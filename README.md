@@ -7,13 +7,11 @@
 
 ## CONTENTS
 --------------------
-### doc
+### doc/
 This directory holds the current PDF documentation for the STASH 2.0 code.
 
-### py_version
+### py_version/
 This directory holds the Python version of the STASH 2.0 code. 
-
-Files include:
 
 * __stash.py__ 
     * Implements the EVAP class for point-based processing 
@@ -49,6 +47,29 @@ Files include:
         * delta method (optional)
             * 'loutre', 'spencer', 'cooper' or 'circle'
     * CRU-based input data is used (user must have a copy of data files and specify their location)
+
+### r_version/
+This directory holds the R version of the STASH 2.0 code. 
+
+* __stash.R__ 
+    * Implements the EVAP function for point-based processing 
+    * Inputs include:
+        * longitude, degrees
+        * latitude, degrees
+        * day of year
+        * year (optional)
+        * sunshine fraction (optional), decimal
+        * mean daily air temperature (optional), °C
+        * elevation (optional), meters
+        * evaporative supply rate (optional), mm/h
+        * distance method (optional)
+            * 'loutre' or 'klein'
+        * lambda method (optional)
+            * 'kepler', 'woolf' or 'berger'
+        * delta method (optional)
+            * 'loutre', 'spencer', 'cooper' or 'circle'
+    * Input data must be imported separately by user (example data is given)
+    * Includes plotting examples of monthly and daily results
 
 
 ## STASH 2.0: Evapotranspiration and Radiation Module
