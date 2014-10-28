@@ -1,10 +1,58 @@
-# README #
+# README
+---------------
 
 * LAST UPDATED: 2014-10-28
 * TEAM: labprentice
 * REPO: stash (private)
 
+## CONTENTS
+--------------------
+### doc
+This directory holds the current PDF documentation for the STASH 2.0 code.
+
+### py_version
+This directory holds the Python version of the STASH 2.0 code. 
+
+Files include:
+
+* __stash.py__ 
+    * Implements the EVAP class for point-based processing 
+    * Inputs include:
+        * longitude, degrees
+        * latitude, degrees
+        * day of year
+        * elevation (optional), meters
+        * year (optional)
+        * sunshine fraction (optional), decimal
+        * mean daily air temperature (optional), °C
+        * evaporative supply rate (optional), mm/h
+        * distance method (optional)
+            * 'loutre' or 'klein'
+        * lambda method (optional)
+            * 'kepler', 'woolf' or 'berger'
+        * delta method (optional)
+            * 'loutre', 'spencer', 'cooper' or 'circle'
+    * Input data must be imported separately by user (example data is given).
+* __stash_grid.py__ 
+    * Implements the EVAP_G class for grid-based processing 
+    * Inputs include:
+        * day of year
+        * elevation (360x720 array), meters
+        * sunshine fraction (360x720 array), decimal
+        * mean daily air temperature (360x720 array), °C
+        * evaporative supply rate (360x720 array), mm/h
+        * year (optional)
+        * distance method (optional)
+            * 'loutre' or 'klein'
+        * lambda method (optional)
+            * 'kepler', 'woolf' or 'berger'
+        * delta method (optional)
+            * 'loutre', 'spencer', 'cooper' or 'circle'
+    * CRU-based input data is used (user must have a copy of data files and specify their location)
+
+
 ## STASH 2.0: Evapotranspiration and Radiation Module
+----------------------------------------------------------------------------
 This work aims to model monthly global radiation, evaporation, and soil moisture quantities and indexes using simple but theoretically-based simulation. The methodology follows the pseudo-code presented by Cramer & Prentice (1988).
 
 ### Key Outputs
@@ -56,4 +104,5 @@ The model theory is as follows:
 19. Update daily soil moisture (Wn) 
 
 ## References
+--------------------
 * Cramer, W. and I. C. Prentice (1988) Simulation of regional soil moisture deficits on a European scale, Norsk Geografisk Tidsskrift - Norwegian Journal of Geography, 42:2-3, pp. 149-151.
