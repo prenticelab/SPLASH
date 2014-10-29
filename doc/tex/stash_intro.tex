@@ -1,0 +1,226 @@
+% stash_intro.tex
+%
+% written by Tyler W. Davis
+% Imperial College London
+%
+% 2014-10-29 -- created
+% 2014-10-29 -- last updated
+%
+% ------------
+% description:
+% ------------
+% This TEX file contains the first chapter of the STASH 2.0 code book.
+%
+% ----------
+% changelog:
+% ----------
+% 01. modularized chapter [14.10.29]
+% 02. newline for each sentence [14.10.29]
+% --> simpler for Git version control
+%
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% PART 1 -- INTRODUCTION
+%% //////////////////////////////////////////////////////////////////////// %%
+\section{Introduction}
+\label{sec:intro}
+This work aims to model monthly global radiation, evaporation, and soil moisture quantities and indexes using simple but theoretically-based simulation.
+
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% PART 1.2 -- THEORY
+%% //////////////////////////////////////////////////////////////////////// %%
+\subsection{Theory}
+\label{sec:theory}
+The methodology is based on the psuedo-code presented by \parencite{cramer88}:
+
+\begin{enumerate}
+	\item Daily
+	\begin{enumerate}
+		\item Estimate the evaporative supply rate, $S_w$ (\S \ref{sec:sw})
+		\item Calculate (or estimate) the heliocentric longitudes, 
+		      $\nu$ and $\lambda$ (\S \ref{sec:lambda})
+		\item Calculate (or estimate) the distance factor, $d_r$ 
+		      (\S \ref{sec:dr})
+		\item Calculate (or estimate) the declination angle, $\delta$ 
+		      (\S \ref{sec:delta})
+		\item Calculate the sunset angle, $H_s$ (Eq. \ref{eq:hs})
+		\item Calculate daily extraterrestrial solar radiation flux, $R_{Da}$ 
+		      (\S \ref{sec:dra})
+		\item Estimate transmittivity, $\tau$ (\S \ref{sec:rs})
+		\item Calculate daily photosynthetic photon flux density, PPFD$_D$ 
+		      (\S \ref{sec:dppfd})
+		\item Estimate net longwave radiation flux, $R_{nl}$ (\S \ref{sec:rn})
+		\item Calculate net radiation cross-over hour angle, $H_n$ 
+		      (Eq. \ref{eq:hn})
+		\item Calculate daytime net radiation, $R_{Dn}$ (\S \ref{sec:drn})
+		\item Calculate nighttime net radiation, $R_{Dnn}$ (\S \ref{sec:drnn})
+		\item Calculate energy conversion factor, $E_{con}$ (\S \ref{sec:econ})
+		\item Estimate daily condensation, $W_c$ (\S \ref{sec:cond})
+		\item Estimate daily equilibrium evapotranspiration, EET$_D$ 
+		      (\S \ref{sec:deet})
+		\item Estimate daily potential evapotranspiration, PET$_D$ 
+		      (\S \ref{sec:dpet})
+		\item Calculate the intersection hour angle, $H_i$ (Eq. \ref{eq:hi})
+		\item Estimate daily actual evapotranspiration, AET$_D$ 
+		      (\S \ref{sec:daet})
+		\item Update daily soil moisture, $W_n$ (\S \ref{sec:dw})
+	\end{enumerate}
+	\item Monthly
+	\begin{enumerate}
+		\item Sum monthly totals of AET$_D$, PET$_D$, EET$_D$ and PPFD$_D$
+		\item Calculate monthly Cramer-Prentice moisture index, $\alpha$ 
+		      (\S \ref{sec:alpha})
+		\item Calculate monthly climatic water deficit, $\Delta$E 
+		      (\S \ref{sec:cwd})
+	\end{enumerate}
+	\item Yearly
+	\begin{enumerate}
+		\item Test whether soil on 31 December agrees with initial conditions
+	\end{enumerate}
+\end{enumerate}
+
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% PART 1.2 -- KEY OUTPUTS
+%%///////////////////////////////////////////////////////////////////////// %%
+\subsection{Key Outputs}
+\label{sec:outputs}
+The key outputs from this model are:
+\begin{enumerate}
+	\item monthly PPFD, mol$\cdot$m$^{-2}$
+	\item monthly equilibrium evapotranspiration (EET), mm
+	\item monthly potential evapotranspiration (PET), mm
+	\item monthly Cramer-Prentice moisture index ($\alpha$), unitless
+	\item monthly climatic water deficit ($\Delta$E), mm
+\end{enumerate}
+
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% PART 1.3 -- MODEL INPUTS
+%%///////////////////////////////////////////////////////////////////////// %%
+\subsection{Model Inputs}
+\label{sec:inputs}
+The model simulation of radiation fluxes requires basic inputs on the time of the year (i.e., year, month, and day) and geographic position (i.e., longitude, $\theta_{lon}$, latitude, $\phi$, and elevation, $z$). 
+For modeling evaporation, the basic meteorological variables needed are: air temperature, precipitation, and fraction of sunlight hours. 
+
+In most cases, daily values of the necessary meteorological variables are not available (especially for global coverage). 
+It is possible, then, to use CRU TS datasets\footnotemark, which provide 0.5$^{\circ}$ resolution global monthly climate variables including: monthly mean daily air temperature, $^{\circ}$C (TMP), monthly precipitation totals, millimeters (PRE), and percent cloudiness, unitless (CLD).\footnotetext{\url{http://badc.nerc.ac.uk/view/badc.nerc.ac.uk\textunderscore \textunderscore ATOM\textunderscore \textunderscore dataent\textunderscore 1256223773328276}} 
+
+Based on CRU TS climatic data, the mean daily temperature, $T_c$, may be assumed constant for each day in the month. 
+The daily precipitation, $P_n$, may be assumed as a constant fraction of the monthly precipitation (i.e., the monthly total precipitation divided by the number of days in the month, $N_m$). 
+The percent cloudiness data is derived on fractional sunshine hours \parencite{harris14}; therefore, the fraction of sunshine hours, $S_f$, may be calculated (albeit only loosely analogous) as the complementary fraction of cloudiness (i.e., $1-$CLD) and may be assumed constant for each day in the month.
+
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% PART 1.4 -- MODEL CONSTANTS
+%%///////////////////////////////////////////////////////////////////////// %%
+\subsection{Model Constants}
+\label{sec:constants}
+Table \ref{tab:constants} presents the constant values used in this model with the corresponding symbol used in this document and variable name used in the coded environment. 
+
+%% ------------------------------------------------------------------------ %%
+%% tab:constants | Constants used in STASH model
+%% ------------------------------------------------------------------------ %%
+\nomenclature{$A$}{Empirical constant for net radiation flux}%
+\nomenclature{$a$}{Length of the semi-major axis, km}%
+\nomenclature{$\beta_{sw}$}{Shortwave albedo, unitless}%
+\nomenclature{$\beta_{vis}$}{PAR albedo, unitless}%
+\nomenclature{$b$}{Empirical constant for net radiation flux, unitless}%
+\nomenclature{$c$}{Minimum transmittivity for cloudy skies, unitless}%
+\nomenclature{$C_w$}{Maximum rate of evaporation, mm$\cdot$hr$^{-1}$}%
+\nomenclature{$d$}{Angular coefficient of transmittivity, unitless}%
+\nomenclature{$e$}{Earth's orbital eccentricity, unitless}%
+\nomenclature{$\epsilon$}{Obliquity of the elliptic, degrees}%
+\nomenclature{$\text{fFEC}$}{From flux to energy conversion, $\mu$mol$\cdot$J$^{-1}$}%
+\nomenclature{$g$}{Gravitational acceleration, m$\cdot$s$^{-2}$}%
+\nomenclature{$GM$}{Standard gravity of the sun, km$^{3}\cdot$s$^{-2}$}%
+\nomenclature{$L$}{Temperature lapse rate, K$\cdot$m$^{-1}$}%
+\nomenclature{$M_a$}{Molecular weight of dry air, kg$\cdot$mol$^{-1}$}%
+\nomenclature{$M_v$}{Molecular weight of water vapor, kg$\cdot$mol$^{-1}$}%
+\nomenclature{$P_o$}{Base pressure, Pa}%
+\nomenclature{$R$}{Universal gas constant, J$\cdot$mol$^{-1}\cdot$K$^{-1}$}%
+\nomenclature{$\sigma_{sb}$}{Stefan-Boltzmann constant, W$\cdot$m$^{-2}\cdot$K$^{-4}$}%
+\nomenclature{$T_o$}{Base temperature, K}%
+\nomenclature{$w$}{Entrainment factor, unitless}%
+\nomenclature{$\omega$}{Longitude of the perihelion, degrees}
+\begin{longtable}{c c r p{6cm}}
+	\caption{Constants used in the STASH model. \label{tab:constants}} \\
+	\hline 
+	\textbf{Symbol} & \textbf{Variable} & \textbf{Value} & 
+	\textbf{Definition} \\
+    \hline
+    \endfirsthead
+    \caption{Constants used in the STASH model (continued).} \\
+	\hline 
+	\textbf{Symbol} & \textbf{Variable} & \textbf{Value} & 
+	\textbf{Definition} \\
+    \hline
+	\endhead
+    $A$ & \texttt{kA} & 107 & 
+    	Constant for $R_{nl}$, W$\cdot$m$^{-2}$ 
+        \parencite{monteith90} \\ 
+    $a$ & \texttt{ka} & 1.496 &
+        Semi-major axis, $\times 10^8$ km \\
+    $\beta_{sw}$ & \texttt{kalb\textunderscore sw} & 0.17 &
+        Shortwave albedo, unitless 
+        \parencite{federer68} \\
+    $\beta_{vis}$ & \texttt{kalb\textunderscore vis} & 0.03 &
+        PAR albedo, unitless 
+        \parencite{sellers85} \\
+    $b$ & \texttt{kb} & 0.20 &
+        Constant for $R_{nl}$, unitless  
+        \parencite{linacre68} \\
+    $c$ & \texttt{kc} & 0.25 & 
+        Cloudy transmittivity, unitless 
+        \parencite{linacre68} \\
+    $C_w$ & \texttt{kCw} & 1.05 & 
+        Supply constant, mm$\cdot$hr$^{-1}$  
+        \parencite{federer82} \\
+    $d$ & \texttt{kd} & 0.50 & 
+        Angular coefficient of transmittivity, unitless 
+        \parencite{linacre68} \\
+    $e$ & \texttt{ke} & 0.01670 & 
+        Eccentricity (2000 CE), unitless 
+        \parencite{berger78} \\
+    $\epsilon$ & \texttt{keps} & 23.44 & 
+        Obliquity (2000 CE), degrees 
+        \parencite{berger78} \\
+    fFEC & \texttt{kfFEC} & 2.04 & 
+        From flux to energy, $\mu$mol$\cdot$J$^{-1}$  
+        \parencite{meek84} \\
+    $g$ & \texttt{kG} & 9.80665 &
+        Gravitational acceleration, m$\cdot$s$^{-2}$ \\
+    $GM$ & \texttt{kGM} & 1.32712 &
+        Standard gravity, $\times 10^{11}$ km$^3\cdot$s$^{-2}$ \\
+    $G_{sc}$ & \texttt{kGsc} & 1360.8 &
+        Solar constant, W$\cdot$m$^{-2}$ 
+        \parencite{kopp11} \\
+    $L$ & \texttt{kL} & 0.0065 & 
+        Lapse rate, K$\cdot$m$^{-1}$ 
+        \parencite{cavcar00} \\
+    $M_a$ & \texttt{kMa} & 0.028963 &
+        Molecular weight of dry air, kg$\cdot$mol$^{-1}$ 
+        \parencite{tsilingiris08} \\
+    $M_v$ & \texttt{kMv} & 0.01802 &
+        Molecular weight of water vapor, kg$\cdot$mol$^{-1}$
+        \parencite{tsilingiris08} \\
+    $P_o$ & \texttt{kPo} & 101325 &
+        Base pressure, Pa 
+        \parencite{cavcar00} \\
+    $R$ & \texttt{kR} & 8.314 &
+        Universal gas constant, J$\cdot$mol$^{-1}\cdot$K$^{-1}$ \\
+    $\sigma_{sb}$ & \texttt{ksb} & 5.670373 &
+        Stefan-Boltzmann constant, $\times 10^{-8}$ 
+        W$\cdot$m$^{-2}\cdot$K$^{-4}$ \\
+    $T_o$ & \texttt{kTo} & 298.15 &
+        Base temperature, K 
+        (Prentice, unpublished) \\
+    $W_m$ & \texttt{kWm} & 150 &
+        Soil moisture capacity, mm  
+        \parencite{cramer88} \\
+    $w$ & \texttt{kw} & 0.26 & 
+        Entrainment, unitless 
+        \parencite{lhomme97,priestley72} \\
+    $\omega$ & \texttt{komega} & 283 & 
+        Longitude of perihelion (2000 CE), degrees 
+        \parencite{berger78} \\
+        \hline
+\end{longtable}
+
+% @TODO: model variables table

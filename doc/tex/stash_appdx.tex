@@ -1,0 +1,96 @@
+% stash_appdx.tex
+%
+% written by Tyler W. Davis
+% Imperial College London
+%
+% 2014-10-29 -- created
+% 2014-10-29 -- last updated
+%
+% ------------
+% description:
+% ------------
+% This TEX file contains the appendix of the STASH 2.0 code book.
+%
+% ----------
+% changelog:
+% ----------
+% 01. modularized chapter [14.10.29]
+% 02. newline for each sentence [14.10.29]
+% --> simpler for Git version control
+%
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% APPENDIX A -- PYTHON CODE SNIPPETS
+%% //////////////////////////////////////////////////////////////////////// %%
+\section{Python Code}
+
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% APPENDIX A.1 -- JULIAN DAY
+%% //////////////////////////////////////////////////////////////////////// %%
+\subsection{Julian Day}
+\label{app:jday}
+\texttt{ \\
+\noindent 01~~def julian\textunderscore day(y, m, i):\\
+\noindent 02 \indent if m <= 2:\\
+\noindent 03 \indent \indent y = y-1\\
+\noindent 04 \indent \indent m = m+12\\
+\noindent 05 \indent A = int(y/100)\\
+\noindent 06 \indent B = 2-A+int(A/4)\\
+\noindent 07 \indent JDE = int(365.25*(y+4716))+int(30.6001*(m+1))+i+B-1524.5
+\\
+\noindent 08 \indent return(JDE)\\
+}
+
+\noindent This script calculates the Julian day for a given date in the Gregorian calendar \parencite[Ch. 7]{meeus91}, where \texttt{y} is the year, \texttt{m} is the month (i.e., 1--12), and \texttt{i} is the day (i.e., 1--31). 
+The term $B$ on Line 06 is for the modified definition of leap-years in the Gregorian calendar from the Julian calendar. If using the Julian calendar dates, set $B$ equal to zero. 
+To test whether the algorithm is correctly implemented, the Julian day of 13 Aug 2014 is 2456882.
+
+\newpage
+
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% APPENDIX A.2 -- EQUINOX
+%% //////////////////////////////////////////////////////////////////////// %%
+\subsection{Equinox}
+\label{app:equinox}
+\texttt{ \\
+\noindent 01~~def equinox(y, opt=0):\\
+\noindent 02 \indent \# Table 26.A: jde\textunderscore table\textunderscore a \\
+\noindent 03 \indent \# Table 26.B: jde\textunderscore table\textunderscore b \\
+\noindent 04 \indent \# Table 26.C: periodic\textunderscore terms \\
+\noindent 05 \indent if y < 1000:\\
+\noindent 06 \indent \indent jde\textunderscore table = jde\textunderscore table\textunderscore a \\
+\noindent 07 \indent \indent y = y/1000.0 \\
+\noindent 08 \indent else: \\
+\noindent 09 \indent \indent jde\textunderscore table = jde\textunderscore table\textunderscore b \\
+\noindent 10 \indent \indent y = (y-2000.0)/1000.0 \\
+\noindent 11 \indent jde0 = ( \\
+\noindent 12 \indent \indent jde\textunderscore table[opt,0] + \\
+\noindent 13 \indent \indent jde\textunderscore table[opt,1]*y + \\
+\noindent 14 \indent \indent jde\textunderscore table[opt,2]*y**2 + \\
+\noindent 15 \indent \indent jde\textunderscore table[opt,3]*y**3 + \\
+\noindent 16 \indent \indent jde\textunderscore table[opt,4]*y**4 \\
+\noindent 17 \indent ) \\
+\noindent 18 \indent t = (jde0-2451545.0)/36525.0 \\
+\noindent 19 \indent w = (35999.373*t)-2.47 \\
+\noindent 20 \indent dl = ( \\
+\noindent 21 \indent \indent 1.0 + \\
+\noindent 22 \indent \indent (0.0334 * numpy.cos(numpy.pi/180*w)) + \\
+\noindent 23 \indent \indent (0.0007 * numpy.cos(numpy.pi/180*2*w)) \\
+\noindent 24 \indent ) \\
+\noindent 25 \indent s = 0 \\
+\noindent 26 \indent j = 0 \\
+\noindent 28 \indent for i in xrange(24): \\
+\noindent 29 \indent \indent s += periodic\textunderscore terms[j]*numpy.cos( \\
+\noindent 30 \indent \indent \indent numpy.pi/180.0*(\\
+\noindent 31 \indent \indent \indent \indent periodic\textunderscore terms[j+1] + \\
+\noindent 32 \indent \indent \indent \indent (periodic\textunderscore terms[j+2]*t) \\
+\noindent 33 \indent \indent \indent ) \\
+\noindent 34 \indent \indent ) \\
+\noindent 35 \indent \indent j=j+3 \\
+\noindent 36 \indent jde = jde0+((s*0.00001)/dl) \\
+\noindent 37 \indent jde\textunderscore year = julian\textunderscore day(y, 1, 1) \\
+\noindent 38 \indent return (jde-jde\textunderscore year+1) \\
+}
+
+This algorithm calculates the corresponding Julian day of the vernal equinox (i.e., \texttt{opt=0}) for a given year \parencite[Ch. 26]{meeus91}. 
+In this example, numpy is used for defining the arrays, calculating the cosine, and for the numerical definition of $\pi$. 
+The three tables that are referenced on Lines 02--04 need to be defined. 

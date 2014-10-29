@@ -1,0 +1,205 @@
+% stash_doc.tex
+%
+% written by Tyler W. Davis
+% Imperial College London
+%
+% 2014-08-11 -- created
+% 2014-10-29 -- last updated
+%
+% ------------
+% description:
+% ------------
+% This is a TeX document containing documentation on the STASH v2.0
+% code.
+%
+% The required files/file structure:
+%   ./stash_doc.tex
+%   ./stash.bib
+%   ./tex/
+%     stash_intro.tex
+%     stash_methods.tex
+%     stash_appdx.tex
+%   ./img/
+%     aet.eps
+%     cp.eps
+%     declination.eps
+%     delta_differences.eps
+%     density.eps
+%     eot.eps
+%     int_ra.eps
+%     int_rn.eps
+%     int_rnn.eps
+%     kepler_diff.eps
+%     kepler_map.eps
+%     kepler_v_klein.eps
+%     latent.eps
+%     psychro.eps
+%     sat_slope.eps
+%     title_page.eps
+%
+% ---------
+% to build:
+% ---------
+% To produce the "List of Notations" and "References"
+% 1. run latex (twice if ToC was changed), e.g.:
+%    $ latex stash_doc.tex
+% 2. run MakeIndex (twice), e.g.:
+%    $ makeindex -s nomencl.ist gepisat_doc.nlo -o gepisat_doc.nls
+% 3. run Bibtex (twice if new Bib entries added)
+% 4. QuickBuild, e.g.:
+%    $ latex stash_doc.tex
+%    $ dvips stash_doc.dvi
+%    $ ps2pdf stash_doc.ps
+%
+% ----------
+% changelog:
+% ----------
+% 00. document created [2014.08.11] 
+% --> based on gepisat_doc.tex [2014.07.31]
+% 01. corrected wxMaxima equations [2014.09.24]
+% 02. corrected Woolf's method for lambda [2014.10.08]
+% 03. updated transmittivity based on Allen (1996) [2014.10.08]
+% 04. added Berger's method for true longitude [14.10.10]
+% 05. added Spencer's method for delta [14.10.10]
+% 06. updated VIS and SW albedo [14.10.28]
+% 07. modularized latex file [14.10.29]
+% 08. added graphicspath{} to preamble [14.10.29]
+%
+% -----
+% todo:
+% -----
+% 1. Model variables table (analogous to model constants table)
+% 2. Update figure delta with Spencer's Method
+%
+% ----------
+% resources:
+% ----------
+% Displaying formula's: http://en.wikipedia.org/wiki/Help:Formula
+% Biblatex: http://tex.stackexchange.com/questions/26730/citation-
+%           bib-style-with-biblatex
+%
+% Texmaker In-line Dictionary:
+% MacOSX:
+% * uses LibreOffice dictionary
+%   /Applications/LibreOffice.app/Contents/share/extensions/dict-en           \
+%   /en_[US|GB].dic
+%
+
+%% ------------------------------------------------------------------------ %%
+%% DEFINE DOCUMENT CLASS AND PACKAGES
+%% ------------------------------------------------------------------------ %%
+\documentclass[11pt,twoside,a4paper,titlepage]{article}
+
+\usepackage{amsmath}
+\usepackage{appendix}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{breakurl}
+\usepackage[refpage]{nomencl}
+\usepackage[citestyle=authoryear-icomp,%
+            backref=true,%
+            maxcitenames=2,%
+            maxbibnames=99,%
+            dashed=false,%
+            url=true,%
+            bibstyle=authoryear]{biblatex}
+\addbibresource{stash.bib}
+\usepackage{eso-pic}
+
+\renewcommand{\nomname}{List of Notations}
+\renewcommand*{\pagedeclaration}[1]{\unskip\dotfill\hyperpage{#1}}
+\makenomenclature
+
+\usepackage{makeidx}
+\makeindex
+
+% Create command for background image:
+\newcommand\BackgroundPic{\put(0,0){\parbox[b][\paperheight]{\paperwidth}{%
+\vfill
+\centering
+\includegraphics[width=\paperwidth,height=\paperheight,keepaspectratio]{./img/title_page.eps}%
+\vfill
+}}}
+
+% Create a special font for the title:
+\newcommand*{\TitleFont}{%
+      \usefont{\encodingdefault}{\rmdefault}{b}{n}%
+      \fontsize{16}{20}%
+      \selectfont}
+
+% Define graphics directory
+\graphicspath{{./img/}}
+
+%% ------------------------------------------------------------------------ %%
+%% BEGIN DOCUMENT
+%% ------------------------------------------------------------------------ %%
+\begin{document}
+
+%% ------------------------------------------------------------------------ %%
+%% TITLE, AUTHORS, and DATE
+%% ------------------------------------------------------------------------ %%
+\title{\TitleFont The STASH Code Book\\version 2.0}
+\author{
+         I. C. Prentice$^{1,2}$, B. J. Evans$^{2}$, T. W. Davis$^{1}$, \\
+         H. Wang$^{2}$, R. J. Whitley$^{2}$, T. F. Keenan$^{2}$ \\
+         and X. M. P. Gilbert$^{1}$\\
+         \\
+         $^{1}$AXA Chair Programme in Biosphere and Climate Impacts\\
+         Department of Life Sciences and Grantham Institute for Climate 
+         Change\\
+         Imperial College London, London, UK\\
+         \\
+         $^{2}$Department of Biological Sciences\\
+         Macquarie University, North Ryde, NSW, Australia\\
+         \\
+         }
+
+\date{Last updated: \today}
+
+\AddToShipoutPicture*{\BackgroundPic}
+
+\maketitle
+
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% TABLE OF CONTENTS
+%%///////////////////////////////////////////////////////////////////////// %%
+\tableofcontents
+
+\newpage
+
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% NOMENCLATURE
+%% //////////////////////////////////////////////////////////////////////// %%
+\printnomenclature
+
+\newpage
+
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% INTRO
+%% //////////////////////////////////////////////////////////////////////// %%
+\include{./tex/stash_intro}
+
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% METHODS
+%% //////////////////////////////////////////////////////////////////////// %%
+\include{./tex/stash_methods}
+
+%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
+%% THE APPENDICES
+%% //////////////////////////////////////////////////////////////////////// %%
+\appendix
+
+\include{./tex/stash_appdx}
+
+%% ------------------------------------------------------------------------ %%
+%% THE BIBLIOGRAPHY
+%% ------------------------------------------------------------------------ %%
+\printbibliography
+
+%% ------------------------------------------------------------------------ %%
+%% END DOCUMENT
+%% ------------------------------------------------------------------------ %%
+\end{document}
+
