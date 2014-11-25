@@ -1,14 +1,25 @@
 # README
 ---------------
 
-* LAST UPDATED: 2014-10-28
+* LAST UPDATED: 2014-10-29
 * TEAM: labprentice
 * REPO: stash (private)
 
-## CONTENTS
+## Contents
 --------------------
 ### doc/
-This directory holds the current PDF documentation for the STASH 2.0 code.
+This directory holds the current documentation for the STASH 2.0 code.
+
+* __stash_doc.pdf__
+    * The current PDF build of the documentation
+* __stash_doc.tex__
+    * The main LaTeX document file
+* __stash.bib__
+    * The BibLatex file for documentation references
+* __img/__
+    * Contains the EPS figures for the documentation
+* __tex/__
+    * Contains the modular LaTeX chapter files (and appendix)
 
 ### py_version/
 This directory holds the Python version of the STASH 2.0 code. 
