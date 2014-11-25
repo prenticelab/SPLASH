@@ -8,7 +8,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2014-10-23 -- last updated
+# 2014-11-25 -- last updated
 #
 # ------------
 # description:
@@ -95,6 +95,9 @@
 # 28. distinguish shortwave from visible light albedo [14.10.16]
 # 29. added some if 0 statements for annual PPFD [14.10.21]
 # 30. created mean_monthly_w function [14.10.23]
+# 31. updated value and reference for semi-major axis, a [14.10.31]
+# 32. fixed Cooper's and Spencer's declination equations [14.11.25]
+# 33. replaced simplified kepler with full kepler [14.11.25]
 #
 # -----
 # todo:
@@ -114,7 +117,7 @@ from scipy.io import netcdf
 ## GLOBAL CONSTANTS:
 ###############################################################################
 kA = 107       # constant for Rnl (Monteith & Unsworth, 1990)
-ka = 1.496e8   # semi-major axis, km
+ka = 1.49598e8 # semi-major axis, km (Allen, 1973)
 kalb_sw = 0.17 # shortwave albedo (Federer, 1968)
 kalb_vis = 0.03 # visible light albedo (Sellers, 1985)
 kb = 0.20      # constant for Rnl (Linacre, 1968)
@@ -125,14 +128,14 @@ ke = 0.0167    # eccentricity for 2000 CE (Berger, 1978)
 keps = 23.44   # obliquity for 2000 CE, degrees (Berger, 1978)
 kerror = -9999 # error value
 kfFEC = 2.04   # from flux to energy conversion, umol/J (Meek et al., 1984)
-kG = 9.80665   # gravitational acceleration, m/s^2
+kG = 9.80665   # gravitational acceleration, m/s^2 (Allen, 1973)
 kGM = 1.32712e11 # standard gravity of the sun, km^3/s^2
 kGsc = 1360.8  # solar constant, W/m^2 (Kopp & Lean, 2011)
 kL = 0.0065    # temperature lapse rate, K/m (Cavcar, 2000)
 kMa = 0.028963 # molecular weight of dry air, kg/mol (Tsilingiris, 2008)
 kMv = 0.01802  # molecular weight of water vapor, kg/mol (Tsilingiris, 2008)
-kPo = 101325   # base pressure, Pa (Cavcar, 2000)
-kR = 8.314     # universal gas constant, J/mol/K
+kPo = 101325   # standard atmosphere, Pa (Allen, 1973)
+kR = 8.3143    # universal gas constant, J/mol/K (Allen, 1973)
 ksb = 5.670373e-8 # Stefan-Boltzman constant, W/m^2/K^4
 kTo = 298.15   # base temperature, K (Prentice, unpublished)
 kWm = 150      # soil moisture capacity, mm (Cramer & Prentice, 1988)
@@ -336,7 +339,7 @@ class EVAP_G:
         elif delm == 'cooper':
             # Eq. 16, STASH 2.0 Documentation (Cooper, 1969)
             self.delta = keps*numpy.sin(
-                2.0*numpy.pi*(komega + self.user_day)/self.kN
+                2.0*numpy.pi*(self.user_day + 284.0)/self.kN
             )
         elif delm == 'circle':
             # Eq. 15, STASH 2.0 Documentation
@@ -351,7 +354,7 @@ class EVAP_G:
                           0.070257*numpy.sin(spencer_b) - 
                           0.006758*numpy.cos(2.0*spencer_b) +
                           0.000907*numpy.sin(2.0*spencer_b) - 
-                          0.0022697*numpy.cos(3.0*spencer_b) + 
+                          0.002697*numpy.cos(3.0*spencer_b) + 
                           0.00148*numpy.sin(3.0*spencer_b))
             self.delta *= (180.0/numpy.pi)
         else:
@@ -770,70 +773,14 @@ class EVAP_G:
         # Return the day of year:
         return (jde - jde_year + 1)
     #
-    def correct_kepler(self, lon, t):
+    def full_kepler(self, lon):
         """
-        Name:     EVAP_G.correct_kepler
-        Input:    - longitudes w.r.t. the perihelion; at least two points 
-                    before and one point after the 180 degree cross-over (lon)
-                  - days associates with the longitudes (t)
-        Output:   days
-        Features: Corrects the array of days output from simplified_kepler due 
-                  to the asymptote in the arctan at 180 degrees
-        """
-        # Find indexes of positive and negative values:
-        neg_points = numpy.where(t<0)[0]
-        pos_points = numpy.where(t>=0)[0]
-        #
-        # Linearly extrapolate the positive position of the first negative 
-        # value for:
-        #   xa ... ya  <-- known value pair a
-        #   xb ... yb  <-- known value pair b
-        #   xi ... yi  <-- extrapolated value pair i
-        # where all variables are known except for yi, such that:
-        #   (yi-ya)/(yb-ya) = (xi-xa)/(xb-xa)
-        # and solving for yi:
-        #   yi = ya + (yb-ya)*(xi-xa)/(xb-xa)
-        xa = pos_points[-2]
-        xb = pos_points[-1]
-        xi = neg_points[0]
-        #
-        ya = t[xa]
-        yb = t[xb]
-        yi = ya + (yb - ya)*(xi - xa)/(xb - xa)
-        #
-        # Calculate the difference between the pos. and neg. values at y:
-        diff_y = yi - t[xi]
-        #
-        # Add the difference to the negative values to push them to the proper
-        # positive position, i.e.:
-        #
-        #      +y                     +y
-        #       |     o               |           o
-        #       |   o                 |         o  
-        #       | o                   |       o    
-        #       |------------- +x  => |     o      
-        #       |           o         |   o        
-        #       |         o           | o          
-        #       |       o             |------------ +x
-        #
-        #       (a) Original Data     (b) Corrected
-        #
-        y = numpy.copy(t)
-        y[neg_points] = y[neg_points] + diff_y
-        #
-        return (y)
-    #
-    def simplified_kepler(self,lon):
-        """
-        Name:     EVAP_G.simplified_kepler
-        Input:    float, longitude w.r.t. the perihelion (lon)
-        Output:   float, days traveled from the perihelion (t)
-        Features: Calculates the time (days) of earth's orbit around the sun
-                  for a given longitude using a simplified Kepler approach
-        Depends:  correct_kepler
-                  Global constants:
-                  - ke
-        Ref:      Kepler's Second Law of Planetary Motion
+        Name:     EVAP_G.full_kepler
+        Input:    float, longitude w.r.t. the perihelion, deg (lon)
+        Output:   float, days traveled from perihelion (t)
+        Features: Returns the days traveled since the earth past the perihelion
+        Depends:  -ke (ellipticity)
+        Ref:      Kepler's Second Law
         """
         # Make lon into numpy array, if it is not already:
         if isinstance(lon, numpy.float) or isinstance(lon, numpy.int):
@@ -841,21 +788,24 @@ class EVAP_G:
         elif not isinstance(lon, numpy.ndarray):
             lon = numpy.array(lon)
         #
-        # Calculate the days
-        # NOTE: arctan(inf) = pi/2
-        t = (
-            self.kN/numpy.pi*(
-                numpy.arctan(
-                    self.dsin(lon)/(self.dcos(lon) + 1)
-                ) - ke*self.dsin(lon)
-            )
-        )
+        xee = ke**2
+        xte = ke**3
+        xse = numpy.sqrt(1.0 - xee)
+        xco = self.dcos(lon) + 1
         #
-        # Correct the days, if necessary:
-        if len(lon) > 1:
-            t = self.correct_kepler(lon, t)
+        A = (0.5*self.kN/numpy.pi)*(1 - xee)**1.5
+        B = 2*numpy.arctan((ke - 1.)*self.dsin(lon)/(xse*xco))
+        C = xse*(xee - 1)
+        D = 2.*ke*self.dsin(lon)
+        E = xco*((xte - xee - ke + 1)*self.dsin(lon)**2/xco**2 - 
+                 xte - xee + ke + 1)
+        kepler_t = A*(B/C - D/E)
         #
-        return t
+        # Correct negative points due to inverse tan function:
+        neg_points = numpy.where(lon > 180)[0]
+        kepler_t[neg_points] -= 2*numpy.pi*A/C
+        #
+        return (kepler_t)
     #
     def map_days(self, n, y):
         """
@@ -869,13 +819,13 @@ class EVAP_G:
                   - earth_period
                   - earth_velocity
                   - equinox
-                  - simplified_kepler
+                  - full_kepler
                   Global constants:
                   - komega
         """
         # Create longitude field and compute the days for orbit:
-        lon_nu = numpy.array([1.0*i for i in xrange(361)])
-        day_nu = self.simplified_kepler(lon_nu)
+        lon_nu = numpy.array([360.*i/365. for i in xrange(366)])
+        day_nu = self.full_kepler(lon_nu)
         #
         # Compute the angle of the vernal equinox w.r.t. the perihelion
         # i.e., the explementary angle of komega:
@@ -883,11 +833,9 @@ class EVAP_G:
         #
         # Calculate the length of time it takes earth to travel from the
         # perihelion (t=0) to the vernal equinox:
-        if wp < 180.0:
-            days_to_ve = self.simplified_kepler(wp)[0]
-        else:
-            lon_temp = numpy.array([179.0, 180.0, 181.0, wp])
-            days_to_ve = self.simplified_kepler(lon_temp)[3]
+        if wp == 180:
+            wp += 1e-6
+        days_to_ve = self.full_kepler(wp)[0]
         #
         # Get day of year of vernal equinox
         if y == 0:
@@ -922,6 +870,9 @@ class EVAP_G:
             #
             # Calculate the new longitude, degrees:
             nu_doy = lon_nu[ibefore] + (vbefore*dt)*180.0/numpy.pi
+        #
+        if nu_doy >= 360:
+            nu_doy -= 360
         #
         # Convert nu to lambda:
         lamda_doy = nu_doy + komega

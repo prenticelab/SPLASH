@@ -1,16 +1,23 @@
-# R-Studio
+# R-Studio 0.98
 #
 # stash.R
 #
 # written by Tyler W. Davis
 # Imperial College London
 #
-# last updated: 2014-10-28
+# last updated: 2014-11-25
 #
 # ~~~~~~~~~~~~
 # description:
 # ~~~~~~~~~~~~
 # This script runs the STASH 2.0 code for point-based data.
+#
+# ~~~~~~~~~~
+# changelog:
+# ~~~~~~~~~~
+# 01. updated values and references for ka and kR [14.10.31]
+# 02. fixed Cooper's and Spencer's declination angle equations [14.11.25]
+# 03. replaced simplified_kepler with full_kepler method [14.11.25]
 #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 #### Define functions #########################################################
@@ -181,7 +188,7 @@ evap <- function(user.lon, user.lat, user.day, user.year=0, user.fsun=1,
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   if (user.lambda == 'kepler'){
     # Kepler method:
-    mdoy <- map_days(user.day, user.year, kN)
+    mdoy <- map_days_full(user.day, user.year, kN)
     my_nu<- mdoy[1]
     my_lambda<- mdoy[2]
   } else if (user.lambda == 'woolf'){
@@ -268,7 +275,7 @@ evap <- function(user.lon, user.lat, user.day, user.year=0, user.fsun=1,
     delta <- asin(dsin(my_lambda)*dsin(keps))*180/pi
   } else if (user.delta == 'cooper'){
     # Cooper method:
-    delta <- keps*sin(2*pi*(komega + user.day)/kN)
+    delta <- keps*sin(2*pi*(user.day + 284)/kN)
   } else if (user.delta == 'circle'){
     # Circle method:
     delta <- -keps*cos(2*pi*(user.day + 10)/kN) 
@@ -277,7 +284,7 @@ evap <- function(user.lon, user.lat, user.day, user.year=0, user.fsun=1,
     B <- 2*pi*(user.day - 1)/kN
     delta <- 180.0/pi*(0.006918 - 0.399912*cos(B) + 0.070257*sin(B) - 
                          0.006758*cos(2*B) + 0.000907*sin(2*B) - 
-                         0.0022697*cos(3*B) + 0.00148*sin(3*B))
+                         0.002697*cos(3*B) + 0.00148*sin(3*B))
   } else {
     stop("Warning: declination angle method not recognized!")
   }
@@ -884,98 +891,68 @@ equinox <- function(year, opt=1) {
 }
 
 # ************************************************************************
-# * Name: simplified_kepler
+# * Name: full_kepler
 # *
-# * Input: double (lon), degrees
-# *        double (P), days in year
+# * Input: - double, helicentric longitude (lon), degrees
+# *        - double, number of days in year (P)
 # *
-# * Return: double (t), days
+# * Return: double, days past perihelion (t), days
 # *
 # * Features: This function calculates the amount of time (days) it 
 # *           takes earth to travel a set amount of longitude with
 # *           respect to the perihelion
 # *
-# *           "SIMPLIFIED KEPLER METHOD"
+# *           "FULL KEPLER METHOD"
 # *
 # *           Depends on:
-# *           - dsin() ......... dsin(x) = sin(x*pi/180)
-# *           - dcos() ......... dcos(x) = cos(x*pi/180)
-# *           - ke ............. eccentricity of earth's orbit
+# *           - ke ............. eccentricity of earth's orbit, unitless
+# *           - dsin
+# *           - dcos
 # *
-# * Note: The original derivation of d(t)/d(lon) was computed in wxmaxima
+# * Note: The derivation of d(t)/d(lon) was computed in wxmaxima
+# *       > f: 1/(1+e*cos(nu))^2;
+# *       > integrate(f, nu); negative;
+# *       > ratsimp(%);
 # *
-# *         d(t)/d(lon)= P/(2*pi)*(1-e^2)^1.5/(1+e*cos(lon))^2
+# *       d(t)/d(lon)= P/(2*pi)*(1-e^2)^1.5/(1+e*cos(lon))^2
 # *
-# *       The simplification assumes that eccentricity is small and so
-# *       neglects the term in the numer and denom terms in the 
-# *       full_kepler function.
+# *       t = A*(B/C - D/E)
+# *       where:
+# *         A = N(1-e^2)^1.5/(2pi)
+# *         B = 2 atan((2e-2)*sin(nu)/(2*sqrt(1-e^2)*(cos(nu)+1)))
+# *         C = sqrt(1-e^2)*(e^2-1)
+# *         D = 2e*sin(nu)
+# *         E = (cos(nu)+1)*((e^3-e^2-e+1)*sin(nu)^2/(cos(nu)+1)^2 - 
+# *              e^3 - e^2 + e + 1)
 # *
-# *       The correction factor (2sin x) is due to periodic differences
-# *       between the simple approach and the full expression presented
-# *       in the full_kepler function
+# *       Correct time by adding 2*C*(pi/2) to values after lon==180 deg,
+# *       i.e., 2A/C
 # *
 # ************************************************************************
-simplified_kepler <- function(lon, P=kP){
-  P/(pi)*(atan(dsin(lon)/(dcos(lon)+1))-ke*dsin(lon))
+full_kepler <- function(lon, P=kP){
+  xee <- ke^2
+  xte <- ke^3
+  xse <- sqrt(1.0 - xee)
+  xco <- dcos(lon) + 1
+  #
+  A <- (0.5*P/pi)*(1 - xee)^1.5
+  B <- 2*atan((2*ke - 2)*dsin(lon)/(2*xse*xco))
+  C <- xse*(xee - 1)
+  D <- 2*ke*dsin(lon)
+  E <- xco*((xte - xee - ke + 1)*dsin(lon)^2/xco^2 - xte - xee + ke + 1)
+  kepler_t <- A*(B/C - D/E)
+  #
+  # Correct negative values:
+  neg_points <- which(lon > 180)
+  kepler_t[neg_points] <- (
+    kepler_t[neg_points] - 2*pi*A/C
+  )
+  #
+  return (kepler_t)
 }
 
 # ************************************************************************
-# * Name: correct_time
-# *
-# * Input: numeric list (x), longitude degrees
-# *        numeric list (y), days
-# *
-# * Return: numeric list (y), days
-# *
-# * Features: This function corrects the series of days (y) for a given
-# *           set of longitudes (x) calcuated by either full_kepler or 
-# *           simplified_kepler functions. 
-# *
-# *           The problem with these two functions is that the atan()
-# *           has an asymptote at pi/2 (180 degrees). In order to 
-# *           correctly stack the series the slope of the last two 
-# *           points before the asymptote is used to approximate the
-# *           value of the first negative term (where it should be along
-# *           the line, if it were unbroken). The negative terms are then
-# *           shifted to this value to create a complete unbroken line,
-# *           see figure below for a visual explanation:
-# *
-# *          +y                     +y
-# *           |     o               |           o
-# *           |   o                 |         o  
-# *           | o                   |       o    
-# *           |------------- +x  => |     o      
-# *           |           o         |   o        
-# *           |         o           | o          
-# *           |       o             |------------ +x
-# *
-# *           (a) Original Data     (b) Corrected
-# ************************************************************************
-correct_time <- function(x,y){
-  # Find indices for negative and positive values of time:
-  neg_points <- which(y<0)
-  pos_points <- which(y>=0)
-  #
-  # Extrapolation values for longitude:
-  intrp_a <- pos_points[length(pos_points)]
-  intrp_x <- neg_points[1]
-  intrp_b <- pos_points[length(pos_points)-1]
-  #
-  intrp_A <- y[intrp_a]
-  intrp_B <- y[intrp_b]
-  #
-  intrp_y <- intrp_A - (intrp_B - intrp_A)*(intrp_a-intrp_x)/(intrp_b-intrp_a)
-  #
-  # Calculate the difference between the interpolated value and actual
-  diff_y <- intrp_y - y[intrp_x]
-  #
-  # Add the difference to the negative terms:
-  y[neg_points]<- y[neg_points]+diff_y
-  y
-}
-
-# ************************************************************************
-# * Name: map_days
+# * Name: map_days_full
 # *
 # * Input: double (doy), day of year
 # *        double (year)
@@ -1009,35 +986,31 @@ correct_time <- function(x,y){
 # *           Solving for longitude a+b = a + b => a + w(a)*dt
 # *
 # *           Depends on:
-# *           - simplified_kepler() .... Simple Kepler Method, t(nu)
-# *           - correct_time() ......... fixes sign change due to tan()
+# *           - full_kepler() .......... Kepler Method, t(nu)
 # *           - equinox() .............. calculates day of vernal equinox
 # *           - earth_velocity() ....... calculates tangential velocity
 # *           - komega ................. angle of the perihelion, degrees
 # ************************************************************************
-map_days <- function(doy, yr, P=kP){
+map_days_full <- function(doy, yr, P=kP){
   # Check doy is correct:
   if (doy < 1 | doy > 366){
     warning("DOY should be from 1 to 366")
   } else{
     # Create longitude field (nu, w.r.t. to perihelion)
-    lon <- seq(0,360)
+    lon <- seq(0,365)*(360/365)
     # 
     # Calculate the time to circumnavigate the sun
     # * ranges between 0 (lon=0) and P (lon=360)
-    kepler_days <- correct_time(lon,simplified_kepler(lon, P))
+    kepler_days <- full_kepler(lon, P)
     #
     # Get angle between perihelion and the vernal equinox:
     wp <- (360-komega)
     #
     # Find how long it takes earth to travel to vernal equinox:
-    if(wp<180){
-      daysToVE <- simplified_kepler(wp, P)
-    } else{
-      # Set up longitudes before and after the jump:
-      my_lons <- c(179,180,181,wp)
-      daysToVE <- correct_time(my_lons,simplified_kepler(my_lons, P))[4]
+    if(wp==180){
+      wp <- wp-1e-6
     }
+    daysToVE <- full_kepler(wp, P)
     #
     # Find which day the vernal equinox falls on:
     if (yr == 0){
@@ -1078,6 +1051,10 @@ map_days <- function(doy, yr, P=kP){
       #
       # Longitude of doy (w.r.t perihelion)
       nu_doy <- lon[ibefore]+atraveled
+    }
+    # Check nu:
+    if(nu_doy >= 360){
+      nu_doy <- nu_doy - 360
     }
     # Longitude of doy (w.r.t. vernal equinox)
     lamda_doy <- (nu_doy + komega)
@@ -1306,7 +1283,7 @@ psychro <- function(tc, pa){
 # Obliquity varies 22.1--24.5 degrees with a period of ~41000 years.
 # 
 kA <- 107             # constant for Rl (Monteith & Unsworth, 1990)
-ka <- 1.4960e8        # length of earth's semi-major axis, km
+ka <- 1.49598e8       # length of earth's semi-major axis, km (Allen, 1973)
 kalb_sw <- 0.17       # shortwave albedo (Federer, 1968)
 kalb_vis <- 0.03      # visible light albedo (Sellers, 1985)
 kb <- 0.20            # constant for Rl (Linacre, 1968; Kramer, 1957)
@@ -1316,16 +1293,16 @@ kd <- 0.50            # constant for Rs (Linacre, 1968)
 ke <- 0.01670         # eccentricity of earth's orbit, 2000CE (Berger 1978)
 keps <- 23.44         # obliquity of earth's elliptic, 2000CE (Berger 1978)
 kfFEC <- 2.04         # from-flux-to-energy, umol/J (Meek et al., 1984)
-kG <- 9.80665         # gravitational acceleration, m/s^2
+kG <- 9.80665         # gravitational acceleration, m/s^2 (Allen, 1973)
 kGM <- 1.32712e11     # sun's standard gravity, km3/s2 (NASA's Sun Fact Sheet)
 kGsc <- 1360.8        # solar constant, W/m^2 (Kopp & Lean, 2011)
 kL <- 0.0065          # adiabatic lapse rate, K/m (Cavcar, 2000)
 kMa <- 0.028963       # molecular weight of dry air, kg/mol (Tsilingiris, 2008)
 kMv <- 0.01802        # mol. weight of water vapor, kg/mol (Tsilingiris, 2008)
-komega <- (103+180)   # lon. of perihelion, degrees, 2000CE (Berger, 1978)
+komega <- 283         # lon. of perihelion, degrees, 2000CE (Berger, 1978)
 kSecInDay <- 86400    # number of seconds in a day
-kPo <- 101325         # mean sea-level pressure, Pa (Cavcar, 2000)
-kR <- 8.314           # universal gas constant, J/mol/K (Farquhar et al., 1980)
+kPo <- 101325         # standard atmosphere, Pa (Allen, 1973)
+kR <- 8.3143          # universal gas constant, J/mol/K (Allen, 1973)
 ksb <- 5.670373e-8    # Stefan-Boltzman constant, W/m^2/K^4
 kTo <- 298.15         # base temperature (25 deg C), K (I.C. Prentice)
 kWm <- 150            # soil moisture capacity, mm (Cramer-Prentice, 1988)

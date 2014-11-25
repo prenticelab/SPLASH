@@ -4,7 +4,7 @@
 % Imperial College London
 %
 % 2014-10-29 -- created
-% 2014-10-29 -- last updated
+% 2014-11-25 -- last updated
 %
 % ------------
 % description:
@@ -17,6 +17,8 @@
 % 01. modularized chapter [14.10.29]
 % 02. newline for each sentence [14.10.29]
 % --> simpler for Git version control
+% 03. updated values in Table [14.11.25]
+% 04. updated variable names [14.11.25]
 %
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 1 -- INTRODUCTION
@@ -42,34 +44,34 @@ The methodology is based on the psuedo-code presented by \parencite{cramer88}:
 		      (\S \ref{sec:dr})
 		\item Calculate (or estimate) the declination angle, $\delta$ 
 		      (\S \ref{sec:delta})
-		\item Calculate the sunset angle, $H_s$ (Eq. \ref{eq:hs})
-		\item Calculate daily extraterrestrial solar radiation flux, $R_{Da}$ 
+		\item Calculate the sunset angle, $h_s$ (Eq. \ref{eq:hs})
+		\item Calculate daily extraterrestrial solar radiation flux, $H_o$ 
 		      (\S \ref{sec:dra})
 		\item Estimate transmittivity, $\tau$ (\S \ref{sec:rs})
-		\item Calculate daily photosynthetic photon flux density, PPFD$_D$ 
+		\item Calculate daily photosynthetic photon flux density, $Q_n$ 
 		      (\S \ref{sec:dppfd})
-		\item Estimate net longwave radiation flux, $R_{nl}$ (\S \ref{sec:rn})
-		\item Calculate net radiation cross-over hour angle, $H_n$ 
+		\item Estimate net longwave radiation flux, $I_{LW}$ (\S \ref{sec:rn})
+		\item Calculate net radiation cross-over hour angle, $h_n$ 
 		      (Eq. \ref{eq:hn})
-		\item Calculate daytime net radiation, $R_{Dn}$ (\S \ref{sec:drn})
-		\item Calculate nighttime net radiation, $R_{Dnn}$ (\S \ref{sec:drnn})
+		\item Calculate daytime net radiation, $H_{N}$ (\S \ref{sec:drn})
+		\item Calculate nighttime net radiation, $H_{N}^{\ast}$ (\S \ref{sec:drnn})
 		\item Calculate energy conversion factor, $E_{con}$ (\S \ref{sec:econ})
-		\item Estimate daily condensation, $W_c$ (\S \ref{sec:cond})
-		\item Estimate daily equilibrium evapotranspiration, EET$_D$ 
+		\item Estimate daily condensation, $C_n$ (\S \ref{sec:cond})
+		\item Estimate daily equilibrium evapotranspiration, $E_n^q$ 
 		      (\S \ref{sec:deet})
-		\item Estimate daily potential evapotranspiration, PET$_D$ 
+		\item Estimate daily potential evapotranspiration, $E_n^p$ 
 		      (\S \ref{sec:dpet})
-		\item Calculate the intersection hour angle, $H_i$ (Eq. \ref{eq:hi})
-		\item Estimate daily actual evapotranspiration, AET$_D$ 
+		\item Calculate the intersection hour angle, $h_i$ (Eq. \ref{eq:hi})
+		\item Estimate daily actual evapotranspiration, $E_n^a$ 
 		      (\S \ref{sec:daet})
 		\item Update daily soil moisture, $W_n$ (\S \ref{sec:dw})
 	\end{enumerate}
 	\item Monthly
 	\begin{enumerate}
-		\item Sum monthly totals of AET$_D$, PET$_D$, EET$_D$ and PPFD$_D$
+		\item Sum monthly totals of $E_m^a$, $E_m^p$, $E_m^q$ and $Q_m$
 		\item Calculate monthly Cramer-Prentice moisture index, $\alpha$ 
 		      (\S \ref{sec:alpha})
-		\item Calculate monthly climatic water deficit, $\Delta$E 
+		\item Calculate monthly climatic water deficit, $\Delta E_m$ 
 		      (\S \ref{sec:cwd})
 	\end{enumerate}
 	\item Yearly
@@ -85,11 +87,11 @@ The methodology is based on the psuedo-code presented by \parencite{cramer88}:
 \label{sec:outputs}
 The key outputs from this model are:
 \begin{enumerate}
-	\item monthly PPFD, mol$\cdot$m$^{-2}$
-	\item monthly equilibrium evapotranspiration (EET), mm
-	\item monthly potential evapotranspiration (PET), mm
+	\item monthly PPFD ($Q_m$), mol$\cdot$m$^{-2}$
+	\item monthly equilibrium evapotranspiration ($E_m^q$), mm
+	\item monthly potential evapotranspiration ($E_m^p$), mm
 	\item monthly Cramer-Prentice moisture index ($\alpha$), unitless
-	\item monthly climatic water deficit ($\Delta$E), mm
+	\item monthly climatic water deficit ($\Delta E_m$), mm
 \end{enumerate}
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
@@ -123,7 +125,7 @@ Table \ref{tab:constants} presents the constant values used in this model with t
 \nomenclature{$\beta_{vis}$}{PAR albedo, unitless}%
 \nomenclature{$b$}{Empirical constant for net radiation flux, unitless}%
 \nomenclature{$c$}{Minimum transmittivity for cloudy skies, unitless}%
-\nomenclature{$C_w$}{Maximum rate of evaporation, mm$\cdot$hr$^{-1}$}%
+\nomenclature{$S_c$}{Maximum rate of evaporation, mm$\cdot$h$^{-1}$}%
 \nomenclature{$d$}{Angular coefficient of transmittivity, unitless}%
 \nomenclature{$e$}{Earth's orbital eccentricity, unitless}%
 \nomenclature{$\epsilon$}{Obliquity of the elliptic, degrees}%
@@ -137,8 +139,8 @@ Table \ref{tab:constants} presents the constant values used in this model with t
 \nomenclature{$R$}{Universal gas constant, J$\cdot$mol$^{-1}\cdot$K$^{-1}$}%
 \nomenclature{$\sigma_{sb}$}{Stefan-Boltzmann constant, W$\cdot$m$^{-2}\cdot$K$^{-4}$}%
 \nomenclature{$T_o$}{Base temperature, K}%
-\nomenclature{$w$}{Entrainment factor, unitless}%
-\nomenclature{$\omega$}{Longitude of the perihelion, degrees}
+\nomenclature{$\omega$}{Entrainment factor, unitless}%
+\nomenclature{$\tilde{\omega}$}{Longitude of the perihelion, degrees}
 \begin{longtable}{c c r p{6cm}}
 	\caption{Constants used in the STASH model. \label{tab:constants}} \\
 	\hline 
@@ -155,8 +157,8 @@ Table \ref{tab:constants} presents the constant values used in this model with t
     $A$ & \texttt{kA} & 107 & 
     	Constant for $R_{nl}$, W$\cdot$m$^{-2}$ 
         \parencite{monteith90} \\ 
-    $a$ & \texttt{ka} & 1.496 &
-        Semi-major axis, $\times 10^8$ km \\
+    $a$ & \texttt{ka} & 1.49598 &
+        Semi-major axis, $\times 10^8$ km \parencite{allen73} \\
     $\beta_{sw}$ & \texttt{kalb\textunderscore sw} & 0.17 &
         Shortwave albedo, unitless 
         \parencite{federer68} \\
@@ -169,9 +171,6 @@ Table \ref{tab:constants} presents the constant values used in this model with t
     $c$ & \texttt{kc} & 0.25 & 
         Cloudy transmittivity, unitless 
         \parencite{linacre68} \\
-    $C_w$ & \texttt{kCw} & 1.05 & 
-        Supply constant, mm$\cdot$hr$^{-1}$  
-        \parencite{federer82} \\
     $d$ & \texttt{kd} & 0.50 & 
         Angular coefficient of transmittivity, unitless 
         \parencite{linacre68} \\
@@ -185,10 +184,11 @@ Table \ref{tab:constants} presents the constant values used in this model with t
         From flux to energy, $\mu$mol$\cdot$J$^{-1}$  
         \parencite{meek84} \\
     $g$ & \texttt{kG} & 9.80665 &
-        Gravitational acceleration, m$\cdot$s$^{-2}$ \\
+        Gravitational acceleration, m$\cdot$s$^{-2}$
+        \parencite{allen73} \\
     $GM$ & \texttt{kGM} & 1.32712 &
         Standard gravity, $\times 10^{11}$ km$^3\cdot$s$^{-2}$ \\
-    $G_{sc}$ & \texttt{kGsc} & 1360.8 &
+    $I_{sc}$ & \texttt{kGsc} & 1360.8 &
         Solar constant, W$\cdot$m$^{-2}$ 
         \parencite{kopp11} \\
     $L$ & \texttt{kL} & 0.0065 & 
@@ -200,26 +200,30 @@ Table \ref{tab:constants} presents the constant values used in this model with t
     $M_v$ & \texttt{kMv} & 0.01802 &
         Molecular weight of water vapor, kg$\cdot$mol$^{-1}$
         \parencite{tsilingiris08} \\
+	$\omega$ & \texttt{kw} & 0.26 & 
+        Entrainment, unitless 
+        \parencite{lhomme97,priestley72} \\    
+    $\tilde{\omega}$ & \texttt{komega} & 283 & 
+        Longitude of perihelion (2000 CE), degrees 
+        \parencite{berger78} \\
     $P_o$ & \texttt{kPo} & 101325 &
         Base pressure, Pa 
         \parencite{cavcar00} \\
-    $R$ & \texttt{kR} & 8.314 &
-        Universal gas constant, J$\cdot$mol$^{-1}\cdot$K$^{-1}$ \\
+    $R$ & \texttt{kR} & 8.3143 &
+        Universal gas constant, J$\cdot$mol$^{-1}\cdot$K$^{-1}$ 
+        \parencite{allen73} \\
     $\sigma_{sb}$ & \texttt{ksb} & 5.670373 &
         Stefan-Boltzmann constant, $\times 10^{-8}$ 
         W$\cdot$m$^{-2}\cdot$K$^{-4}$ \\
+    $S_c$ & \texttt{kCw} & 1.05 & 
+        Supply constant, mm$\cdot$hr$^{-1}$  
+        \parencite{federer82} \\
     $T_o$ & \texttt{kTo} & 298.15 &
         Base temperature, K 
         (Prentice, unpublished) \\
     $W_m$ & \texttt{kWm} & 150 &
         Soil moisture capacity, mm  
         \parencite{cramer88} \\
-    $w$ & \texttt{kw} & 0.26 & 
-        Entrainment, unitless 
-        \parencite{lhomme97,priestley72} \\
-    $\omega$ & \texttt{komega} & 283 & 
-        Longitude of perihelion (2000 CE), degrees 
-        \parencite{berger78} \\
         \hline
 \end{longtable}
 
