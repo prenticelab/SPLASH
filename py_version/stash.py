@@ -8,7 +8,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2014-11-25 -- last updated
+# 2014-12-09 -- last updated
 #
 # ------------
 # description:
@@ -31,21 +31,29 @@
 # 10. updated value and reference for semi-major axis, a [14.10.31]
 # 11. fixed Cooper's and Spencer's declination equations [14.11.25]
 # 12. replaced simplified kepler with full kepler [14.11.25]
+# 13. removed options for approximation methods not considering variable 
+#     orbital velocity (e.g. Spencer, Woolf, Klein, Cooper, and Circle 
+#     methods) [14.12.09]
+# 14. reduced the list of constants and EVAP class functions [14.12.09]
+# 15. added matplotlib to module list [14.12.09]
+# 16. added plots for results [14.12.09]
 #
 # -----
 # todo:
 # -----
+# 1. finish with STASH class
+# 2. finish plots
 #
 ###############################################################################
 ## IMPORT MODULES:
 ###############################################################################
+import matplotlib.pyplot as plt
 import numpy
 
 ###############################################################################
 ## GLOBAL CONSTANTS:
 ###############################################################################
 kA = 107       # constant for Rnl (Monteith & Unsworth, 1990)
-ka = 1.49598e8 # semi-major axis, km (Allen, 1973)
 kalb_sw = 0.17 # shortwave albedo (Federer, 1968)
 kalb_vis = 0.03 # visible light albedo (Sellers, 1985)
 kb = 0.20      # constant for Rnl (Linacre, 1968)
@@ -56,14 +64,12 @@ ke = 0.0167    # eccentricity for 2000 CE (Berger, 1978)
 keps = 23.44   # obliquity for 2000 CE, degrees (Berger, 1978)
 kfFEC = 2.04   # from flux to energy conversion, umol/J (Meek et al., 1984)
 kG = 9.80665   # gravitational acceleration, m/s^2 (Allen, 1973)
-kGM = 1.32712e11 # standard gravity of the sun, km^3/s^2
 kGsc = 1360.8  # solar constant, W/m^2 (Kopp & Lean, 2011)
 kL = 0.0065    # temperature lapse rate, K/m (Cavcar, 2000)
 kMa = 0.028963 # molecular weight of dry air, kg/mol (Tsilingiris, 2008)
 kMv = 0.01802  # molecular weight of water vapor, kg/mol (Tsilingiris, 2008)
 kPo = 101325   # standard atmosphere, Pa (Allen, 1973)
 kR = 8.3143    # universal gas constant, J/mol/K (Allen, 1973)
-ksb = 5.670373e-8 # Stefan-Boltzman constant, W/m^2/K^4
 kTo = 298.15   # base temperature, K (Prentice, unpublished)
 kWm = 150      # soil moisture capacity, mm (Cramer & Prentice, 1988)
 kw = 0.26      # entrainment factor (Lhomme, 1997; Priestley & Taylor, 1972)
@@ -93,8 +99,8 @@ class EVAP:
               Berger, A.L. (1978), Long-term variations of daily insolation and 
                 quarternary climatic changes, Journal of Atmospheric Sciences, 
                 vol. 35, pp. 2362--2367.
-              Cooper, P. I. (1969), The absorption of radiation in solar 
-                stills, Solar Energy, vol. 12(3), pp. 333–346 
+              Berger, A.L., M.F. Loutre, and C. Tricot (1993), Insolation and 
+                Earth's orbital periods, J. Geophys. Res., 98, 10341--10362.
               Duffie, J. A. and W. A. Beckman (1991). Solar engineering of 
                 thermal processes. 4th ed. New Jersey: John Wiley and Sons
               Federer (1982), Transpirational supply and demand: plant, soil, 
@@ -109,9 +115,6 @@ class EVAP:
                 Journal of the Royal Meteorological Society 110, pp. 1186–1190
               Linacre (1968), Estimating the net-radiation flux, Agricultural 
                 Meteorology, vol. 5, pp. 49--63.
-              Loutre, M.F. (2003) Ice ages (Milankovitch theory), Encyclopedia 
-                of Atmospheric Sciences, edited by J.R. Holton, J.A. Curry, 
-                and J.A. Pyle, pp. 995–1003, Elsevier Ltd.
               Prentice, I.C., M.T. Sykes, W. Cramer (1993), A simulation model 
                 for the transient effects of climate change on forest 
                 landscapes, Ecological Modelling, vol. 65, pp. 51--70.
@@ -133,9 +136,7 @@ class EVAP:
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization 
     # ////////////////////////////////////////////////////////////////////////
-    def __init__(
-        self, lon, lat, n, elv=0.0, y=0, sf=1.0, tc=23.0, sw=1.0, 
-        drm='loutre', lamm = 'kepler', delm = 'loutre'):
+    def __init__(self, lon, lat, n, elv=0.0, y=0, sf=1.0, tc=23.0, sw=1.0):
         """
         Name:     EVAP.__init__
         Input:    - float, longitude, degrees (lon)
@@ -145,11 +146,7 @@ class EVAP:
                   - int, year (y)
                   - float, fraction of sunshine hours (sf)
                   - float, mean daily air temperature, C (tc)
-                  - float, evaporative supply rate, mm/hr (sw)
-                  - string, distance method (drm)
-                  - string, lambda method (lamm)
-                  - string, delta method (delm)
-        
+                  - float, evaporative supply rate, mm/hr (sw)        
         """
         # Assign default public variables:
         self.user_elv = elv
@@ -180,8 +177,9 @@ class EVAP:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Calculate number of days in year (kN), days
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if self.user_year == 0:
+        if y == 0:
             self.kN = 365
+            self.user_year = 2001
         else:
             self.kN = (
                 self.julian_day((self.user_year+1),1,1) - 
@@ -191,106 +189,28 @@ class EVAP:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Calculate heliocentric longitudes (nu and lambda), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if lamm == 'kepler':
-            # Kepler Method:
-            self.my_nu, self.my_lambda = self.map_days(self.user_day, 
-                                                       self.user_year)
-        elif lamm == 'woolf':
-            # Woolf Method:
-            woolf_b = (self.user_day - 1.0)*(360.0/self.kN)
-            self.my_lambda = (
-                279.9348 + woolf_b + 1.914827*self.dsin(woolf_b) - 
-                0.079525*self.dcos(woolf_b) + 0.019938*self.dsin(2*woolf_b) - 
-                0.00162*self.dcos(2*woolf_b)
-            )
-            if self.my_lambda < 0:
-                self.my_lambda += 360.0
-            elif self.my_lambda > 360:
-                self.my_lambda -= 360.0
-            self.my_nu = (self.my_lambda - komega)
-            if self.my_nu < 0:
-                self.my_nu += 360.0
-        elif lamm == 'berger':
-            # Berger'78 Method:
-            xee = ke**2 
-            xec = ke**3
-            xse = numpy.sqrt(1.0 - xee)
-            xlam = ((ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega) - 
-                xee/4.0*(0.5 + xse)*self.dsin(2.0*komega) + 
-                xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega))
-            xlam = numpy.degrees(2.0*xlam)
-            dlamm = xlam + (n - 80.0)*(360.0/self.kN)
-            anm = dlamm - komega
-            ranm = numpy.radians(anm)
-            ranv = (ranm + (2.0*ke - xec/4.0)*numpy.sin(ranm) + 
-                5.0/4.0*xee*numpy.sin(2.0*ranm) + 
-                13.0/12.0*xec*numpy.sin(3.0*ranm))
-            anv = numpy.degrees(ranv)
-            self.my_lambda = anv + komega
-            if self.my_lambda < 0:
-                self.my_lambda += 360.0
-            elif self.my_lambda > 360:
-                self.my_lambda -= 360.0
-            self.my_nu = (self.my_lambda - komega)
-            if self.my_nu < 0:
-                self.my_nu += 360.0
-        else:
-            print "Heliocentric longitude method not recognized!"
-            exit(1)
-        #
+        # Berger (1978)
+        self.my_nu, self.my_lambda = self.berger_tls(n)
+        # 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate distance factor (dr), unitless
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if drm == 'loutre':
-            # Eq. 1, Loutre (2002)
-            my_rho = (1.0 - ke**2.0)/(1.0 + ke*self.dcos(self.my_nu))
-            self.dr = (1.0/my_rho)**2.0
-        elif drm == 'klein':
-            # Eq. 11, STASH 2.0 Documentation (Klein, 1977)
-            self.dr = (
-                1.0 + 2.0*ke*numpy.cos(2.0*numpy.pi*self.user_day/self.kN)
-            )
-        else:
-            print "Distance factor method not recognized!"
-            exit(1)
+        # Berger et al. (1993)
+        my_rho = (1.0 - ke**2)/(1.0 + ke*self.dcos(self.my_nu))
+        self.dr = (1.0/my_rho)**2
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate declination angle (delta), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if delm == 'loutre':
-            # Eq. 14, STASH 2.0 Documentation (Loutre, 2002)
-            self.delta = numpy.arcsin(self.dsin(self.my_lambda)*self.dsin(keps))
-            self.delta *= (180.0/numpy.pi)
-        elif delm == 'cooper':
-            # Eq. 16, STASH 2.0 Documentation (Cooper, 1969)
-            self.delta = keps*numpy.sin(
-                2.0*numpy.pi*(self.user_day + 284.0)/self.kN
-            )
-        elif delm == 'circle':
-            # Eq. 15, STASH 2.0 Documentation
-            self.delta = -1.0*keps*numpy.cos(
-                2.0*numpy.pi*(self.user_day + 10.0)/self.kN
-            )
-        elif delm == 'spencer':
-            # Eq. 17, STASH 2.0 Documentation
-            spencer_b = (self.user_day - 1.0)*(2.0*numpy.pi/self.kN)
-            self.delta = (0.006918 - 
-                          0.399912*numpy.cos(spencer_b) + 
-                          0.070257*numpy.sin(spencer_b) - 
-                          0.006758*numpy.cos(2.0*spencer_b) +
-                          0.000907*numpy.sin(2.0*spencer_b) - 
-                          0.002697*numpy.cos(3.0*spencer_b) + 
-                          0.00148*numpy.sin(3.0*spencer_b))
-            self.delta *= (180.0/numpy.pi)
-        else:
-            print "Declination angle method not recognized!"
-            exit(1)
+        # Woolf (1968)
+        self.delta = numpy.arcsin(self.dsin(self.my_lambda)*self.dsin(keps))
+        self.delta *= (180.0/numpy.pi)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Calculate variable substitutes (u and v), unitless
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ru = self.dsin(self.delta)*self.dsin(self.user_lat)
-        rv = self.dcos(self.delta)*self.dcos(self.user_lat)
+        ru = self.dsin(self.delta)*self.dsin(lat)
+        rv = self.dcos(self.delta)*self.dcos(lat)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 6. Calculate the sunset hour angle (hs), degrees
@@ -319,25 +239,22 @@ class EVAP:
         # 8. Calculate transmittivity (tau), unitless
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 11, Linacre (1968)
-        tau_o = (kc + kd*self.user_sf)
+        tau_o = (kc + kd*sf)
         #
         # Eq. 2, Allen (1996)
-        tau = tau_o*(1.0 + (2.67e-5)*self.user_elv)
+        tau = tau_o*(1.0 + (2.67e-5)*elv)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 9. Calculate daily PPFD (ppfd_d), mol/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 57, STASH 2.0 Documentation
-        self.ppfd_d = (1.0e-6)*kfFEC*(1.0-kalb_vis)*tau*self.ra_d
+        self.ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*self.ra_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 10. Estimate net longwave radiation (rnl), W/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 11, Prentice et al. (1993);
-        # Eq. 5 and 6, Linacre (1968)
-        self.rnl = (
-            (kb + (1.0 - kb)*self.user_sf)*(kA - self.user_tc)
-        )
+        # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
+        self.rnl = (kb + (1.0 - kb)*sf)*(kA - tc)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 11. Calculate variable substitute (rw), W/m^2
@@ -370,22 +287,22 @@ class EVAP:
         # Eq. 56, STASH 2.0 Documentation
         rnn_d = (86400.0/numpy.pi)*(
             rw*ru*(self.hs-self.hn)*(numpy.pi/180.0) + 
-            rw*rv*(self.dsin(self.hs)-self.dsin(self.hn)) + self.rnl*(
-                numpy.pi - 2.0*self.hs*(numpy.pi/180.0) + self.hn*(numpy.pi/180.0)
-            )
+            rw*rv*(self.dsin(self.hs)-self.dsin(self.hn)) + 
+            self.rnl*(numpy.pi - 2.0*self.hs*(numpy.pi/180.0) + 
+                self.hn*(numpy.pi/180.0))
         )
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 15. Calculate water-to-energy conversion (econ), m^3/J
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Slope of saturation vap press temp curve, Pa/K
-        s = self.sat_slope(self.user_tc)
+        s = self.sat_slope(tc)
         # Enthalpy of vaporization, J/kg
-        lv = self.enthalpy_vap(self.user_tc)
+        lv = self.enthalpy_vap(tc)
         # Density of water, kg/m^3
-        pw = self.density_h2o(self.user_tc, self.elv2pres(self.user_elv))
+        pw = self.density_h2o(tc, self.elv2pres(elv))
         # Psychrometric constant, Pa/K
-        g = self.psychro(self.user_tc, self.elv2pres(self.user_elv))
+        g = self.psychro(tc, self.elv2pres(elv))
         #
         # Eq. 58, STASH 2.0 Documentation
         self.econ = s/(lv*pw*(s + g))
@@ -416,9 +333,7 @@ class EVAP:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 20. Calculate the intersection hour angle (hi), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        cos_hi = (
-            self.user_sw/(rw*rv*rx) + self.rnl/(rw*rv) - ru/rv
-        )
+        cos_hi = sw/(rw*rv*rx) + self.rnl/(rw*rv) - ru/rv
         if cos_hi >= 1.0:
             # Supply exceeds demand:
             self.hi = 0.0
@@ -459,32 +374,59 @@ class EVAP:
         """
         return numpy.sin(x*numpy.pi/180.0)
     #
-    def dtan(self, x):
+    def berger_tls(self, n):
         """
-        Name:     EVAP.dtan
-        Input:    float, angle, degrees (x)
-        Output:   float, tan(x*pi/180)
-        Features: Calculates the tangent of an angle given in degrees
+        Name:     EVAP.berger_tls
+        Input:    int, day of year
+        Output:   tuple, 
+                  - true anomaly, degrees
+                  - true longitude, degrees
+        Features: Returns true anomaly and true longitude for a given day
+        Depends:  - ke
+                  - komega
+        Ref:      Berger, A. L. (1978), Long term variations of daily insolation
+                  and quaternary climatic changes, J. Atmos. Sci., 35, 2362-
+                  2367.
         """
-        return numpy.tan(x*numpy.pi/180.0)
-    #
-    def earth_velocity(self, lon):
-        """
-        Name:     EVAP.earth_velocity
-        Input:    longitude(s) w.r.t. the perihelion (lon)
-        Output:   angular velocity(ies), rad/day (w)
-        Features: Calculates earth's angular velocity at a given longitude
-                  relative to the perihelion
-        Depends:  Global constants:
-                  - ke
-        Ref:      Kepler's Second Law of Planetary Motion
-        """
-        w = (
-            2.0*numpy.pi/self.kN*(
-                1.0+ke*self.dcos(lon)
-                )**2.0*(1.0-ke**2)**(-1.5)
-        )
-        return w
+        # Variable substitutes:
+        xee = ke**2 
+        xec = ke**3
+        xse = numpy.sqrt(1.0 - xee)
+        #
+        # Mean longitude for vernal equinox:
+        xlam = (
+            (ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega) - 
+            xee/4.0*(0.5 + xse)*self.dsin(2.0*komega) + 
+            xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
+            )
+        xlam = numpy.degrees(2.0*xlam)
+        #
+        # Mean longitude for day of year:
+        dlamm = xlam + (n - 80.0)*(360.0/self.kN)
+        #
+        # Mean anomaly:
+        anm = dlamm - komega
+        ranm = numpy.radians(anm)
+        #
+        # True anomaly:
+        ranv = (ranm + (2.0*ke - xec/4.0)*numpy.sin(ranm) + 
+            5.0/4.0*xee*numpy.sin(2.0*ranm) + 
+            13.0/12.0*xec*numpy.sin(3.0*ranm))
+        anv = numpy.degrees(ranv)
+        #
+        # True longitude:
+        my_tls = anv + komega
+        if my_tls < 0:
+            my_tls += 360.0
+        elif my_tls > 360:
+            my_tls -= 360.0
+        # 
+        # True anomaly:
+        my_nu = (my_tls - komega)
+        if my_nu < 0:
+            my_nu += 360.0
+        #
+        return(my_nu, my_tls)
     #
     def julian_day(self,y,m,i):
         """
@@ -508,225 +450,6 @@ class EVAP:
         jde = int(365.25*(y+4716)) + int(30.6001*(m+1)) + i + b - 1524.5
         return jde
     #
-    def equinox(self, year, opt=0):
-        """
-        Name:     EVAP.equinox
-        Input:    - int, year (year)
-                  - int, option (opt)
-                    0: vernal equinox     1: summer solstice
-                    2: autumnal equinox   3: winter solstice
-        Output:   float, day of the year
-        Features: Calculates the day of the year on which seasonal dates fall
-        Depends:  julian_day
-        Ref:      J. Meeus (1991), Ch.26 "Equinoxes and solstices," 
-                  Astronomical Algorithms
-        """
-        # Table 26.C (Meeus, 1991)
-        periodic_terms = numpy.array([
-            # A    B          C
-            485, 324.96,   1934.136,
-            203, 337.23,  32964.467,
-            199, 342.08,     20.186,
-            182,  27.85, 445267.112,
-            156,  73.14,  45036.886,
-            136, 171.52,  22518.443,
-            77, 222.54,  65928.934,
-            74, 296.72,   3034.906,
-            70, 243.58,   9037.513,
-            58, 119.81,  33718.147,
-            52, 297.17,    150.678,
-            50,  21.02,   2281.226,
-            45, 247.54,  29929.562,
-            44, 325.15,  31555.956,
-            29,  60.93,   4443.417,
-            18, 155.12,  67555.328,
-            17, 288.79,   4562.452,
-            16, 198.04,  62894.029,
-            14, 199.76,  31436.921,
-            12,  95.39,  14577.848,
-            12, 287.11,  31931.756,
-            12, 320.81,  34777.259,
-            9, 227.73,   1222.114,
-            8,  15.45,  16859.074
-            ])
-        #
-        # Table 26.A (Meeus, 1991)
-        jde_table_a = numpy.array([
-            numpy.array([1721139.29189, 365242.13740,  0.06134,  
-                         0.00111, -0.00071]), # March equinox
-            numpy.array([1721233.25401, 365241.72562, -0.05323,  
-                         0.00907,  0.00025]), # June solstice
-            numpy.array([1721325.70455, 365242.49558, -0.11677, 
-                         -0.00297,  0.00074]), # September equinox
-            numpy.array([1721414.39987, 365242.88257, -0.00769, 
-                         -0.00933, -0.00006])  # December solstice
-            ])
-        #
-        # Table 26.B (Meeus, 1991)
-        jde_table_b = numpy.array([
-            numpy.array([2451623.80984, 365242.37404,  0.05169, 
-                         -0.00411, -0.00057]), # March equinox
-            numpy.array([2451716.56767, 365241.62603,  0.00325,  
-                         0.00888, -0.00030]), # June solstice
-            numpy.array([2451810.21715, 365242.01767, -0.11575,  
-                         0.00337,  0.00078]), # September equinox
-            numpy.array([2451900.05952, 365242.74049, -0.06223, 
-                         -0.00823,  0.00032])  # December solstice
-            ])
-        #
-        if year < 1000:
-            # Use Table 26.A for years -1000 to 1000
-            jde_table = jde_table_a
-            y = year/1000.0
-        else:
-            # Use Table 26.B for years 1000 to 3000
-            jde_table = jde_table_b
-            y = (year-2000.0)/1000.0
-        #
-        # Calculate the mean equinox based on Table 26.A or 26.B:
-        jde0 = (
-       	jde_table[opt,0] +
-       	jde_table[opt,1]*y +
-       	jde_table[opt,2]*y*y +
-       	jde_table[opt,3]*y*y*y +
-       	jde_table[opt,4]*y*y*y*y
-        )
-        #
-        # Calculate the other three terms:
-        t = (jde0 - 2451545.0)/36525.0
-        w = (35999.373*t) - 2.47
-        dl = (
-            1.0 + 
-            (0.0334*self.dcos(w)) + 
-            (0.0007*self.dcos(2*w))
-        )
-        #
-        # Compute the sum of the 24 periodic terms:
-        s = 0
-        j = 0
-        for i in xrange(24):
-            s += periodic_terms[j]*self.dcos(
-                (periodic_terms[j+1] + (periodic_terms[j+2]*t))
-            )
-            j += 3
-        #
-        # Calculate the JDE (Julian Ephemeris Day) of the equinox/solstice:
-        jde = jde0 + ((s*0.00001)/dl)
-        #
-        # Calcuate the JDE for the first day of this year:
-        jde_year = self.julian_day(year, 1, 1)
-        #
-        # Return the day of year:
-        return (jde - jde_year + 1)
-    #
-    def full_kepler(self, lon):
-        """
-        Name:     EVAP.full_kepler
-        Input:    float, longitude w.r.t. the perihelion, deg (lon)
-        Output:   float, days traveled from perihelion (t)
-        Features: Returns the days traveled since the earth past the perihelion
-        Depends:  -ke (ellipticity)
-        Ref:      Kepler's Second Law
-        """
-        # Make lon into numpy array, if it is not already:
-        if isinstance(lon, numpy.float) or isinstance(lon, numpy.int):
-            lon = numpy.array([lon,])
-        elif not isinstance(lon, numpy.ndarray):
-            lon = numpy.array(lon)
-        #
-        xee = ke**2
-        xte = ke**3
-        xse = numpy.sqrt(1.0 - xee)
-        xco = self.dcos(lon) + 1
-        #
-        A = (0.5*self.kN/numpy.pi)*(1 - xee)**1.5
-        B = 2*numpy.arctan((ke - 1.)*self.dsin(lon)/(xse*xco))
-        C = xse*(xee - 1)
-        D = 2.*ke*self.dsin(lon)
-        E = xco*((xte - xee - ke + 1)*self.dsin(lon)**2/xco**2 - 
-                 xte - xee + ke + 1)
-        kepler_t = A*(B/C - D/E)
-        #
-        # Correct negative points due to inverse tan function:
-        neg_points = numpy.where(lon > 180)[0]
-        kepler_t[neg_points] -= 2*numpy.pi*A/C
-        #
-        return (kepler_t)
-    #
-    def map_days(self, n, y):
-        """
-        Name:     EVAP.map_days
-        Input:    - int, day of the year (n)
-                  - int, year (y)
-        Output:   float, longitude relative to the vernal equinox (lamda_doy)
-        Features: Computes earth's longitude relative to the vernal equinox 
-                  for a given day of the year
-        Depends:  Functions:
-                  - earth_period
-                  - earth_velocity
-                  - equinox
-                  - full_kepler
-                  Global constants:
-                  - komega
-        """
-        # Create longitude field and compute the days for orbit:
-        lon_nu = numpy.array([360.*i/365. for i in xrange(366)])
-        day_nu = self.full_kepler(lon_nu)
-        #
-        # Compute the angle of the vernal equinox w.r.t. the perihelion
-        # i.e., the explementary angle of komega:
-        wp = (360.0 - komega)
-        #
-        # Calculate the length of time it takes earth to travel from the
-        # perihelion (t=0) to the vernal equinox:
-        if wp == 180:
-            wp += 1e-6
-        days_to_ve = self.full_kepler(wp)[0]
-        #
-        # Get day of year of vernal equinox
-        if y == 0:
-            day_ve = 80.0
-        else:
-            day_ve = self.equinox(y)
-        #
-        # Calculate the offset between days to and day of vernal equinox:
-        offset = (day_ve - days_to_ve)
-        #
-        # Calculate the calendar days and set between 0 and kN:
-        calendar_days = (day_nu + offset)
-        calendar_days[numpy.where(calendar_days >= self.kN)] -= self.kN
-        #
-        # Check to see if n is listed in calendar:
-        if n in calendar_days:
-            icalendar = numpy.where(calendar_days==n)[0][0]
-            nu_doy = lon_nu[icalendar]
-        else:
-            # Find the calendar day the precedes doy:
-            calendar_temp = numpy.sort(numpy.append(calendar_days, [n,]))
-            dbefore = calendar_temp[numpy.where(calendar_temp==n)[0][0]-1]
-            #
-            # Get the index of the preceding day:
-            ibefore = numpy.where(calendar_days == dbefore)[0][0]
-            #
-            # Get the angular velocity for the longitude of the preceding day:
-            vbefore = self.earth_velocity(lon_nu[ibefore])
-            #
-            # Calculate the delta time
-            dt = (n - dbefore)
-            #
-            # Calculate the new longitude, degrees:
-            nu_doy = lon_nu[ibefore] + (vbefore*dt)*180.0/numpy.pi
-        #
-        if nu_doy >= 360:
-            nu_doy -= 360
-        #
-        # Convert nu to lambda:
-        lamda_doy = nu_doy + komega
-        if lamda_doy >= 360:
-            lamda_doy -= 360
-        #
-        return (nu_doy, lamda_doy)
-    #
     def sat_slope(self, tc):
         """
         Name:     EVAP.sat_slope
@@ -748,7 +471,7 @@ class EVAP:
         Features: Calculates the enthalpy of vaporization, J/kg
         Ref:      Eq. 8, Henderson-Sellers (1984)
         """
-        return (1.91846e6*((tc + 273.15)/(tc + 273.15 - 33.91))**2.0)
+        return (1.91846e6*((tc + 273.15)/(tc + 273.15 - 33.91))**2)
     #
     def elv2pres(self, z):
         """
@@ -763,7 +486,7 @@ class EVAP:
                   - kMa
                   - kG
                   - kR
-        Ref:      Cavcar (2000)
+        Ref:      Allen et al. (1998)
         """
         p = kPo*(1.0 - kL*z/kTo)**(kG*kMa/(kR*kL))
         return p
@@ -838,8 +561,7 @@ class EVAP:
         Depends:  Global constants:
                   - kMa
                   - kMv
-        Refs:     Allen et al. (1998)
-                  Tsilingiris (2008) 
+        Refs:     Allen et al. (1998); Tsilingiris (2008) 
         """
         # Calculate the specific heat capacity of water, J/kg/K
         # Eq. 47, Tsilingiris (2008)
@@ -858,32 +580,210 @@ class EVAP:
         # Calculate psychrometric constant, Pa/K
         # Eq. 8, Allen et al. (1998)
         return (cp*kMa*p/(kMv*lv))
-    #
-
-###############################################################################
-## FUNCTIONS 
-###############################################################################
-def julian_day(y, m, i):
+#
+class STASH:
     """
-    Name:     julian_day
-    Input:    - int, year (y)
-              - int, month (m)
-              - int, day of month (i)
-    Output:   float, Julian Ephemeris Day
-    Features: Converts Gregorian date (year, month, day) to Julian Ephemeris
-              Day
-    Ref:      Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," Astronomical 
-              Algorithms
+    Name:     STASH
+    Features: This class maintains daily, monthly and annual quantities of 
+              radiation, evapotranspiration, and soil moisture based on the 
+              STASH methods
     """
-    if m <= 2.0:
-        y -= 1.0
-        m += 12.0
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Initialization 
+    # ////////////////////////////////////////////////////////////////////////
+    def __init__(self, lat, lon, elv):
+        """
+        Name:     STASH.__init__
+        Input:    - float, latitude, degrees (lat)
+                  - float, longitude, degrees (lon)
+                  - float, elevation, meters (elv)
+        """
+        # Error handle and assign required public variables:
+        self.elv = elv
+        #
+        if lon > 180.0 or lon < -180.0:
+            print "Longitude outside range of validity (-180 to 180)!"
+            exit(1)
+        else:
+            self.lon = lon
+        #
+        if lat > 90.0 or lat < -90.0:
+            print "Latitude outside range of validity (-90 to 90)!"
+            exit(1)
+        else:
+            self.lat = lat
+        #
+        # Initialize daily totals
+        self.daily_totals = numpy.empty(
+            shape=(366,), 
+            dtype=[('ho',numpy.float),    # daily solar irradiation, J/m2
+                   ('hn', numpy.float),   # daily net radiation, J/m2
+                   ('qn', numpy.float),   # daily PPFD, mol/m2
+                   ('cn', numpy.float),   # daily condensation water, mm
+                   ('wn', numpy.float),   # daily soil moisture, mm
+                   ('pn', numpy.float),   # daily precipitation, mm
+                   ('ro', numpy.float),   # daily runoff, mm
+                   ('eq_n', numpy.float), # daily equilibrium ET, mm
+                   ('ep_n', numpy.float), # daily potential ET, mm
+                   ('ea_n', numpy.float)] # daily actual ET, mm
+        )
+        #
+        # Initialize monthly totals
+        self.monthly_totals = numpy.zeros(shape=(12,),
+                                          dtype=[('eq_m', numpy.float),
+                                                 ('ep_m', numpy.float),
+                                                 ('ea_m', numpy.float),
+                                                 ('cpa', numpy.float),
+                                                 ('cwd', numpy.float),
+                                                 ('qm', numpy.float)])
     #
-    a = int(y/100)
-    b = 2 - a + int(a/4)
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Function Definitions
+    # ////////////////////////////////////////////////////////////////////////
+    def spin_up(self, ppt, tc, sf):
+        """
+        Name:     STASH.spin
+        Input:    - numpy.ndarray, monthly precip, mm (ppt) 
+                  - numpy.ndarray, mean monthly temperature, deg C (tc) 
+                  - numpy.ndarray, mean monthly sunshine fraction (sf)
+        Output:   None.
+        Features: Spins up the daily soil moisture
+        """
+        # Run once:
+        self.run_one_year(2000, ppt, tc, sf)
+        #
+        # Check to see if 1 Jan soil moisture matches 31 Dec:
+        start_sm = self.daily_totals['wn'][0]
+        end_sm = self.daily_totals['wn'][-1]
+        diff_sm = numpy.abs(end_sm - start_sm)
+        #
+        # If not, spin again!
+        self.spin_count = 1
+        while (diff_sm > 1e-4):
+            self.run_one_year(2000, ppt, tc, sf)
+            start_sm = self.daily_totals['wn'][0]
+            end_sm = self.daily_totals['wn'][-1]
+            diff_sm = numpy.abs(end_sm - start_sm)
+            self.spin_count += 1
     #
-    jde = int(365.25*(y + 4716)) + int(30.6001*(m + 1)) + i + b - 1524.5
-    return jde
+    def run_one_year(self, y, ppt, tc, sf):
+        """
+        Name:     STASH.run_one_year
+        Input:    - int, year (y)
+                  - numpy.ndarray, monthly total precip, mm (ppt)
+                  - numpy.ndarray, mean monthly temp, deg C (tc)
+                  - numpy.ndarray, mean fractional sunshine (sf)
+        Output:   None.
+        Features: Calculates daily and monthly quantities for one year
+        """
+        # Reset monthly totals:
+        self.reset_monthly_totals()
+        #
+        # Calculates days in year:
+        ny = self.julian_day(y+1, 1, 1) - self.julian_day(y, 1, 1)
+        #
+        # Iterate through the months:
+        months = [j+1 for j in xrange(12)]
+        for m in months:
+            nm = self.julian_day(y, m+1, 1) - self.julian_day(y, m, 1)
+            days = [j+1 for j in xrange(int(nm))]
+            for i in days:
+                # Calculate the day of the year:
+                n = self.julian_day(y, m, i) - self.julian_day(y, 1, 1) + 1
+                #
+                # Get index for yesterday (Note: zero indexing)
+                idx = int(n-1) - 1
+                if idx < 0:
+                    idx = int(ny - 1)
+                #
+                # Calculate evaporative supply rate, mm/h
+                sw = kCw*self.daily_totals['wn'][idx]/kWm
+                #
+                # Calculate radiation and evaporation quantities
+                my_evap = EVAP(self.lon, self.lat, n, self.elv, 2000, sf[m-1], 
+                               tc[m-1], sw)
+                #
+                # Calculate daily precipitation:
+                self.daily_totals['pn'][n-1] = ppt[m-1]/nm
+                #
+                # Update soil moisture:
+                self.daily_totals['wn'][n-1] = (self.daily_totals['wn'][idx] +
+                    self.daily_totals['pn'][n-1] + my_evap.wc - my_evap.aet_d)
+                if self.daily_totals['wn'][n-1] > kWm:
+                    # Bucket is full 
+                    # * set soil moisture to capacity
+                    # * add remaining water to monthly runoff total
+                    self.daily_totals['ro'][n-1] = self.daily_totals['wn'][n-1]
+                    self.daily_totals['ro'][n-1] -= kWm
+                    self.daily_totals['wn'][n-1] = kWm
+                elif self.daily_totals['wn'][n-1] < 0:
+                    # Bucket is empty
+                    # * set soil moisture to zero
+                    self.daily_totals['wn'][n-1] = 0
+                    self.daily_totals['ro'][n-1] = 0
+                else:
+                    self.daily_totals['ro'][n-1] = 0
+                #
+                # Save the daily totals:
+                self.daily_totals['ho'][n-1] = my_evap.ra_d
+                self.daily_totals['hn'][n-1] = my_evap.rn_d
+                self.daily_totals['qn'][n-1] = my_evap.ppfd_d
+                self.daily_totals['cn'][n-1] = my_evap.wc
+                self.daily_totals['eq_n'][n-1] = my_evap.eet_d
+                self.daily_totals['ep_n'][n-1] = my_evap.pet_d
+                self.daily_totals['ea_n'][n-1] = my_evap.aet_d
+                #
+                # Update monthly totals:
+                self.monthly_totals['eq_m'][m-1] += my_evap.eet_d
+                self.monthly_totals['ep_m'][m-1] += my_evap.pet_d
+                self.monthly_totals['ea_m'][m-1] += my_evap.aet_d
+                self.monthly_totals['qm'][m-1] += my_evap.ppfd_d
+                #
+            # END LOOP ON DAYS
+            # Calculate other monthly totals:
+            self.monthly_totals['cpa'][m-1] = self.monthly_totals['ea_m'][m-1]
+            self.monthly_totals['cpa'][m-1] /= self.monthly_totals['ep_m'][m-1]
+            self.monthly_totals['cwd'][m-1] = self.monthly_totals['ep_m'][m-1]
+            self.monthly_totals['cwd'][m-1] -= self.monthly_totals['ea_m'][m-1]
+        # END LOOP ON MONTHS
+    #
+    def reset_monthly_totals(self):
+        """
+        Name:     STASH.reset_monthly_totals
+        Input:    None.
+        Output:   None.
+        Features: Resets the monthly results to zero
+        """
+        self.monthly_totals = numpy.zeros(shape=(12,),
+                                          dtype=[('eq_m', numpy.float),
+                                                 ('ep_m', numpy.float),
+                                                 ('ea_m', numpy.float),
+                                                 ('cpa', numpy.float),
+                                                 ('cwd', numpy.float),
+                                                 ('qm', numpy.float)])
+    #
+    def julian_day(self, y, m, i):
+        """
+        Name:     STASH.julian_day
+        Input:    - int, year (y)
+                  - int, month (m)
+                  - int, day of month (i)
+        Output:   float, Julian Ephemeris Day
+        Features: Converts Gregorian date (year, month, day) to Julian 
+                  Ephemeris Day
+        Ref:      Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," Astronomical 
+                  Algorithms
+        """
+        if m <= 2.0:
+            y -= 1.0
+            m += 12.0
+        #
+        a = int(y/100)
+        b = 2 - a + int(a/4)
+        #
+        jde = int(365.25*(y+4716)) + int(30.6001*(m+1)) + i + b - 1524.5
+        return jde
+    #
 
 ###############################################################################
 ## MAIN PROGRAM 
@@ -897,135 +797,109 @@ if 0:
         y = 2001,
         sf = 0.43,
         tc = 17.3,
-        sw = 0.5,
-        drm = 'loutre',  # loutre or klein
-        lamm = 'kepler',  # kepler, woolf or berger
-        delm = 'loutre'  # loutre, spencer, cooper or circle
-    )
+        sw = 0.5
+        )
 
 # Example data (Met Office average climate)
-data = numpy.array([
-    (0.21, 4.80, 61.0),
-    (0.27, 4.85, 41.2),
-    (0.30, 7.10, 44.5), 
-    (0.40, 9.10, 48.0), 
-    (0.39, 12.4, 46.4), 
-    (0.39, 15.3, 44.6), 
-    (0.40, 17.6, 46.0), 
-    (0.43, 17.3, 52.3), 
-    (0.36, 14.6, 50.3), 
-    (0.32, 11.2, 71.8), 
-    (0.23, 7.55, 66.3),
-    (0.19, 5.05, 62.9)
-], dtype=[('sf',numpy.float),('tc',numpy.float),('ppt',numpy.float)])
+data = numpy.array([(0.21, 4.80, 61.0),
+                    (0.27, 4.85, 41.2),
+                    (0.30, 7.10, 44.5), 
+                    (0.40, 9.10, 48.0), 
+                    (0.39, 12.4, 46.4), 
+                    (0.39, 15.3, 44.6), 
+                    (0.40, 17.6, 46.0), 
+                    (0.43, 17.3, 52.3), 
+                    (0.36, 14.6, 50.3), 
+                    (0.32, 11.2, 71.8), 
+                    (0.23, 7.55, 66.3),
+                    (0.19, 5.05, 62.9)], 
+                   dtype=[('sf',numpy.float), 
+                          ('tc',numpy.float), 
+                          ('ppt',numpy.float)])
 
 # User definitions:
 my_lon = -0.641 # longitude, degrees
 my_lat = 51.4   # latitude, degrees
 my_elv = 74.0   # elevation, m
+my_class = STASH(my_lat, my_lon, my_elv)
+my_class.spin_up(data['ppt'], data['tc'], data['sf'])
 
-# Initialize soil moisture
-w = numpy.array([0.0*j for j in xrange(366)])
+# Plot daily stuff:
+my_days = range(1,367)
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
+plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
+ax1.plot(my_days, my_class.daily_totals['wn'], 'g-', linewidth=2, 
+         label='Soil Moisture')
+ax1.set_xlabel('Day', fontsize=18)
+ax1.set_ylabel('Moisture, mm', fontsize=18)
+#ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+#            ncol=4, mode="expand", borderaxespad=0., fontsize=18)
+plt.show()
 
-# Create empty daily results
-daily_results = numpy.empty(
-    shape=(366,), 
-    dtype=[
-        ('ra_d',numpy.float), 
-        ('rn_d', numpy.float), 
-        ('ppfd_d', numpy.float), 
-        ('wc', numpy.float), 
-        ('eet_d', numpy.float), 
-        ('pet_d', numpy.float), 
-        ('aet_d', numpy.float)
-    ]
-)
+# Plot monthly ET
+my_months = range(1, 13)
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
+plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
+ax1.plot(my_months, my_class.monthly_totals['ep_m'], 'k-', linewidth=2, label='Potential')
+ax1.plot(my_months, my_class.monthly_totals['ea_m'], 'c--', linewidth=2, label='Actual')
+ax1.plot(my_months, my_class.monthly_totals['eq_m'], 'g-', linewidth=2, label='Equilibrium')
+ax1.plot(my_months, my_class.monthly_totals['cwd'], 'r:', linewidth=2, label='Deficit')
+ax1.set_xticks(my_months)
+ax1.set_xlabel('Months', fontsize=18)
+ax1.set_ylabel('Evapotranspiration, mm', fontsize=18)
+ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+            ncol=4, mode="expand", borderaxespad=0., fontsize=18)
+plt.xlim([1, 12])
+plt.show()
 
-# Create empty monthly totals:
-monthly_results = numpy.zeros(
-    shape=(12,),
-    dtype=[
-        ('EET', numpy.float),
-        ('PET', numpy.float),
-        ('AET', numpy.float),
-        ('CP', numpy.float),
-        ('CWD', numpy.float),
-        ('PPFD', numpy.float),
-        ('RO', numpy.float)
-    ]
-)
+# Plot monthly CPA
+my_months = range(1, 13)
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
+plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
+ax1.plot(my_months, my_class.monthly_totals['cpa'], 'k-', linewidth=2, 
+         label='Cramer-Prentice alpha')
+ax1.set_xticks(my_months)
+ax1.set_xlabel('Months', fontsize=18)
+ax1.set_ylabel('Evapotranspiration, mm', fontsize=18)
+ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+            ncol=1, mode="expand", borderaxespad=0., fontsize=18)
+plt.xlim([1, 12])
+plt.show()
 
-# Define year and days in year:
-y = 2000
-ny = julian_day(y+1, 1, 1) - julian_day(y, 1, 1)
+# Plot monthly precip and runoff
+#my_daily_precip = []
+#fig = plt.figure()
+#ax1 = fig.add_subplot(111)
+#plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
+#plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
+#ax1.plot(months, data['ppt'], 'b-', linewidth=2, label='Precip')
+#ax1.plot(months, monthly_results['RO'], 'g--', linewidth=2, label='Runoff')
+#ax1.plot(months, monthly_results['W'], 'c-', linewidth=2, label='Soil Moisture')
+#ax1.set_xticks(months)
+#ax1.set_xlabel('Months', fontsize=18)
+#ax1.set_ylabel('Evapotranspiration, mm', fontsize=18)
+#ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+#            ncol=3, mode="expand", borderaxespad=0., fontsize=18)
+#plt.xlim([1, 12])
+#plt.show()
 
-# Iterate through the months:
-months = [j+1 for j in xrange(12)]
-for m in months:
-    nm = julian_day(y, m+1, 1) - julian_day(y, m, 1)
-    days = [j+1 for j in xrange(int(nm))]
-    for i in days:
-        # Calculate the day of the year:
-        n = julian_day(y, m, i) - julian_day(y, 1, 1) + 1
-        #
-        # Get index for yesterday (Note: zero indexing)
-        idx = int(n-1)-1
-        if idx < 0:
-            idx = int(ny-1)
-        #
-        # Calculate evaporative supply rate
-        sw = kCw*w[idx]/kWm
-        #
-        # Calculate radiation and evaporation quantities
-        my_evap = EVAP(
-            lon = my_lon,
-            lat = my_lat,
-            n = n,
-            elv = my_elv,
-            y = y,
-            sf = data['sf'][m-1],
-            tc = data['tc'][m-1],
-            sw = sw,
-            drm = 'loutre',  # loutre or klein
-            lamm = 'kepler',  # kepler, berger or woolf
-            delm = 'loutre'  # loutre, spencer, cooper or circle
-        )
-        #
-        # Update soil moisture:
-        ro = w[idx] + data['ppt'][m-1]/nm + my_evap.wc - my_evap.aet_d
-        if ro > kWm:
-            # Bucket is full 
-            # * set soil moisture to capacity
-            # * add remaining water to monthly runoff total
-            w[n-1] = kWm
-            monthly_results['RO'][m-1] += (ro - kWm)
-        elif ro < 0:
-            # Bucket is empty
-            # * set soil moisture to zero
-            w[n-1] = 0
-        else:
-            w[n-1] = ro
-        #
-        # Save the daily results:
-        daily_results['ra_d'][n-1] = my_evap.ra_d
-        daily_results['rn_d'][n-1] = my_evap.rn_d
-        daily_results['ppfd_d'][n-1] = my_evap.ppfd_d
-        daily_results['wc'][n-1] = my_evap.wc
-        daily_results['eet_d'][n-1] = my_evap.eet_d
-        daily_results['pet_d'][n-1] = my_evap.pet_d
-        daily_results['aet_d'][n-1] = my_evap.aet_d
-        #
-        # Accumulate the monthly totals:
-        monthly_results['EET'][m-1] += my_evap.eet_d
-        monthly_results['PET'][m-1] += my_evap.pet_d
-        monthly_results['AET'][m-1] += my_evap.aet_d
-        monthly_results['PPFD'][m-1] += my_evap.ppfd_d
-    #
-    # Calculate monthly quantities
-    monthly_results['CP'][m-1] = (
-        monthly_results['AET'][m-1]/monthly_results['PET'][m-1]
-    )
-    monthly_results['CWD'][m-1] = (
-    	monthly_results['PET'][m-1] - monthly_results['AET'][m-1]
-    )
-#
+
+# Plot daily radiation
+#x_data = range(1,367)
+#fig = plt.figure()
+#ax1 = fig.add_subplot(111)
+#plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
+#plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
+#ax1.plot(x_data, daily_results['ra_d'], 'k-', linewidth=2, label='Ho')
+#ax1.plot(x_data, daily_results['rn_d'], 'c--', linewidth=2, label='Hn')
+#ax1.set_xlabel('Day', fontsize=18)
+#ax1.set_ylabel('Radiation, J m$^{-2}$', fontsize=18)
+#ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+#            ncol=4, mode="expand", borderaxespad=0., fontsize=18)
+#plt.show()
