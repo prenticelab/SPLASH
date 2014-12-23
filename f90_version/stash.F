@@ -1,7 +1,9 @@
       module modelparams
         !////////////////////////////////////////////////////////////////
         ! Module contains model parameters
-        !----------------------------------------------------------------      
+        !----------------------------------------------------------------   
+        implicit none
+
         real, parameter :: kA = 107             ! constant for Rnl (Monteith & Unsworth, 1990)
         real, parameter :: kalb_sw = 0.17       ! shortwave albedo (Federer, 1968)
         real, parameter :: kalb_vis = 0.03      ! visible light albedo (Sellers, 1985)
@@ -25,13 +27,19 @@
         real, parameter :: komega = 283.0       ! longitude of perihelion for 2000 CE, degrees (Berger, 1978)
         real, parameter :: pi = 3.14159
 
+        integer, parameter :: ndayyear = 366    ! number of days in year, allows for ...
+        integer, parameter :: nmonth = 12       ! number of months in year
+
       end module modelparams
 
 
       module auxfunc
         !////////////////////////////////////////////////////////////////
         ! Module contains auxiliary functions required by stash
-        !----------------------------------------------------------------   
+        !----------------------------------------------------------------
+        implicit none
+
+        contains
         
         function dcos( x )
           !----------------------------------------------------------------   
@@ -67,6 +75,7 @@
           dsin = sin(x*pi/180.0)
 
         end function dsin
+
 
         function degrees( x )
           !----------------------------------------------------------------   
@@ -112,11 +121,14 @@
           ! 2362-2367.
           !----------------------------------------------------------------   
           use modelparams, only: ke
-          use auxfunc
           implicit none
 
           ! arguments
           integer, intent(in) :: day   ! day of the year
+
+          ! local variables
+          real :: anm, anv
+          real :: dlamm                ! Mean longitude for day of year
 
           ! function return value
           real, dimension(2) :: berger_tls ! return "tuple": (my_nu = true anomaly, degrees; my_tls = true longitude, degrees)
@@ -127,7 +139,9 @@
           xse = sqrt(1.0 - xee)
 
           ! Mean longitude for vernal equinox:
-          xlam = (ke/2.0 + xec/8.0)*(1.0 + xse)*dsin(komega) - xee/4.0*(0.5 + xse)*dsin(2.0*komega) + xec/8.0*(1.0/3.0 + xse)*dsin(3.0*komega)
+          xlam = (ke/2.0 + xec/8.0)*(1.0 + xse)*dsin(komega) 
+     $           - xee/4.0*(0.5 + xse)*dsin(2.0*komega) 
+     $           + xec/8.0*(1.0/3.0 + xse)*dsin(3.0*komega)
           xlam = degrees(2.0*xlam)
 
           ! Mean longitude for day of year:
@@ -138,7 +152,9 @@
           ranm = radians(anm)
 
           ! True anomaly:
-          ranv = (ranm + (2.0*ke - xec/4.0)*sin(ranm) + 5.0/4.0*xee*sin(2.0*ranm) + 13.0/12.0*xec*sin(3.0*ranm))
+          ranv = (ranm + (2.0*ke - xec/4.0)*sin(ranm) 
+     $           + 5.0/4.0*xee*sin(2.0*ranm) 
+     $           + 13.0/12.0*xec*sin(3.0*ranm))
           anv = degrees(ranv)
 
           ! True longitude:
@@ -160,13 +176,13 @@
         end function berger_tls
 
 
-
         function julian_day( y, m, i )
           !----------------------------------------------------------------   
           ! Converts Gregorian date (year, month, day) to Julian 
           ! Ephemeris Day
           ! Reference:  Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," 
           ! Astronomical Algorithms
+          ! xxx zero indexing in Python => usage of this function ok for Fortran? xxx
           !----------------------------------------------------------------   
           implicit none
 
@@ -188,7 +204,9 @@
 
           a = int(real(y)/real(100))
           b = 2 - a + int(real(a)/real(4))
-          julian_day = real(int( 365.25 * real(y+4716) )) + real(int( 30.6001 * real(m+1) )) + real(i) + real(b) - 1524.5
+          julian_day = real(int( 365.25 * real(y+4716) )) 
+     $               + real(int( 30.6001 * real(m+1) )) 
+     $               + real(i) + real(b) - 1524.5
 
         end function julian_day
 
@@ -206,7 +224,8 @@
           ! function return value
           real :: sat_slope  ! slope of the sat pressure temp curve, Pa/K
 
-          sat_slope = (17.269)*(237.3)*(610.78)*(exp(tc*17.269/(tc + 237.3))/((tc + 237.3)**2))
+          sat_slope = (17.269)*(237.3)*(610.78)
+     $               *(exp(tc*17.269/(tc + 237.3))/((tc + 237.3)**2))
 
         end function sat_slope
 
@@ -224,7 +243,8 @@
           ! function return value
           real ::  enthalpy_vap ! enthalpy of vaporization, J/kg
 
-          enthalpy_vap = (1.91846e6*((tc + 273.15)/(tc + 273.15 - 33.91))**2)
+          enthalpy_vap = 1.91846e6
+     $      *((tc + 273.15)/(tc + 273.15 - 33.91))**2
 
         end function enthalpy_vap
 
@@ -248,7 +268,7 @@
         end function elv2pres
 
 
-        function density_h2o( tc, p )
+        function density_h2o( tc, press )
           !----------------------------------------------------------------   
           ! Calculates density of water at a given temperature and pressure
           ! Ref: Chen et al. (1977)
@@ -256,55 +276,60 @@
           implicit none
 
           ! arguments
-          real, intent(in) :: tc ! air temperature, degrees C
-          real, intent(in) :: press  ! atmospheric pressure, Pa
+          real, intent(in) :: tc     ! air temperature (degrees C)
+          real, intent(in) :: press  ! atmospheric pressure (Pa)
+
+          ! local variables
+          real :: po, ko, ca, cb
+          real :: pbar               ! atmospheric pressure (bar)
 
           ! function return value
           real :: density_h2o  ! density of water, kg/m^3
 
           ! Calculate density at 1 atm:
           po = (
-     $         0.99983952 + 
-     $         (6.788260e-5)*tc + 
-     $         -(9.08659e-6)*tc*tc +
-     $         (1.022130e-7)*tc*tc*tc + 
-     $         -(1.35439e-9)*tc*tc*tc*tc +
-     $         (1.471150e-11)*tc*tc*tc*tc*tc +
-     $         -(1.11663e-13)*tc*tc*tc*tc*tc*tc + 
-     $         (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc + 
-     $         -(1.00659e-18)*tc*tc*tc*tc*tc*tc*tc*tc
+     $         0.99983952
+     $         + 6.788260e-5  *tc
+     $         - 9.08659e-6   *tc*tc
+     $         + 1.022130e-7  *tc*tc*tc  
+     $         - 1.35439e-9   *tc*tc*tc*tc
+     $         + 1.471150e-11 *tc*tc*tc*tc*tc
+     $         - 1.11663e-13  *tc*tc*tc*tc*tc*tc
+     $         + 5.044070e-16 *tc*tc*tc*tc*tc*tc*tc
+     $         - 1.00659e-18  *tc*tc*tc*tc*tc*tc*tc*tc
      $     )
 
           ! Calculate bulk modulus at 1 atm:
           ko = (
-     $         19652.17 +
-     $         148.1830*tc + 
-     $         -2.29995*tc*tc + 
-     $         0.01281*tc*tc*tc + 
-     $         -(4.91564e-5)*tc*tc*tc*tc + 
-     $         (1.035530e-7)*tc*tc*tc*tc*tc
+     $         19652.17
+     $         + 148.1830   *tc
+     $         - 2.29995    *tc*tc
+     $         + 0.01281    *tc*tc*tc
+     $         - 4.91564e-5 *tc*tc*tc*tc
+     $         + 1.035530e-7*tc*tc*tc*tc*tc
      $     )
 
           ! Calculate temperature dependent coefficients:
           ca = (
-     $         3.26138 + 
-     $         (5.223e-4)*tc + 
-     $         (1.324e-4)*tc*tc + 
-     $         -(7.655e-7)*tc*tc*tc + 
-     $         (8.584e-10)*tc*tc*tc*tc
+     $         3.26138
+     $         + 5.223e-4  *tc
+     $         + 1.324e-4  *tc*tc
+     $         - 7.655e-7  *tc*tc*tc
+     $         + 8.584e-10 *tc*tc*tc*tc
      $     )
           cb = (
-     $         (7.2061e-5) +
-     $         -(5.8948e-6)*tc + 
-     $         (8.69900e-8)*tc*tc + 
-     $         -(1.0100e-9)*tc*tc*tc + 
-     $         (4.3220e-12)*tc*tc*tc*tc
+     $         7.2061e-5
+     $         - 5.8948e-6  *tc
+     $         + 8.69900e-8 *tc*tc
+     $         - 1.0100e-9  *tc*tc*tc
+     $         + 4.3220e-12 *tc*tc*tc*tc
      $     )
 
           ! Convert atmospheric pressure to bar (1 bar = 100000 Pa)
           pbar = (1.0e-5)*press
 
-          density_h2o = 1000.0*po*(ko + ca*pbar + cb*pbar**2.0)/(ko + ca*pbar + cb*pbar**2.0 - pbar)
+          density_h2o = 1000.0*po*(ko + ca*pbar + cb*pbar**2.0)
+     $       /(ko + ca*pbar + cb*pbar**2.0 - pbar)
 
         end function density_h2o
 
@@ -323,19 +348,20 @@
 
           ! local variables
           real :: lv  ! latent heat of vaporization (J/kg)
+          real :: cp
 
           ! function return value
           real :: psychro  ! psychrometric constant, Pa/K
 
           ! Calculate the specific heat capacity of water, J/kg/K
           ! Eq. 47, Tsilingiris (2008)
-          cp = (1.0e3)*(
-     $         1.0045714270 +
-     $         (2.050632750e-3)*tc -
-     $         (1.631537093e-4)*tc*tc +
-     $         (6.212300300e-6)*tc*tc*tc -
-     $         (8.830478888e-8)*tc*tc*tc*tc +
-     $         (5.071307038e-10)*tc*tc*tc*tc*tc
+          cp = 1.0e3*(
+     $           1.0045714270
+     $         + 2.050632750e-3  *tc
+     $         - 1.631537093e-4  *tc*tc
+     $         + 6.212300300e-6) *tc*tc*tc
+     $         - 8.830478888e-8) *tc*tc*tc*tc
+     $         + 5.071307038e-10)*tc*tc*tc*tc*tc
      $        )
 
           ! Calculate latent heat of vaporization, J/kg
@@ -350,22 +376,125 @@
       end module auxfunc
 
 
+      module outputvars
+        !////////////////////////////////////////////////////////////////
+        ! Module contains output variables
+        !----------------------------------------------------------------   
+        use modelparams
+
+        ! daily totals
+        real, dimension(ndayyear) :: dho    ! daily solar irradiation, J/m2
+        real, dimension(ndayyear) :: dhn    ! daily net radiation, J/m2
+        real, dimension(ndayyear) :: dqn    ! daily PPFD, mol/m2
+        real, dimension(ndayyear) :: dcn    ! daily condensation water, mm
+        real, dimension(ndayyear) :: dwn    ! daily soil moisture, mm
+        real, dimension(ndayyear) :: dpn    ! daily precipitation, mm
+        real, dimension(ndayyear) :: dro    ! daily runoff, mm
+        real, dimension(ndayyear) :: deq_n  ! daily equilibrium ET, mm
+        real, dimension(ndayyear) :: dep_n  ! daily potential ET, mm
+        real, dimension(ndayyear) :: dea_n  ! daily actual ET, mm
+
+        ! monthly totals
+        real, dimension(nmonth) :: meq_m
+        real, dimension(nmonth) :: mep_m
+        real, dimension(nmonth) :: mea_m
+        real, dimension(nmonth) :: mcpa
+        real, dimension(nmonth) :: mcwd
+        real, dimension(nmonth) :: mqm
+
+
+        subroutine initdaily
+          !----------------------------------------------------------------   
+          ! Initialises daily output variables
+          !----------------------------------------------------------------   
+          dho(:) = 0.0
+          dhn(:) = 0.0
+          dqn(:) = 0.0
+          dcn(:) = 0.0
+          dwn(:) = 0.0
+          dpn(:) = 0.0
+          dro(:) = 0.0
+          deq_n(:) = 0.0
+          dep_n(:) = 0.0
+          dea_n(:) = 0.0
+
+        end subroutine initdaily
+
+
+        subroutine initmonthly
+          !----------------------------------------------------------------   
+          ! Initialises monthly output variables
+          !----------------------------------------------------------------   
+          meq_m(:) = 0.0
+          mep_m(:) = 0.0
+          mea_m(:) = 0.0
+          mcpa(:) = 0.0
+          mcwd(:) = 0.0
+          mqm(:) = 0.0
+
+        end subroutine initmonthly 
+
+      end module outputvars
+
+
       program stash
       !////////////////////////////////////////////////////////////////
-      ! main program 
+      ! STASH MAIN PROGRAM 
+      ! This subroutine maintains daily, monthly and annual quantities of 
+      ! radiation, evapotranspiration, and soil moisture based on the 
+      ! STASH methods.
       !----------------------------------------------------------------
       use modelparams, only: keps, ke, pi, kGsc, kc, kd, kfFEC, kalb_vis
       use auxfunc 
+      use outputvars
 
       implicit none
 
-      lon = 2.0
-      lat = 46.5
-      elv = 300
+      ! LOCAL VARIABLES
+      real :: my_lon
+      real :: my_lat
+      real :: my_elv
+
+      real, dimension(nmonth) :: insf
+      real, dimension(nmonth) :: intc
+      real, dimension(nmonth) :: inppt
+
+      ! Define input variables
+      my_lon = -0.641 ! longitude, degrees
+      my_lat = 51.4   ! latitude, degrees
+      my_elv = 74.0   ! elevation, m
+
+      ! Example data (Met Office average climate for this gridcell)
+      insf  = (/0.21, 0.27, 0.30, 0.40, 0.39, 0.39, 0.40, 0.43, 0.36, 0.32, 0.23, 0.19/)
+      intc  = (/4.80, 4.85, 7.10, 9.10, 12.4, 15.3, 17.6, 17.3, 14.6, 11.2, 7.55, 5.05/)                      dtype=[('sf',numpy.float), 
+      inppt = (/61.0, 41.2, 44.5, 48.0, 46.4, 44.6, 46.0, 52.3, 50.3, 71.8, 66.3, 62.9/)
+
+      ! sanity check
+      if (my_lon>180.0 .or. my_lon<(-180.0)) then
+        print "Longitude outside range of validity (-180 to 180)!"
+        stop
+      endif
+
+      if (my_lat>90.0 .or. my_lat<(-90.0)) then
+        print "Latitude outside range of validity (-90 to 90)!"
+        stop
+      endif
+
+      ! Initialize daily totals (output variables)
+      call initdaily
+
+      ! Initialize monthly totals (output variables)
+      call initmonthly
+
+      ! soil moisture spinup
+      ! output variables are over-written in each year of spinup
+      ! hence, values at the end of the spinup represent equilibrium
+      call spin_up( inppt, intc, insf )
+
 
       contains
 
-      subroutine evap( lon, lat, n, ppfd_d, eet_d, pet_d, aet_d, wc, elv, year, sf, tc, sw )
+      subroutine evap( my_lon, my_lat, n, ppfd_d, eet_d, pet_d, aet_d, wc, elv, year, sf, tc, sw )
         !----------------------------------------------------------------   
         ! This subroutine calculates daily radiation and evapotranspiration
         ! quantities
@@ -664,16 +793,138 @@
       end subroutine evap
 
 
-      subroutine stash()
+      subroutine spin_up( ppt, tc, sf )
+        !----------------------------------------------------------------   
+        ! Spins up the daily soil moisture
+        !----------------------------------------------------------------   
+        use outputvars
+
+        ! ARGUMENTS
+        real, dimension(nmonth), intent(in) :: ppt       ! monthly precip (mm) 
+        real, dimension(nmonth), intent(in) :: tc        ! mean monthly temperature (deg C)
+        real, dimension(nmonth), intent(in) :: sf        ! mean monthly sunshine fraction (unitless)
+
+        ! LOCAL VARIABLES
+        integer :: spin_count                            ! counter variable
+
+        spin_count = 1.0
+        diff_sm = 9999.0
+
+        do while (diff_sm>1e-4)
+
+          ! Run one year
+          call run_one_year(2000, ppt, tc, sf)
+
+          ! Check to see if 1 Jan soil moisture matches 31 Dec:
+          start_sm = dwn(1)
+          end_sm = dwn(366)
+          diff_sm = abs(end_sm - start_sm)
+
+          ! Increase counter
+          spin_count = spin_count + 1
+
+        enddo
+
+      end subroutine spin_up
 
 
+      subroutine run_one_year( y, ppt, tc, sf )
+        !----------------------------------------------------------------   
+        ! Calculates daily and monthly quantities for one year
+        !----------------------------------------------------------------   
+        use outputvars
+        use auxfunc
 
+        ! ARGUMENTS
+        real, dimension(nmonth), intent(in) :: ppt       ! monthly precip (mm) 
+        real, dimension(nmonth), intent(in) :: tc        ! mean monthly temperature (deg C)
+        real, dimension(nmonth), intent(in) :: sf        ! mean monthly sunshine fraction (unitless)
 
-      end subroutine stash
+        ! LOCAL VARIABLES
+        real, intent(out) :: ppfd_d          ! daily PPFD (ppfd_d), mol/m^2
+        real, intent(out) :: eet_d           ! daily EET (eet_d), mm
+        real, intent(out) :: pet_d           ! daily PET (pet_d), mm
+        real, intent(out) :: aet_d           ! daily AET (aet_d), mm
+        real, intent(out) :: wc              ! daily condensation (wc), mm
 
+        ! Reset monthly totals
+        call initmonthly
 
+        ! Calculates days in year
+        ny = julian_day(y+1, 1, 1) - julian_day(y, 1, 1)
 
+        ! Iterate through the months
+        do m=1,nmonth
+          nm = julian_day(y, m+1, 1) - julian_day(y, m, 1)
 
+          do i=1,nm
+            ! Calculate the day of the year
+            ! xxx is this '+1' really necessary here?
+            n = julian_day(y, m, i) - julian_day(y, 1, 1) + 1
+
+            ! Get index for yesterday (Note: zero indexing xxx)
+            idx = int(n-1) - 1
+            if (idx < 0) idx = int(ny - 1)
+
+            ! Calculate evaporative supply rate, mm/h
+            sw = kCw * dwn(idx) / kWm
+
+            ! Calculate radiation and evaporation quantities
+            call evap( lon, lat, n, ppfd_d, eet_d, pet_d, aet_d, wc, elv, 2000, sf(m-1), tc(m-1), sw )
+
+            ! Calculate daily precipitation 
+            ! xxx 'n-1' only for zero-indexing in Python?
+            dpn(n-1) = ppt(m-1)/nm
+
+            ! Update soil moisture
+            dwn(n-1) = dwn(idx) + dpn(n-1) + wc - aet_d
+
+            if (dwn(n-1)>kWm) then
+              ! Bucket is full 
+              ! * set soil moisture to capacity
+              ! * add remaining water to monthly runoff total
+              dro(n-1) = dwn(n-1)
+              dro(n-1) = dro(n-1) - kWm
+              dwn(n-1) = kWm
+
+            elseif (dwn(n-1)<0) then
+              ! Bucket is empty
+              ! * set soil moisture to zero
+              dwn(n-1) = 0.0
+              dro(n-1) = 0.0
+
+            else
+              ! No runoff occurrs
+              dro(n-1) = 0.0
+
+            endif
+
+            ! Save the daily totals:
+            dho(n-1) = ra_d
+            dhn(n-1) = rn_d
+            dqn(n-1) = ppfd_d
+            dcn(n-1) = wc
+            deq_n(n-1) = eet_d
+            dep_n(n-1) = pet_d
+            dea_n(n-1) = aet_d
+
+            ! Update monthly totals:
+            meq_m(m-1) = meq_m(m-1) + eet_d
+            mep_m(m-1) = mep_m(m-1) + pet_d
+            mea_m(m-1) = mea_m(m-1) + aet_d
+            mqm(m-1)   =   mqm(m-1) + ppfd_d
+
+          enddo
+
+          ! Calculate other monthly totals:
+          mcpa(m-1) = mea_m(m-1)
+          mcpa(m-1) = mcpa(m-1) / mep_m(m-1)
+          mcwd(m-1) = mep_m(m-1)
+          mcwd(m-1) = mcwd(m-1) - mea_m(m-1)
+
+        enddo
+
+      end subroutine run_one_year
 
 
       end program
