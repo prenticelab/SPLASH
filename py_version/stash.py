@@ -49,6 +49,7 @@
 ###############################################################################
 import matplotlib.pyplot as plt
 import numpy
+import csv
 
 ###############################################################################
 ## GLOBAL CONSTANTS:
@@ -665,6 +666,11 @@ class STASH:
             end_sm = self.daily_totals['wn'][-1]
             diff_sm = numpy.abs(end_sm - start_sm)
             self.spin_count += 1
+
+        # Once in equilibrium, write daily and monthly values 
+        # of one year to file
+        self.write_to_file()
+
     #
     def run_one_year(self, y, ppt, tc, sf):
         """
@@ -692,6 +698,10 @@ class STASH:
                 n = self.julian_day(y, m, i) - self.julian_day(y, 1, 1) + 1
                 #
                 # Get index for yesterday (Note: zero indexing)
+                # xxx in effect, idx is TWO days before -- is this correct? xxx
+                # Note that 'n' represents day of year and runs from 1 to 365 (366),
+                # whereas idx is the index and runs from 0 to 364 (365) (zero-indexing 
+                # in Python!)
                 idx = int(n-1) - 1
                 if idx < 0:
                     idx = int(ny - 1)
@@ -705,6 +715,7 @@ class STASH:
                 #
                 # Calculate daily precipitation:
                 self.daily_totals['pn'][n-1] = ppt[m-1]/nm
+
                 #
                 # Update soil moisture:
                 self.daily_totals['wn'][n-1] = (self.daily_totals['wn'][idx] +
@@ -761,6 +772,31 @@ class STASH:
                                                  ('cpa', numpy.float),
                                                  ('cwd', numpy.float),
                                                  ('qm', numpy.float)])
+    #
+    def write_to_file(self):
+        """
+        Name:     STASH.write_to_file
+        Input:    None.
+        Output:   None.
+        Features: Writes daily and monthly values to files
+        """
+        #
+        print "writing daily totals to files"
+        numpy.savetxt('./output/ho.d.out', self.daily_totals['ho'])
+        numpy.savetxt('./output/hn.d.out', self.daily_totals['hn'])
+        numpy.savetxt('./output/qn.d.out', self.daily_totals['qn'])
+        numpy.savetxt('./output/cn.d.out', self.daily_totals['cn'])
+        numpy.savetxt('./output/eq_n.d.out', self.daily_totals['eq_n'])
+        numpy.savetxt('./output/ep_n.d.out', self.daily_totals['ep_n'])
+        numpy.savetxt('./output/ea_n.d.out', self.daily_totals['ea_n'])
+        #
+        print "writing monthly totals to files"
+        numpy.savetxt('./output/eq_m.m.out',self.monthly_totals['eq_m'])
+        numpy.savetxt('./output/ep_m.m.out',self.monthly_totals['ep_m'])
+        numpy.savetxt('./output/ea_m.m.out',self.monthly_totals['ea_m'])
+        numpy.savetxt('./output/qm.m.out',self.monthly_totals['qm'])
+        numpy.savetxt('./output/cpa.m.out',self.monthly_totals['cpa'])
+        numpy.savetxt('./output/cwd.m.out',self.monthly_totals['cwd'])
     #
     def julian_day(self, y, m, i):
         """
@@ -824,53 +860,53 @@ my_elv = 74.0   # elevation, m
 my_class = STASH(my_lat, my_lon, my_elv)
 my_class.spin_up(data['ppt'], data['tc'], data['sf'])
 
-# Plot daily stuff:
-my_days = range(1,367)
-fig = plt.figure()
-ax1 = fig.add_subplot(111)
-plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
-plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
-ax1.plot(my_days, my_class.daily_totals['wn'], 'g-', linewidth=2, 
-         label='Soil Moisture')
-ax1.set_xlabel('Day', fontsize=18)
-ax1.set_ylabel('Moisture, mm', fontsize=18)
-#ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-#            ncol=4, mode="expand", borderaxespad=0., fontsize=18)
-plt.show()
+# # Plot daily stuff:
+# my_days = range(1,367)
+# fig = plt.figure()
+# ax1 = fig.add_subplot(111)
+# plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
+# plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
+# ax1.plot(my_days, my_class.daily_totals['wn'], 'g-', linewidth=2, 
+#          label='Soil Moisture')
+# ax1.set_xlabel('Day', fontsize=18)
+# ax1.set_ylabel('Moisture, mm', fontsize=18)
+# #ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+# #            ncol=4, mode="expand", borderaxespad=0., fontsize=18)
+# plt.show()
 
-# Plot monthly ET
-my_months = range(1, 13)
-fig = plt.figure()
-ax1 = fig.add_subplot(111)
-plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
-plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
-ax1.plot(my_months, my_class.monthly_totals['ep_m'], 'k-', linewidth=2, label='Potential')
-ax1.plot(my_months, my_class.monthly_totals['ea_m'], 'c--', linewidth=2, label='Actual')
-ax1.plot(my_months, my_class.monthly_totals['eq_m'], 'g-', linewidth=2, label='Equilibrium')
-ax1.plot(my_months, my_class.monthly_totals['cwd'], 'r:', linewidth=2, label='Deficit')
-ax1.set_xticks(my_months)
-ax1.set_xlabel('Months', fontsize=18)
-ax1.set_ylabel('Evapotranspiration, mm', fontsize=18)
-ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-            ncol=4, mode="expand", borderaxespad=0., fontsize=18)
-plt.xlim([1, 12])
-plt.show()
+# # Plot monthly ET
+# my_months = range(1, 13)
+# fig = plt.figure()
+# ax1 = fig.add_subplot(111)
+# plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
+# plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
+# ax1.plot(my_months, my_class.monthly_totals['ep_m'], 'k-', linewidth=2, label='Potential')
+# ax1.plot(my_months, my_class.monthly_totals['ea_m'], 'c--', linewidth=2, label='Actual')
+# ax1.plot(my_months, my_class.monthly_totals['eq_m'], 'g-', linewidth=2, label='Equilibrium')
+# ax1.plot(my_months, my_class.monthly_totals['cwd'], 'r:', linewidth=2, label='Deficit')
+# ax1.set_xticks(my_months)
+# ax1.set_xlabel('Months', fontsize=18)
+# ax1.set_ylabel('Evapotranspiration, mm', fontsize=18)
+# ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+#             ncol=4, mode="expand", borderaxespad=0., fontsize=18)
+# plt.xlim([1, 12])
+# plt.show()
 
-# Plot monthly CPA
-my_months = range(1, 13)
-fig = plt.figure()
-ax1 = fig.add_subplot(111)
-plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
-plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
-ax1.plot(my_months, my_class.monthly_totals['cpa'], 'k-', linewidth=2, 
-         label='Cramer-Prentice alpha')
-ax1.set_xticks(my_months)
-ax1.set_xlabel('Months', fontsize=18)
-ax1.set_ylabel('Evapotranspiration, mm', fontsize=18)
-ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-            ncol=1, mode="expand", borderaxespad=0., fontsize=18)
-plt.xlim([1, 12])
-plt.show()
+# # Plot monthly CPA
+# my_months = range(1, 13)
+# fig = plt.figure()
+# ax1 = fig.add_subplot(111)
+# plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
+# plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
+# ax1.plot(my_months, my_class.monthly_totals['cpa'], 'k-', linewidth=2, 
+#          label='Cramer-Prentice alpha')
+# ax1.set_xticks(my_months)
+# ax1.set_xlabel('Months', fontsize=18)
+# ax1.set_ylabel('Evapotranspiration, mm', fontsize=18)
+# ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+#             ncol=1, mode="expand", borderaxespad=0., fontsize=18)
+# plt.xlim([1, 12])
+# plt.show()
 
 # Plot monthly precip and runoff
 #my_daily_precip = []
