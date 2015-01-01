@@ -1120,43 +1120,43 @@
         real :: density_h2o  ! density of water, kg/m^3
 
         ! Calculate density at 1 atm:
-        po = (
-     $         0.99983952
-     $         + 6.788260e-5  *tc
-     $         - 9.08659e-6   *tc*tc
-     $         + 1.022130e-7  *tc*tc*tc  
-     $         - 1.35439e-9   *tc*tc*tc*tc
-     $         + 1.471150e-11 *tc*tc*tc*tc*tc
-     $         - 1.11663e-13  *tc*tc*tc*tc*tc*tc
-     $         + 5.044070e-16 *tc*tc*tc*tc*tc*tc*tc
-     $         - 1.00659e-18  *tc*tc*tc*tc*tc*tc*tc*tc
-     $     )
+        po = (&
+                 0.99983952&
+                 + 6.788260e-5  *tc&
+                 - 9.08659e-6   *tc*tc&
+                 + 1.022130e-7  *tc*tc*tc  &
+                 - 1.35439e-9   *tc*tc*tc*tc&
+                 + 1.471150e-11 *tc*tc*tc*tc*tc&
+                 - 1.11663e-13  *tc*tc*tc*tc*tc*tc&
+                 + 5.044070e-16 *tc*tc*tc*tc*tc*tc*tc&
+                 - 1.00659e-18  *tc*tc*tc*tc*tc*tc*tc*tc&
+             )
 
         ! Calculate bulk modulus at 1 atm:
-        ko = (
-     $         19652.17
-     $         + 148.1830   *tc
-     $         - 2.29995    *tc*tc
-     $         + 0.01281    *tc*tc*tc
-     $         - 4.91564e-5 *tc*tc*tc*tc
-     $         + 1.035530e-7*tc*tc*tc*tc*tc
-     $     )
+        ko = (&
+                 19652.17&
+                 + 148.1830   *tc&
+                 - 2.29995    *tc*tc&
+                 + 0.01281    *tc*tc*tc&
+                 - 4.91564e-5 *tc*tc*tc*tc&
+                 + 1.035530e-7*tc*tc*tc*tc*tc&
+             )
 
         ! Calculate temperature dependent coefficients:
-        ca = (
-     $         3.26138
-     $         + 5.223e-4  *tc
-     $         + 1.324e-4  *tc*tc
-     $         - 7.655e-7  *tc*tc*tc
-     $         + 8.584e-10 *tc*tc*tc*tc
-     $     )
-        cb = (
-     $         7.2061e-5
-     $         - 5.8948e-6  *tc
-     $         + 8.69900e-8 *tc*tc
-     $         - 1.0100e-9  *tc*tc*tc
-     $         + 4.3220e-12 *tc*tc*tc*tc
-     $     )
+        ca = (&
+                 3.26138&
+                 + 5.223e-4  *tc&
+                 + 1.324e-4  *tc*tc&
+                 - 7.655e-7  *tc*tc*tc&
+                 + 8.584e-10 *tc*tc*tc*tc&
+             )
+        cb = (&
+                 7.2061e-5&
+                 - 5.8948e-6  *tc&
+                 + 8.69900e-8 *tc*tc&
+                 - 1.0100e-9  *tc*tc*tc&
+                 + 4.3220e-12 *tc*tc*tc*tc&
+             )
 
         ! Convert atmospheric pressure to bar (1 bar = 100000 Pa)
         pbar = (1.0e-5)*press
@@ -1187,14 +1187,14 @@
 
         ! Calculate the specific heat capacity of water, J/kg/K
         ! Eq. 47, Tsilingiris (2008)
-        cp = 1.0e3*(
-     $           1.0045714270
-     $         + 2.050632750e-3  *tc
-     $         - 1.631537093e-4  *tc*tc
-     $         + 6.212300300e-6  *tc*tc*tc
-     $         - 8.830478888e-8  *tc*tc*tc*tc
-     $         + 5.071307038e-10 *tc*tc*tc*tc*tc
-     $        )
+        cp = 1.0e3*(&
+                   1.0045714270&
+                 + 2.050632750e-3  *tc&
+                 - 1.631537093e-4  *tc*tc&
+                 + 6.212300300e-6  *tc*tc*tc&
+                 - 8.830478888e-8  *tc*tc*tc*tc&
+                 + 5.071307038e-10 *tc*tc*tc*tc*tc&
+                )
 
         ! Calculate latent heat of vaporization, J/kg
         lv = enthalpy_vap(tc)
