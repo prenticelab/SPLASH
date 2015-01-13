@@ -8,7 +8,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2014-11-25 -- last updated
+# 2015-01-13 -- last updated
 #
 # ------------
 # description:
@@ -17,8 +17,8 @@
 # the STASH 2.0 model
 #
 # IMPORTANT NOTE: 
-#   Global variables are defined inside a function at runtime; therefore, you
-#   must re-run function definitions if you change a global variable's value
+#   Global variables are defined inside a function at definition; therefore, 
+#   you must re-run function definitions if you change global variable values
 #
 # Key (monthly) outputs:
 # 1. PPFD, mol/m^2
@@ -42,22 +42,6 @@
 #    "cru_ts3.21.1901.2012.cld.dat.nc"
 # 4. z, CRU TS 3.00 Elevation Data, m
 #    "halfdeg.elv.grid.dat"
-#
-# ANALYSIS OF METHODS
-# 1. Kepler method:
-#    drm='loutre'; lamm='kepler'; delm='loutre'
-# 2. Berger's method
-#    drm='loutre'; lamm='berger'; delm='loutre'
-# 3. Woolf's method
-#    drm='loutre'; lamm='woolf'; delm='loutre'
-# 4. Klein's method
-#    drm='klein'; lamm='kepler'; delm='loutre'
-# 5. Spencer's method:
-#    drm='loutre'; lamm='kepler'; delm='spencer'
-# 6. Cooper's method
-#    drm='loutre'; lamm='kepler'; delm='cooper'
-# 7. Circle method
-#    drm='loutre'; lamm='kepler'; delm='circle'
 #
 # ----------
 # changelog:
@@ -98,12 +82,13 @@
 # 31. updated value and reference for semi-major axis, a [14.10.31]
 # 32. fixed Cooper's and Spencer's declination equations [14.11.25]
 # 33. replaced simplified kepler with full kepler [14.11.25]
+# 34. removed options for approximation methods not considering variable 
+#     orbital velocity (e.g. Spencer, Woolf, Klein, Cooper, and Circle 
+#     methods) [15.01.13]
 #
 # -----
 # todo:
 # -----
-# * check why correct_kepler throws divide by zero warning
-#   --> actually thrown in simplified_kepler, but caught in arctan function
 #
 ###############################################################################
 ## IMPORT MODULES:
@@ -117,7 +102,6 @@ from scipy.io import netcdf
 ## GLOBAL CONSTANTS:
 ###############################################################################
 kA = 107       # constant for Rnl (Monteith & Unsworth, 1990)
-ka = 1.49598e8 # semi-major axis, km (Allen, 1973)
 kalb_sw = 0.17 # shortwave albedo (Federer, 1968)
 kalb_vis = 0.03 # visible light albedo (Sellers, 1985)
 kb = 0.20      # constant for Rnl (Linacre, 1968)
@@ -129,14 +113,12 @@ keps = 23.44   # obliquity for 2000 CE, degrees (Berger, 1978)
 kerror = -9999 # error value
 kfFEC = 2.04   # from flux to energy conversion, umol/J (Meek et al., 1984)
 kG = 9.80665   # gravitational acceleration, m/s^2 (Allen, 1973)
-kGM = 1.32712e11 # standard gravity of the sun, km^3/s^2
 kGsc = 1360.8  # solar constant, W/m^2 (Kopp & Lean, 2011)
 kL = 0.0065    # temperature lapse rate, K/m (Cavcar, 2000)
 kMa = 0.028963 # molecular weight of dry air, kg/mol (Tsilingiris, 2008)
 kMv = 0.01802  # molecular weight of water vapor, kg/mol (Tsilingiris, 2008)
 kPo = 101325   # standard atmosphere, Pa (Allen, 1973)
 kR = 8.3143    # universal gas constant, J/mol/K (Allen, 1973)
-ksb = 5.670373e-8 # Stefan-Boltzman constant, W/m^2/K^4
 kTo = 298.15   # base temperature, K (Prentice, unpublished)
 kWm = 150      # soil moisture capacity, mm (Cramer & Prentice, 1988)
 kw = 0.26      # entrainment factor (Lhomme, 1997; Priestley & Taylor, 1972)
@@ -166,8 +148,8 @@ class EVAP_G:
               Berger, A.L. (1978), Long-term variations of daily insolation and 
                 quarternary climatic changes, Journal of Atmospheric Sciences, 
                 vol. 35, pp. 2362--2367.
-              Cooper, P. I. (1969). “The absorption of radiation in solar 
-                stills,” Solar Energy 12.3, pp. 333–346 
+              Berger, A.L., M.F. Loutre, and C. Tricot (1993), Insolation and 
+                Earth's orbital periods, J. Geophys. Res., 98, 10341--10362.
               Duffie, J. A. and W. A. Beckman (1991). Solar engineering of 
                 thermal processes. 4th ed. New Jersey: John Wiley and Sons
               Federer (1982), Transpirational supply and demand: plant, soil, 
@@ -182,9 +164,6 @@ class EVAP_G:
                 Journal of the Royal Meteorological Society 110, pp. 1186–1190
               Linacre (1968), Estimating the net-radiation flux, Agricultural 
                 Meteorology, vol. 5, pp. 49--63.
-              Loutre, M.F. (2003) Ice ages (Milankovitch theory), Encyclopedia 
-                of Atmospheric Sciences, edited by J.R. Holton, J.A. Curry, 
-                and J.A. Pyle, pp. 995–1003, Elsevier Ltd.
               Prentice, I.C., M.T. Sykes, W. Cramer (1993), A simulation model 
                 for the transient effects of climate change on forest 
                 landscapes, Ecological Modelling, vol. 65, pp. 51--70.
@@ -207,8 +186,7 @@ class EVAP_G:
     # Class Initialization 
     # ////////////////////////////////////////////////////////////////////////
     def __init__(
-        self, n, elv, sf, tc, sw, y=0,
-        drm='loutre', lamm = 'kepler', delm = 'loutre'):
+        self, n, elv, sf, tc, sw, y=0):
         """
         Name:     EVAP_G.__init__
         Input:    - int, day of the year (n)
@@ -217,10 +195,6 @@ class EVAP_G:
                   - numpy nd.array, mean daily air temperature, C (tc)
                   - numpy nd.array, evaporative supply rate, mm/hr (sw)
                   - int, year (y)
-                  - string, distance method (drm)
-                  - string, lambda method (lamm)
-                  - string, delta method (delm)
-        
         """
         # Assign default public variables:
         self.user_elv = elv
@@ -263,103 +237,24 @@ class EVAP_G:
         #    my_nu, SCALAR
         #    my_lambda, SCALAR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if lamm == 'kepler':
-            # Kepler Method:
-            self.my_nu, self.my_lambda = self.map_days(self.user_day, 
-                                                       self.user_year)
-        elif lamm == 'woolf':
-            # Woolf Method:
-            # Eq. 23, STASH 2.0 Documentation
-            woolf_b = (self.user_day - 1.0)*(360.0/self.kN)
-            self.my_lambda = (
-                279.9348 + woolf_b + 1.914827*self.dsin(woolf_b) - 
-                0.079525*self.dcos(woolf_b) + 0.019938*self.dsin(2.0*woolf_b) - 
-                0.00162*self.dcos(2.0*woolf_b)
-            )
-            if self.my_lambda < 0:
-                self.my_lambda += 360.0
-            elif self.my_lambda > 360:
-                self.my_lambda -= 360.0
-            self.my_nu = (self.my_lambda - komega)
-            if self.my_nu < 0:
-                self.my_nu += 360.0
-        elif lamm == 'berger':
-            # Berger'78 Method:
-            xee = ke**2 
-            xec = ke**3
-            xse = numpy.sqrt(1.0 - xee)
-            xlam = ((ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega) - 
-                xee/4.0*(0.5 + xse)*self.dsin(2.0*komega) + 
-                xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega))
-            xlam = numpy.degrees(2.0*xlam)
-            dlamm = xlam + (n - 80.0)*(360.0/self.kN)
-            anm = dlamm - komega
-            ranm = numpy.radians(anm)
-            ranv = (ranm + (2.0*ke - xec/4.0)*numpy.sin(ranm) + 
-                5.0/4.0*xee*numpy.sin(2.0*ranm) + 
-                13.0/12.0*xec*numpy.sin(3.0*ranm))
-            anv = numpy.degrees(ranv)
-            self.my_lambda = anv + komega
-            if self.my_lambda < 0:
-                self.my_lambda += 360.0
-            elif self.my_lambda > 360:
-                self.my_lambda -= 360.0
-            self.my_nu = (self.my_lambda - komega)
-            if self.my_nu < 0:
-                self.my_nu += 360.0
-        else:
-            print "Heliocentric longitude method not recognized!"
-            exit(1)
+        # Berger (1978)
+        self.my_nu, self.my_lambda = self.berger_tls(n)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate distance factor, unitless
         #    dr, SCALAR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if drm == 'loutre':
-            # Eq. 7--9, STASH 2.0 Documentation
-            my_rho = (1.0 - ke**2.0)/(1.0 + ke*self.dcos(self.my_nu))
-            self.dr = (1.0/my_rho)**2.0
-        elif drm == 'klein':
-            # Eq. 11, STASH 2.0 Documentation
-            self.dr = (
-                1.0 + 2.0*ke*numpy.cos(2.0*numpy.pi*self.user_day/self.kN)
-            )
-        else:
-            print "Distance factor method not recognized!"
-            exit(1)
+        # Berger et al. (1993)
+        my_rho = (1.0 - ke**2)/(1.0 + ke*self.dcos(self.my_nu))
+        self.dr = (1.0/my_rho)**2
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate declination angle, degrees
         #    delta, SCALAR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if delm == 'loutre':
-            # Eq. 14, STASH 2.0 Documentation (Loutre, 2002)
-            self.delta = numpy.arcsin(self.dsin(self.my_lambda)*self.dsin(keps))
-            self.delta *= (180.0/numpy.pi)
-        elif delm == 'cooper':
-            # Eq. 16, STASH 2.0 Documentation (Cooper, 1969)
-            self.delta = keps*numpy.sin(
-                2.0*numpy.pi*(self.user_day + 284.0)/self.kN
-            )
-        elif delm == 'circle':
-            # Eq. 15, STASH 2.0 Documentation
-            self.delta = -1.0*keps*numpy.cos(
-                2.0*numpy.pi*(self.user_day + 10.0)/self.kN
-            )
-        elif delm == 'spencer':
-            # Eq. 17, STASH 2.0 Documentation
-            spencer_b = (self.user_day - 1.0)*(2.0*numpy.pi/self.kN)
-            self.delta = (0.006918 - 
-                          0.399912*numpy.cos(spencer_b) + 
-                          0.070257*numpy.sin(spencer_b) - 
-                          0.006758*numpy.cos(2.0*spencer_b) +
-                          0.000907*numpy.sin(2.0*spencer_b) - 
-                          0.002697*numpy.cos(3.0*spencer_b) + 
-                          0.00148*numpy.sin(3.0*spencer_b))
-            self.delta *= (180.0/numpy.pi)
-        else:
-            print "Declination angle method not recognized!"
-            exit(1)
+        # Woolf (1968)
+        self.delta = numpy.arcsin(self.dsin(self.my_lambda)*self.dsin(keps))
+        self.delta *= (180.0/numpy.pi)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Calculate variable substitutes, unitless
@@ -429,9 +324,7 @@ class EVAP_G:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 46, STASH 2.0 Documentation
         # Note: missing user_tc == -9999
-        rnl = (
-            (kb + (1.0 - kb)*self.user_sf)*(kA - self.user_tc)
-        )
+        rnl = (kb + (1.0 - kb)*self.user_sf)*(kA - self.user_tc)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 11. Calculate variable substitute, W/m^2
@@ -510,14 +403,14 @@ class EVAP_G:
         #     wc, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 69, STASH 2.0 Documentation
-        self.wc = 1000.0*econ*numpy.abs(rnn_d)
+        self.wc = (1e3)*econ*numpy.abs(rnn_d)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 17. Estimate daily EET, mm
         #     eet_d, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 71, STASH 2.0 Documentation
-        self.eet_d = 1000.0*(econ*rn_d)
+        self.eet_d = (1e3)*econ*rn_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 18. Estimate daily PET, mm
@@ -530,7 +423,7 @@ class EVAP_G:
         # 19. Calculate variable substitute, (mm/hr)/(W/m^2)
         #     rx, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rx = 1000.0*3600.0*(1.0 + kw)*econ
+        rx = (3.6e6)*(1.0 + kw)*econ
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 20. Calculate the intersection hour angle, degrees
@@ -593,14 +486,59 @@ class EVAP_G:
         """
         return numpy.sin(x*numpy.pi/180.0)
     #
-    def dtan(self, x):
+    def berger_tls(self, n):
         """
-        Name:     EVAP_G.dtan
-        Input:    float/nd.array, angle, degrees (x)
-        Output:   float/nd.array, tan(x*pi/180)
-        Features: Calculates the tangent of angle(s) given in degrees
+        Name:     EVAP_G.berger_tls
+        Input:    int, day of year
+        Output:   tuple, 
+                  - true anomaly, degrees
+                  - true longitude, degrees
+        Features: Returns true anomaly and true longitude for a given day
+        Depends:  - ke
+                  - komega
+        Ref:      Berger, A. L. (1978), Long term variations of daily insolation
+                  and quaternary climatic changes, J. Atmos. Sci., 35, 2362-
+                  2367.
         """
-        return numpy.tan(x*numpy.pi/180.0)
+        # Variable substitutes:
+        xee = ke**2 
+        xec = ke**3
+        xse = numpy.sqrt(1.0 - xee)
+        #
+        # Mean longitude for vernal equinox:
+        xlam = (
+            (ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega) - 
+            xee/4.0*(0.5 + xse)*self.dsin(2.0*komega) + 
+            xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
+            )
+        xlam = numpy.degrees(2.0*xlam)
+        #
+        # Mean longitude for day of year:
+        dlamm = xlam + (n - 80.0)*(360.0/self.kN)
+        #
+        # Mean anomaly:
+        anm = dlamm - komega
+        ranm = numpy.radians(anm)
+        #
+        # True anomaly:
+        ranv = (ranm + (2.0*ke - xec/4.0)*numpy.sin(ranm) + 
+            5.0/4.0*xee*numpy.sin(2.0*ranm) + 
+            13.0/12.0*xec*numpy.sin(3.0*ranm))
+        anv = numpy.degrees(ranv)
+        #
+        # True longitude:
+        my_tls = anv + komega
+        if my_tls < 0:
+            my_tls += 360.0
+        elif my_tls > 360:
+            my_tls -= 360.0
+        # 
+        # True anomaly:
+        my_nu = (my_tls - komega)
+        if my_nu < 0:
+            my_nu += 360.0
+        #
+        return(my_nu, my_tls)
     #
     def get_lon_lat(self,x,y,r):
         """
@@ -621,24 +559,6 @@ class EVAP_G:
         lat = lat + (y*r)
         #
         return (lon, lat)
-    #
-    def earth_velocity(self, lon):
-        """
-        Name:     EVAP_G.earth_velocity
-        Input:    longitude(s) w.r.t. the perihelion (lon)
-        Output:   angular velocity(ies), rad/day (w)
-        Features: Calculates earth's angular velocity at a given longitude
-                  relative to the perihelion
-        Depends:  Global constants:
-                  - ke
-        Ref:      Kepler's Second Law of Planetary Motion
-        """
-        w = (
-            2.0*numpy.pi/self.kN*(
-                1.0 + ke*self.dcos(lon)
-                )**2.0*(1.0 - ke**2)**(-1.5)
-        )
-        return w
     #
     def julian_day(self,y,m,i):
         """
@@ -661,225 +581,6 @@ class EVAP_G:
         #
         jde = int(365.25*(y + 4716)) + int(30.6001*(m + 1)) + i + b - 1524.5
         return jde
-    #
-    def equinox(self, year, opt=0):
-        """
-        Name:     EVAP_G.equinox
-        Input:    - int, year (year)
-                  - int, option (opt)
-                    0: vernal equinox     1: summer solstice
-                    2: autumnal equinox   3: winter solstice
-        Output:   float, day of the year
-        Features: Calculates the day of the year on which seasonal dates fall
-        Depends:  julian_day
-        Ref:      J. Meeus (1991), Ch.26 "Equinoxes and solstices," 
-                  Astronomical Algorithms
-        """
-        # Table 26.C (Meeus, 1991)
-        periodic_terms = numpy.array([
-            # A    B          C
-            485, 324.96,   1934.136,
-            203, 337.23,  32964.467,
-            199, 342.08,     20.186,
-            182,  27.85, 445267.112,
-            156,  73.14,  45036.886,
-            136, 171.52,  22518.443,
-            77, 222.54,  65928.934,
-            74, 296.72,   3034.906,
-            70, 243.58,   9037.513,
-            58, 119.81,  33718.147,
-            52, 297.17,    150.678,
-            50,  21.02,   2281.226,
-            45, 247.54,  29929.562,
-            44, 325.15,  31555.956,
-            29,  60.93,   4443.417,
-            18, 155.12,  67555.328,
-            17, 288.79,   4562.452,
-            16, 198.04,  62894.029,
-            14, 199.76,  31436.921,
-            12,  95.39,  14577.848,
-            12, 287.11,  31931.756,
-            12, 320.81,  34777.259,
-            9, 227.73,   1222.114,
-            8,  15.45,  16859.074
-            ])
-        #
-        # Table 26.A (Meeus, 1991)
-        jde_table_a = numpy.array([
-            numpy.array([1721139.29189, 365242.13740,  0.06134,  
-                         0.00111, -0.00071]), # March equinox
-            numpy.array([1721233.25401, 365241.72562, -0.05323,  
-                         0.00907,  0.00025]), # June solstice
-            numpy.array([1721325.70455, 365242.49558, -0.11677, 
-                         -0.00297,  0.00074]), # September equinox
-            numpy.array([1721414.39987, 365242.88257, -0.00769, 
-                         -0.00933, -0.00006])  # December solstice
-            ])
-        #
-        # Table 26.B (Meeus, 1991)
-        jde_table_b = numpy.array([
-            numpy.array([2451623.80984, 365242.37404,  0.05169, 
-                         -0.00411, -0.00057]), # March equinox
-            numpy.array([2451716.56767, 365241.62603,  0.00325,  
-                         0.00888, -0.00030]), # June solstice
-            numpy.array([2451810.21715, 365242.01767, -0.11575,  
-                         0.00337,  0.00078]), # September equinox
-            numpy.array([2451900.05952, 365242.74049, -0.06223, 
-                         -0.00823,  0.00032])  # December solstice
-            ])
-        #
-        if year < 1000:
-            # Use Table 26.A for years -1000 to 1000
-            jde_table = jde_table_a
-            y = year/1000.0
-        else:
-            # Use Table 26.B for years 1000 to 3000
-            jde_table = jde_table_b
-            y = (year - 2000.0)/1000.0
-        #
-        # Calculate the mean equinox based on Table 26.A or 26.B:
-        jde0 = (
-       	jde_table[opt,0] +
-       	jde_table[opt,1]*y +
-       	jde_table[opt,2]*y*y +
-       	jde_table[opt,3]*y*y*y +
-       	jde_table[opt,4]*y*y*y*y
-        )
-        #
-        # Calculate the other three terms:
-        t = (jde0 - 2451545.0)/36525.0
-        w = (35999.373*t) - 2.47
-        dl = (
-            1.0 + 
-            (0.0334*self.dcos(w)) + 
-            (0.0007*self.dcos(2*w))
-        )
-        #
-        # Compute the sum of the 24 periodic terms:
-        s = 0
-        j = 0
-        for i in xrange(24):
-            s += periodic_terms[j]*self.dcos(
-                (periodic_terms[j+1] + (periodic_terms[j+2]*t))
-            )
-            j += 3
-        #
-        # Calculate the JDE (Julian Ephemeris Day) of the equinox/solstice:
-        jde = jde0 + ((s*0.00001)/dl)
-        #
-        # Calcuate the JDE for the first day of this year:
-        jde_year = self.julian_day(year, 1, 1)
-        #
-        # Return the day of year:
-        return (jde - jde_year + 1)
-    #
-    def full_kepler(self, lon):
-        """
-        Name:     EVAP_G.full_kepler
-        Input:    float, longitude w.r.t. the perihelion, deg (lon)
-        Output:   float, days traveled from perihelion (t)
-        Features: Returns the days traveled since the earth past the perihelion
-        Depends:  -ke (ellipticity)
-        Ref:      Kepler's Second Law
-        """
-        # Make lon into numpy array, if it is not already:
-        if isinstance(lon, numpy.float) or isinstance(lon, numpy.int):
-            lon = numpy.array([lon,])
-        elif not isinstance(lon, numpy.ndarray):
-            lon = numpy.array(lon)
-        #
-        xee = ke**2
-        xte = ke**3
-        xse = numpy.sqrt(1.0 - xee)
-        xco = self.dcos(lon) + 1
-        #
-        A = (0.5*self.kN/numpy.pi)*(1 - xee)**1.5
-        B = 2*numpy.arctan((ke - 1.)*self.dsin(lon)/(xse*xco))
-        C = xse*(xee - 1)
-        D = 2.*ke*self.dsin(lon)
-        E = xco*((xte - xee - ke + 1)*self.dsin(lon)**2/xco**2 - 
-                 xte - xee + ke + 1)
-        kepler_t = A*(B/C - D/E)
-        #
-        # Correct negative points due to inverse tan function:
-        neg_points = numpy.where(lon > 180)[0]
-        kepler_t[neg_points] -= 2*numpy.pi*A/C
-        #
-        return (kepler_t)
-    #
-    def map_days(self, n, y):
-        """
-        Name:     EVAP_G.map_days
-        Input:    - int, day of the year (n)
-                  - int, year (y)
-        Output:   float, longitude relative to the vernal equinox (lamda_doy)
-        Features: Computes earth's longitude relative to the vernal equinox 
-                  for a given day of the year
-        Depends:  Functions:
-                  - earth_period
-                  - earth_velocity
-                  - equinox
-                  - full_kepler
-                  Global constants:
-                  - komega
-        """
-        # Create longitude field and compute the days for orbit:
-        lon_nu = numpy.array([360.*i/365. for i in xrange(366)])
-        day_nu = self.full_kepler(lon_nu)
-        #
-        # Compute the angle of the vernal equinox w.r.t. the perihelion
-        # i.e., the explementary angle of komega:
-        wp = (360.0 - komega)
-        #
-        # Calculate the length of time it takes earth to travel from the
-        # perihelion (t=0) to the vernal equinox:
-        if wp == 180:
-            wp += 1e-6
-        days_to_ve = self.full_kepler(wp)[0]
-        #
-        # Get day of year of vernal equinox
-        if y == 0:
-            day_ve = 80.0
-        else:
-            day_ve = self.equinox(y)
-        #
-        # Calculate the offset between days to and day of vernal equinox:
-        offset = (day_ve - days_to_ve)
-        #
-        # Calculate the calendar days and set between 0 and kN:
-        calendar_days = (day_nu + offset)
-        calendar_days[numpy.where(calendar_days >= self.kN)] -= self.kN
-        #
-        # Check to see if n is listed in calendar:
-        if n in calendar_days:
-            icalendar = numpy.where(calendar_days==n)[0][0]
-            nu_doy = lon_nu[icalendar]
-        else:
-            # Find the calendar day the precedes doy:
-            calendar_temp = numpy.sort(numpy.append(calendar_days, [n,]))
-            dbefore = calendar_temp[numpy.where(calendar_temp==n)[0][0]-1]
-            #
-            # Get the index of the preceding day:
-            ibefore = numpy.where(calendar_days == dbefore)[0][0]
-            #
-            # Get the angular velocity for the longitude of the preceding day:
-            vbefore = self.earth_velocity(lon_nu[ibefore])
-            #
-            # Calculate the delta time
-            dt = (n - dbefore)
-            #
-            # Calculate the new longitude, degrees:
-            nu_doy = lon_nu[ibefore] + (vbefore*dt)*180.0/numpy.pi
-        #
-        if nu_doy >= 360:
-            nu_doy -= 360
-        #
-        # Convert nu to lambda:
-        lamda_doy = nu_doy + komega
-        if lamda_doy >= 360:
-            lamda_doy -= 360
-        #
-        return (nu_doy, lamda_doy)
     #
     def sat_slope(self, tc):
         """
@@ -917,7 +618,7 @@ class EVAP_G:
                   - kMa
                   - kG
                   - kR
-        Ref:      Cavcar (2000)
+        Ref:      Allen et al. (1998)
         """
         p = kPo*(1.0 - (kL*z)/kTo)**(kG*kMa/(kR*kL))
         return p
@@ -1373,16 +1074,6 @@ else:
     tmp_dir = "/usr/local/share/database/cru/"
     output_dir = "/home/user/Projects/gepisat/data/stash/out/"
 
-an_dic = {
-    "AN1" : ('loutre', 'kepler', 'loutre'),  # Simplified Kepler
-    "AN2" : ('loutre', 'berger', 'loutre'),  # Berger's Method
-    "AN3" : ('loutre', 'woolf', 'loutre'),   # Woolf'd Method
-    "AN4" : ('klein', 'kepler', 'loutre'),   # Klein's Method
-    "AN5" : ('loutre', 'kepler', 'spencer'), # Spencer's Method
-    "AN6" : ('loutre', 'kepler', 'cooper'),  # Cooper's Method
-    "AN7" : ('loutre', 'kepler', 'circle')   # Circle Method
-}
-
 ###############################################################################
 ## INITIALIZATIONS
 ###############################################################################
@@ -1481,11 +1172,7 @@ while cur_date < end_date:
         sw = (kCw/kWm)*w[idx,:, :]
         #
         # Calculate the (360x720) daily evaporation and radiation values
-        my_evap = EVAP_G(n, elv, sf, tair, sw, 
-                         y=0,          # cur_date.year
-                         drm=an_dic[out_no][0],    # loutre, klein
-                         lamm=an_dic[out_no][1],   # kepler, woolf, berger
-                         delm=an_dic[out_no][2])   # loutre, circle, cooper, sp.
+        my_evap = EVAP_G(n, elv, sf, tair, sw, y=cur_date.year)
         #
         # Update daily soil moisture:
         # Eq. 83, STASH 2.0 Documentation
