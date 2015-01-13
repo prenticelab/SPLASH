@@ -15,6 +15,10 @@
 # ------------
 # This script runs the STASH 2.0 model.
 #
+# IMPORTANT NOTE: 
+#   Global variables are defined inside a function at definition; therefore, 
+#   you must re-run function definitions if you change global variable values
+
 # ----------
 # changelog:
 # ----------
@@ -255,7 +259,7 @@ class EVAP:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 11. Calculate variable substitute (rw), W/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rw = (1.0-kalb_sw)*tau*kGsc*self.dr
+        rw = (1.0 - kalb_sw)*tau*kGsc*self.dr
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 12. Calculate net radiation cross-over hour angle (hn), degrees
@@ -314,7 +318,7 @@ class EVAP:
         # 17. Estimate daily EET (eet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 70, STASH 2.0 Documentation
-        self.eet_d = (1e3)*self.econ*(self.rn_d)
+        self.eet_d = (1e3)*self.econ*self.rn_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 18. Estimate daily PET (pet_d), mm
