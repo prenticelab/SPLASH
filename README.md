@@ -1,7 +1,7 @@
 # README
 ---------------
 
-* LAST UPDATED: 2014-10-29
+* LAST UPDATED: 2015-01-13
 * TEAM: labprentice
 * REPO: stash (private)
 
@@ -21,13 +21,21 @@ This directory holds the current documentation for the STASH 2.0 code.
 * __tex/__
     * Contains the modular LaTeX chapter files (and appendix)
 
+### f90_version/
+This directory holds the FORTRAN90 version of the STASH 2.0 code. 
+
+* __Makefile__ 
+    * Use to compile the stash.F script.
+
+* __stash.F__ 
+    * TBA.
+
 ### py_version/
 This directory holds the Python version of the STASH 2.0 code. 
 
 * __stash.py__ 
     * Implements the EVAP class for point-based processing 
     * Inputs include:
-        * longitude, degrees
         * latitude, degrees
         * day of year
         * elevation (optional), meters
@@ -35,13 +43,8 @@ This directory holds the Python version of the STASH 2.0 code.
         * sunshine fraction (optional), decimal
         * mean daily air temperature (optional), °C
         * evaporative supply rate (optional), mm/h
-        * distance method (optional)
-            * 'loutre' or 'klein'
-        * lambda method (optional)
-            * 'kepler', 'woolf' or 'berger'
-        * delta method (optional)
-            * 'loutre', 'spencer', 'cooper' or 'circle'
-    * Input data must be imported separately by user (example data is given).
+    * Input data must be imported separately by user (example data is available in the script).
+
 * __stash_grid.py__ 
     * Implements the EVAP_G class for grid-based processing 
     * Inputs include:
@@ -51,12 +54,6 @@ This directory holds the Python version of the STASH 2.0 code.
         * mean daily air temperature (360x720 array), °C
         * evaporative supply rate (360x720 array), mm/h
         * year (optional)
-        * distance method (optional)
-            * 'loutre' or 'klein'
-        * lambda method (optional)
-            * 'kepler', 'woolf' or 'berger'
-        * delta method (optional)
-            * 'loutre', 'spencer', 'cooper' or 'circle'
     * CRU-based input data is used (user must have a copy of data files and specify their location)
 
 ### r_version/
@@ -65,21 +62,14 @@ This directory holds the R version of the STASH 2.0 code.
 * __stash.R__ 
     * Implements the EVAP function for point-based processing 
     * Inputs include:
-        * longitude, degrees
         * latitude, degrees
         * day of year
+        * elevation (optional), meters
         * year (optional)
         * sunshine fraction (optional), decimal
         * mean daily air temperature (optional), °C
-        * elevation (optional), meters
         * evaporative supply rate (optional), mm/h
-        * distance method (optional)
-            * 'loutre' or 'klein'
-        * lambda method (optional)
-            * 'kepler', 'woolf' or 'berger'
-        * delta method (optional)
-            * 'loutre', 'spencer', 'cooper' or 'circle'
-    * Input data must be imported separately by user (example data is given)
+    * Input data must be imported separately by user (example data is available in the script)
     * Includes plotting examples of monthly and daily results
 
 
@@ -137,4 +127,4 @@ The model theory is as follows:
 
 ## References
 --------------------
-* Cramer, W. and I. C. Prentice (1988) Simulation of regional soil moisture deficits on a European scale, Norsk Geografisk Tidsskrift - Norwegian Journal of Geography, 42:2-3, pp. 149-151.
+* Cramer, W. and I. C. Prentice (1988) Simulation of regional soil moisture deficits on a European scale, _Norsk Geografisk Tidsskrift - Norwegian Journal of Geography_, 42:2-3, pp. 149-151.
