@@ -8,7 +8,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2014-12-09 -- last updated
+# 2015-01-13 -- last updated
 #
 # ------------
 # description:
@@ -37,6 +37,8 @@
 # 14. reduced the list of constants and EVAP class functions [14.12.09]
 # 15. added matplotlib to module list [14.12.09]
 # 16. added plots for results [14.12.09]
+# 17. removed longitude from EVAP & STASH classes [15.01.13]
+# 18. general housekeeping [15.01.13]
 #
 # -----
 # todo:
@@ -137,11 +139,10 @@ class EVAP:
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization 
     # ////////////////////////////////////////////////////////////////////////
-    def __init__(self, lon, lat, n, elv=0.0, y=0, sf=1.0, tc=23.0, sw=1.0):
+    def __init__(self, lat, n, elv=0.0, y=0, sf=1.0, tc=23.0, sw=1.0):
         """
         Name:     EVAP.__init__
-        Input:    - float, longitude, degrees (lon)
-                  - float, latitude, degrees (lat)
+        Input:    - float, latitude, degrees (lat)
                   - int, day of the year (n)
                   - float, elevation, m (elv)
                   - int, year (y)
@@ -157,12 +158,6 @@ class EVAP:
         self.user_sw = sw
         #
         # Error handle and assign required public variables:
-        if lon > 180.0 or lon < -180.0:
-            print "Longitude outside range of validity (-180 to 180)!"
-            exit(1)
-        else:
-            self.user_lon = lon
-            #
         if lat > 90.0 or lat < -90.0:
             print "Latitude outside range of validity (-90 to 90)!"
             exit(1)
@@ -272,7 +267,8 @@ class EVAP:
             # Net radiation positive all day
             self.hn = 180.0
         else:
-            self.hn = (180.0/numpy.pi)*numpy.arccos((self.rnl - rw*ru)/(rw*rv))
+            self.hn = numpy.arccos((self.rnl - rw*ru)/(rw*rv))
+            self.hn *= (180.0/numpy.pi)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 13. Calculate daytime net radiation (rn_d), J/m^2
@@ -287,8 +283,8 @@ class EVAP:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 56, STASH 2.0 Documentation
         rnn_d = (86400.0/numpy.pi)*(
-            rw*ru*(self.hs-self.hn)*(numpy.pi/180.0) + 
-            rw*rv*(self.dsin(self.hs)-self.dsin(self.hn)) + 
+            rw*ru*(self.hs - self.hn)*(numpy.pi/180.0) + 
+            rw*rv*(self.dsin(self.hs) - self.dsin(self.hn)) + 
             self.rnl*(numpy.pi - 2.0*self.hs*(numpy.pi/180.0) + 
                 self.hn*(numpy.pi/180.0))
         )
@@ -312,24 +308,24 @@ class EVAP:
         # 16. Calculate daily condensation (wc), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 68, STASH 2.0 Documentation
-        self.wc = 1000.0*self.econ*numpy.abs(rnn_d)
+        self.wc = (1e3)*self.econ*numpy.abs(rnn_d)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 17. Estimate daily EET (eet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 70, STASH 2.0 Documentation
-        self.eet_d = 1000.0*self.econ*(self.rn_d)
+        self.eet_d = (1e3)*self.econ*(self.rn_d)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 18. Estimate daily PET (pet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 72, STASH 2.0 Documentation
-        self.pet_d = (1.0+kw)*self.eet_d
+        self.pet_d = (1.0 + kw)*self.eet_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 19. Calculate variable substitute (rx), (mm/hr)/(W/m^2)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rx = 1000.0*3600.0*(1.0+kw)*self.econ
+        rx = (3.6e6)*(1.0 + kw)*self.econ
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 20. Calculate the intersection hour angle (hi), degrees
@@ -342,7 +338,8 @@ class EVAP:
             # Supply limits demand everywhere:
             self.hi = 180.0
         else:
-            self.hi = numpy.arccos(cos_hi)*(180.0/numpy.pi)
+            self.hi = numpy.arccos(cos_hi)
+            self.hi *= (180.0/numpy.pi)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 21. Estimate daily AET (aet_d), mm
@@ -448,7 +445,7 @@ class EVAP:
         a = int(y/100)
         b = 2 - a + int(a/4)
         #
-        jde = int(365.25*(y+4716)) + int(30.6001*(m+1)) + i + b - 1524.5
+        jde = int(365.25*(y + 4716)) + int(30.6001*(m + 1)) + i + b - 1524.5
         return jde
     #
     def sat_slope(self, tc):
@@ -545,7 +542,7 @@ class EVAP:
         pbar = (1.0e-5)*p
         #
         pw = (
-            1000.0*po*(ko + ca*pbar + cb*pbar**2.0)/(
+            (1e3)*po*(ko + ca*pbar + cb*pbar**2.0)/(
                 ko + ca*pbar + cb*pbar**2.0 - pbar
             )
         )
@@ -592,21 +589,14 @@ class STASH:
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization 
     # ////////////////////////////////////////////////////////////////////////
-    def __init__(self, lat, lon, elv):
+    def __init__(self, lat, elv):
         """
         Name:     STASH.__init__
         Input:    - float, latitude, degrees (lat)
-                  - float, longitude, degrees (lon)
                   - float, elevation, meters (elv)
         """
         # Error handle and assign required public variables:
         self.elv = elv
-        #
-        if lon > 180.0 or lon < -180.0:
-            print "Longitude outside range of validity (-180 to 180)!"
-            exit(1)
-        else:
-            self.lon = lon
         #
         if lat > 90.0 or lat < -90.0:
             print "Latitude outside range of validity (-90 to 90)!"
@@ -669,7 +659,7 @@ class STASH:
 
         # Once in equilibrium, write daily and monthly values 
         # of one year to file
-        self.write_to_file()
+        #self.write_to_file()
 
     #
     def run_one_year(self, y, ppt, tc, sf):
@@ -699,10 +689,10 @@ class STASH:
                 #
                 # Get index for yesterday (Note: zero indexing)
                 # xxx in effect, idx is TWO days before -- is this correct? xxx
-                # Note that 'n' represents day of year and runs from 1 to 365 (366),
-                # whereas idx is the index and runs from 0 to 364 (365) (zero-indexing 
-                # in Python!)
-                idx = int(n-1) - 1
+                # Note that 'n' represents day of year and runs from 1 to 365 
+                # (366), whereas idx is the index and runs from 0 to 364 (365) 
+                # (zero-indexing in Python!)
+                idx = int(n - 1) - 1
                 if idx < 0:
                     idx = int(ny - 1)
                 #
@@ -710,12 +700,10 @@ class STASH:
                 sw = kCw*self.daily_totals['wn'][idx]/kWm
                 #
                 # Calculate radiation and evaporation quantities
-                my_evap = EVAP(self.lon, self.lat, n, self.elv, 2000, sf[m-1], 
-                               tc[m-1], sw)
+                my_evap = EVAP(self.lat, n, self.elv, y, sf[m-1], tc[m-1], sw)
                 #
                 # Calculate daily precipitation:
                 self.daily_totals['pn'][n-1] = ppt[m-1]/nm
-
                 #
                 # Update soil moisture:
                 self.daily_totals['wn'][n-1] = (self.daily_totals['wn'][idx] +
@@ -825,16 +813,13 @@ class STASH:
 ## MAIN PROGRAM 
 ###############################################################################
 if 0:
-    my_evap = EVAP(
-        lon = -0.641,
-        lat = 51.4,
-        n = 172,
-        elv = 74.0,
-        y = 2001,
-        sf = 0.43,
-        tc = 17.3,
-        sw = 0.5
-        )
+    my_evap = EVAP(lat = 51.4,
+                   n = 172,
+                   elv = 74.0,
+                   y = 2001,
+                   sf = 0.43,
+                   tc = 17.3,
+                   sw = 0.5)
 
 # Example data (Met Office average climate)
 data = numpy.array([(0.21, 4.80, 61.0),
@@ -854,10 +839,9 @@ data = numpy.array([(0.21, 4.80, 61.0),
                           ('ppt',numpy.float)])
 
 # User definitions:
-my_lon = -0.641 # longitude, degrees
 my_lat = 51.4   # latitude, degrees
 my_elv = 74.0   # elevation, m
-my_class = STASH(my_lat, my_lon, my_elv)
+my_class = STASH(my_lat, my_elv)
 my_class.spin_up(data['ppt'], data['tc'], data['sf'])
 
 # # Plot daily stuff:
