@@ -5,7 +5,7 @@
 # written by Tyler W. Davis
 # Imperial College London
 #
-# last updated: 2015-01-13
+# last updated: 2015-01-14
 #
 # ~~~~~~~~~~~~
 # description:
@@ -22,7 +22,7 @@
 # 05. reduced list of constants [15.01.13]
 # 06. updated evap function (similar to stash.py EVAP class) [15.01.13]
 # 07. updated monthly and daily results & process [15.01.13]
-# 08. updated plots of results [15.01.13]
+# 08. updated plots of results [15.01.14]
 #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 #### Define functions #########################################################
@@ -713,10 +713,10 @@ for (m in all_months){
     sw <- kCw*daily_totals$wn[idx]/kWm
     #
     # Compute daily radiation and evaporations values:
-    ET <- evap(my_lat, n, my_elv, y, DATA$fsun[m], DATA$tair[m], sw)
+    ET <- evap(my_lat, n, my_elv, y, DATA$fsun[n], DATA$tair[n], sw)
     #
     # Calculate daily precip:
-    daily_totals$pn[n] <- DATA$pre[m]/nm
+    daily_totals$pn[n] <- DATA$pre[n]
     #
     # Update daily soil moisture:
     daily_totals$wn[n] <- daily_totals$wn[idx] + daily_totals$pn[n] + ET$cond_mm - ET$aet_mm
@@ -758,7 +758,7 @@ for (m in all_months){
 
 #### View Results ####
 ##
-## Plot monthly results
+## Plot monthly ET results
 ##
 par(mar=c(4,4.5,1,1))
 plot(monthly_totals$ep_m,type='l',lwd=2, col='black',
@@ -767,8 +767,8 @@ lines(monthly_totals$ea_m, lty=2, lwd=2, col='cyan')
 lines(monthly_totals$eq_m, lty=1, lwd=2, col='green')
 lines(monthly_totals$cwd, lty=3, lwd=2, col='red')
 box(lwd=2)
-axis(side=1, las=1, tck=-0.02, labels=NA)
-axis(side=1, las=1, lwd=0, line=-0.4)
+axis(side=1, las=1, tck=-0.02, labels=NA, at=seq(from=1, to=12, by=1))
+axis(side=1, las=1, lwd=0, line=-0.4, at=seq(from=1, to=12, by=1))
 axis(side=2, las=1, tck=-0.02, labels=NA)
 axis(side=2, las=1, lwd=0, line=-0.4)
 mtext(side=1, 'Month', line=2)
@@ -781,35 +781,79 @@ legend('topleft',legend=c("PET", "AET", "EET", "CWD"),
 ##
 ## Plot daily ET results
 ##
-par(mar=c(4,4.5,1,1))
-plot(daily_totals$ep_n, type='l', lwd=2, col='black', 
-     ylim=c(0,1.5*max(daily_totals$ep_n)),
+par(mfrow=c(1,1))
+par(mar=c(2.5,4.5,1,1))
+plot(daily_totals$ep_n, type='l', lwd=2, col='blue', 
+     ylim=c(0,1.25*max(daily_totals$ep_n)),
      xlab=NA, ylab=NA, axes=F)
 lines(daily_totals$eq_n, lty=1, lwd=2, col='green')
-lines(daily_totals$ea_n, lty=2, lwd=2, col='cyan')
-lines(daily_totals$cn, lty=3, lwd=2, col='blue')
+lines(daily_totals$ea_n, lty=2, lwd=2, col='red')
+box(lwd=2)
+axis(side=1, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=360, by=60))
+axis(side=1, las=1, lwd=0, line=-0.4, at=seq(from=0, to=360, by=60), cex.axis=1.2)
+axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=8, by=1))
+axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=0, to=8, by=1), cex.axis=1.2)
+mtext(side=2, expression(list(Evapotranspiration, mm~d^{-1})), line=2, cex=1.2)
+legend('top',legend=c("Potential", 
+                      "Equilibrium   ", 
+                      "Actual"),
+       col=c('blue', 'green', 'red'),
+       lty=c(1,1,2), lwd=c(2,2,2), inset=0.01, x.intersp=1.1,
+       y.intersp=2.0, horiz=TRUE, bty='n', cex=1.2)
+
+##
+## Plot daily radiation results
+##
+par(mar=c(4,4.5,1,1))
+plot(daily_totals$hn, type='l', lwd=2, col='black', 
+     #ylim=c(0,1.25*max(daily_totals$ep_n)),
+     xlab=NA, ylab=NA, axes=F)
 box(lwd=2)
 axis(side=1, las=1, tck=-0.02, labels=NA)
 axis(side=1, las=1, lwd=0, line=-0.4)
 axis(side=2, las=1, tck=-0.02, labels=NA)
 axis(side=2, las=1, lwd=0, line=-0.4)
+
 mtext(side=1, 'Day', line=2)
 mtext(side=2, as.expression(ET~(mm)), line=3)
-legend('top',legend=c("PET", "EET", "AET", "Cond"),
-       col=c('black', 'green', 'cyan', 'blue'),
+legend('topleft',legend=c("Potential ET", "Equilibriumm ET", "Actual ET", "CWD"),
+       col=c('black', 'green', 'cyan', 'red'),
        lty=c(1,1,2,3), lwd=c(2,2,2,2), inset=0.01,
-       y.intersp=1.0, horiz=TRUE, bty='n')
+       y.intersp=2.0, horiz=FALSE, bty='n')
 
 ##
-## Plot daily soil moisture
+## Plot daily soil moisture (800x600)
 ##
-par(mar=c(2,4.5,1,1))
 par(mfrow=c(2,1))
-plot(daily_totals$wn, type='l', lwd=2, col='blue', xlab="", 
-     ylab="Soil moisture (mm)")
-input_water <- daily_totals$pn + daily_totals$cn - daily_totals$ea_n
-plot(daily_totals$pn, type='l', lwd=1, col='black', xlab="", 
-     ylab="Input water (mm)",
-     ylim=c(0, max(c(daily_totals$pn, daily_totals$cn, daily_totals$ea_n))))
-lines(daily_totals$cn, lty=1, lwd=2, col='cyan')
-lines(daily_totals$ea_n, lty=2, lwd=2, col='red')
+# [1]
+par(mar=c(1,4.5,1,1))
+plot(daily_totals$wn, type='l', lwd=2, col='blue', xlab=NA, ylab=NA, axes=F,
+     lty=2, ylim=c(0, max(daily_totals$wn)))
+lines(daily_totals$ro, lwd=2, lty=1, col='red')
+box(lwd=2)
+axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=0, to=360, by=60))
+axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=0, to=150, by=30))
+axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=0, to=150, by=30), cex.axis=1.1)
+mtext(side=2, expression(list(Daily~water~amount, mm)), line=3, cex=1.1)
+text(0, 150, "(a)", pos=1, cex=1.2)
+legend('topright', legend=c("Soil Moisture     ", "Runoff"),
+       col=c('blue', 'red'),
+       lty=c(2, 1), lwd=c(2, 2), inset=0.00,
+       y.intersp=2.0, horiz=TRUE, bty='n', cex=1.1)
+# [2]
+par(mar=c(2.5,4.5,1,1))
+plot((daily_totals$pn + daily_totals$cn), type='l', lwd=2, col='black', 
+     xlab=NA, ylab=NA, axes=F,
+     ylim=c(-1.25*max(daily_totals$ea_n), 1.25*max(daily_totals$pn + daily_totals$cn)))
+lines(-daily_totals$ea_n, lty=2, lwd=2, col='red')
+box(lwd=2)
+axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=0, to=360, by=60))
+axis(side=1, las=1, lwd=0, line=-0.4, at=seq(from=0, to=360, by=60), cex.axis=1.1)
+axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=-5, to=30, by=5))
+axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-5, to=30, by=5), cex.axis=1.1)
+mtext(side=2, expression(list(Daily~input~water, mm~d^{-1})), line=3, cex=1.1)
+text(0, 30, "(b)", pos=1, cex=1.2)
+legend('topright', legend=c("Precipitation + Condensation    ", "Actual Evapotranspiration"),
+       col=c('black', 'red'),
+       lty=c(1, 2), lwd=c(2, 2), inset=0.00,
+       y.intersp=2.0, horiz=TRUE, bty='n', cex=1.1)
