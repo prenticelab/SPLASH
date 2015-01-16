@@ -8,7 +8,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2015-01-13 -- last updated
+# 2015-01-16 -- last updated
 #
 # ------------
 # description:
@@ -43,19 +43,21 @@
 # 16. added plots for results [14.12.09]
 # 17. removed longitude from EVAP & STASH classes [15.01.13]
 # 18. general housekeeping [15.01.13]
+# 19. updated plots for results [15.01.16]
+# 20. added example data CSV file & updated data for daily input [15.01.16]
+# 21. fixed spin_up indexing in STASH class [15.01.16]
+# 22. fixed Cramer-Prentice alpha definition [15.01.16]
 #
 # -----
 # todo:
 # -----
 # 1. finish with STASH class
-# 2. finish plots
 #
 ###############################################################################
 ## IMPORT MODULES:
 ###############################################################################
 import matplotlib.pyplot as plt
 import numpy
-import csv
 
 ###############################################################################
 ## GLOBAL CONSTANTS:
@@ -635,29 +637,34 @@ class STASH:
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
-    def spin_up(self, ppt, tc, sf):
+    def spin_up(self, y, ppt, tc, sf):
         """
         Name:     STASH.spin
-        Input:    - numpy.ndarray, monthly precip, mm (ppt) 
-                  - numpy.ndarray, mean monthly temperature, deg C (tc) 
-                  - numpy.ndarray, mean monthly sunshine fraction (sf)
+        Input:    - int, year (y)
+                  - numpy.ndarray, daily precip, mm (ppt) 
+                  - numpy.ndarray, daily air temperature, deg C (tc) 
+                  - numpy.ndarray, daily sunshine fraction (sf)
         Output:   None.
         Features: Spins up the daily soil moisture
         """
+        # Determine end-of-year index:
+        ny = self.julian_day(y+1, 1, 1) - self.julian_day(y, 1, 1)
+        idx = int(ny-1)
+        #
         # Run once:
-        self.run_one_year(2000, ppt, tc, sf)
+        self.run_one_year(y, ppt, tc, sf)
         #
         # Check to see if 1 Jan soil moisture matches 31 Dec:
         start_sm = self.daily_totals['wn'][0]
-        end_sm = self.daily_totals['wn'][-1]
+        end_sm = self.daily_totals['wn'][idx]
         diff_sm = numpy.abs(end_sm - start_sm)
         #
         # If not, spin again!
         self.spin_count = 1
-        while (diff_sm > 1e-4):
-            self.run_one_year(2000, ppt, tc, sf)
+        while (diff_sm > 1):
+            self.run_one_year(y, ppt, tc, sf)
             start_sm = self.daily_totals['wn'][0]
-            end_sm = self.daily_totals['wn'][-1]
+            end_sm = self.daily_totals['wn'][idx]
             diff_sm = numpy.abs(end_sm - start_sm)
             self.spin_count += 1
 
@@ -704,10 +711,10 @@ class STASH:
                 sw = kCw*self.daily_totals['wn'][idx]/kWm
                 #
                 # Calculate radiation and evaporation quantities
-                my_evap = EVAP(self.lat, n, self.elv, y, sf[m-1], tc[m-1], sw)
+                my_evap = EVAP(self.lat, n, self.elv, y, sf[n-1], tc[n-1], sw)
                 #
                 # Calculate daily precipitation:
-                self.daily_totals['pn'][n-1] = ppt[m-1]/nm
+                self.daily_totals['pn'][n-1] = ppt[n-1]
                 #
                 # Update soil moisture:
                 self.daily_totals['wn'][n-1] = (self.daily_totals['wn'][idx] +
@@ -745,7 +752,7 @@ class STASH:
             # END LOOP ON DAYS
             # Calculate other monthly totals:
             self.monthly_totals['cpa'][m-1] = self.monthly_totals['ea_m'][m-1]
-            self.monthly_totals['cpa'][m-1] /= self.monthly_totals['ep_m'][m-1]
+            self.monthly_totals['cpa'][m-1] /= self.monthly_totals['eq_m'][m-1]
             self.monthly_totals['cwd'][m-1] = self.monthly_totals['ep_m'][m-1]
             self.monthly_totals['cwd'][m-1] -= self.monthly_totals['ea_m'][m-1]
         # END LOOP ON MONTHS
@@ -825,105 +832,150 @@ if 0:
                    tc = 17.3,
                    sw = 0.5)
 
-# Example data (Met Office average climate)
-data = numpy.array([(0.21, 4.80, 61.0),
-                    (0.27, 4.85, 41.2),
-                    (0.30, 7.10, 44.5), 
-                    (0.40, 9.10, 48.0), 
-                    (0.39, 12.4, 46.4), 
-                    (0.39, 15.3, 44.6), 
-                    (0.40, 17.6, 46.0), 
-                    (0.43, 17.3, 52.3), 
-                    (0.36, 14.6, 50.3), 
-                    (0.32, 11.2, 71.8), 
-                    (0.23, 7.55, 66.3),
-                    (0.19, 5.05, 62.9)], 
-                   dtype=[('sf',numpy.float), 
-                          ('tc',numpy.float), 
-                          ('ppt',numpy.float)])
+# Example data (San Francisco, 2000 CE)
+my_file = 'example_data.csv'
+data = numpy.loadtxt(my_file, 
+                     dtype={'names': ('sf', 'tair', 'pn'),
+                            'formats' : ('f4', 'f4', 'f4')},
+                     delimiter=',',
+                     skiprows=1)
+my_lat = 37.7   # latitude, degrees
+my_elv = 142.   # elevation, m
 
-# User definitions:
-my_lat = 51.4   # latitude, degrees
-my_elv = 74.0   # elevation, m
+# Create STASH class and spin up soil moisture:
 my_class = STASH(my_lat, my_elv)
-my_class.spin_up(data['ppt'], data['tc'], data['sf'])
+my_class.spin_up(2000, data['pn'], data['tair'], data['sf'])
+#my_class.run_one_year(2000, data['ppt'], data['tc'], data['sf'])
 
-# # Plot daily stuff:
-# my_days = range(1,367)
-# fig = plt.figure()
-# ax1 = fig.add_subplot(111)
-# plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
-# plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
-# ax1.plot(my_days, my_class.daily_totals['wn'], 'g-', linewidth=2, 
-#          label='Soil Moisture')
-# ax1.set_xlabel('Day', fontsize=18)
-# ax1.set_ylabel('Moisture, mm', fontsize=18)
-# #ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-# #            ncol=4, mode="expand", borderaxespad=0., fontsize=18)
-# plt.show()
+#
+# Plot monthly ET results
+#
+my_months = range(1, 13)
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
+plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
+ax1.plot(my_months, my_class.monthly_totals['ep_m'], 
+         'k-', linewidth=2, label='PET')
+ax1.plot(my_months, my_class.monthly_totals['ea_m'], 
+         'c--', linewidth=2, label='AET')
+ax1.plot(my_months, my_class.monthly_totals['eq_m'], 
+         'g-', linewidth=2, label='EET')
+ax1.plot(my_months, my_class.monthly_totals['cwd'], 
+         'r:', linewidth=2, label='CWD')
+ax1.set_xticks(my_months)
+ax1.set_xlabel('Months', fontsize=18)
+ax1.set_ylabel('ET (mm)', fontsize=18)
+ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+           ncol=4, mode="expand", borderaxespad=0., fontsize=18)
+plt.xlim([1, 12])
+plt.show()
 
-# # Plot monthly ET
-# my_months = range(1, 13)
-# fig = plt.figure()
-# ax1 = fig.add_subplot(111)
-# plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
-# plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
-# ax1.plot(my_months, my_class.monthly_totals['ep_m'], 'k-', linewidth=2, label='Potential')
-# ax1.plot(my_months, my_class.monthly_totals['ea_m'], 'c--', linewidth=2, label='Actual')
-# ax1.plot(my_months, my_class.monthly_totals['eq_m'], 'g-', linewidth=2, label='Equilibrium')
-# ax1.plot(my_months, my_class.monthly_totals['cwd'], 'r:', linewidth=2, label='Deficit')
-# ax1.set_xticks(my_months)
-# ax1.set_xlabel('Months', fontsize=18)
-# ax1.set_ylabel('Evapotranspiration, mm', fontsize=18)
-# ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-#             ncol=4, mode="expand", borderaxespad=0., fontsize=18)
-# plt.xlim([1, 12])
-# plt.show()
+#
+# Plot daily ET results
+#
+my_days = range(1, 367)
+fig = plt.figure()
+ax1 = fig.add_subplot(111)
+plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
+plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
+ax1.plot(my_days, my_class.daily_totals['ep_n'], 
+         'b-', linewidth=2, label='Potential')
+ax1.plot(my_days, my_class.daily_totals['eq_n'], 
+         'g-', linewidth=2, label='Equilibrium')
+ax1.plot(my_days, my_class.daily_totals['ea_n'], 
+         'r--', linewidth=2, label='Actual')
+ax1.set_ylabel('Evapotranspiration, mm d$^{-1}$', fontsize=18)
+ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+           ncol=3, mode="expand", borderaxespad=0., fontsize=18)
+plt.show()
 
-# # Plot monthly CPA
-# my_months = range(1, 13)
-# fig = plt.figure()
-# ax1 = fig.add_subplot(111)
-# plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
-# plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
-# ax1.plot(my_months, my_class.monthly_totals['cpa'], 'k-', linewidth=2, 
-#          label='Cramer-Prentice alpha')
-# ax1.set_xticks(my_months)
-# ax1.set_xlabel('Months', fontsize=18)
-# ax1.set_ylabel('Evapotranspiration, mm', fontsize=18)
-# ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-#             ncol=1, mode="expand", borderaxespad=0., fontsize=18)
-# plt.xlim([1, 12])
-# plt.show()
+#
+# Plot daily results
+#
+my_days = range(1, 367)
+my_xtks = range(0, 370, 60)
+fig = plt.figure()
+# [1]
+ax1 = fig.add_subplot(811)
+plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=12)
+plt.setp(ax1.get_xticklabels(), visible=False)
+ax1.plot(my_days, data['sf'], 'k-', linewidth=2)
+ax1.set_ylabel('$S_f$', fontsize=14)
+ax1.set_xticks(my_xtks)
+ax1.set_yticks([0.1*i for i in range(4, 8, 1)])
+plt.xlim([-15, 380])
+ax1.text(-5, 0.7, '(a)', fontsize=12)
+# [2]
+ax2 = fig.add_subplot(812)
+plt.setp(ax2.get_yticklabels(), rotation=0, fontsize=12)
+plt.setp(ax2.get_xticklabels(), visible=False)
+ax2.plot(my_days, (1e-6)*my_class.daily_totals['hn'], 'k-', linewidth=2)
+ax2.set_ylabel('$H_N$ (MJ m$^{-2}$)', fontsize=14)
+ax2.set_xticks(my_xtks)
+ax2.set_yticks(range(6, 19, 3))
+plt.xlim([-15, 380])
+ax2.text(-5, 16, '(b)', fontsize=12)
+# [3]
+ax3 = fig.add_subplot(813)
+plt.setp(ax3.get_yticklabels(), rotation=0, fontsize=12)
+plt.setp(ax3.get_xticklabels(), visible=False)
+ax3.plot(my_days, my_class.daily_totals['cn'], 'k-', linewidth=2)
+ax3.set_ylabel('$C_n$ (mm)', fontsize=14)
+ax3.set_xticks(my_xtks)
+ax3.set_yticks([0.1*i for i in range(5, 9, 1)])
+plt.xlim([-15, 380])
+ax3.text(-5, 0.75, '(c)', fontsize=12)
+# [4]
+ax4 = fig.add_subplot(814)
+plt.setp(ax4.get_yticklabels(), rotation=0, fontsize=12)
+plt.setp(ax4.get_xticklabels(), visible=False)
+ax4.plot(my_days, data['ppt'], 'k-', linewidth=2)
+ax4.set_ylabel('$P_n$ (mm)', fontsize=14)
+ax4.set_xticks(my_xtks)
+ax4.set_yticks(range(0, 26, 5))
+plt.xlim([-15, 380])
+ax4.text(-5, 20, '(d)', fontsize=12)
+# [5]
+ax5 = fig.add_subplot(815)
+plt.setp(ax5.get_xticklabels(), visible=False)
+plt.setp(ax5.get_yticklabels(), rotation=0, fontsize=12)
+ax5.plot(my_days, my_class.daily_totals['wn'], 'k-', linewidth=2)
+ax5.set_ylabel('$W_n$ (mm)', fontsize=14)
+ax5.set_xticks(my_xtks)
+ax5.set_yticks(range(30, 151, 30))
+plt.xlim([-15, 380])
+ax5.text(-5, 120, '(e)', fontsize=12)
+# [6]
+ax6 = fig.add_subplot(816)
+plt.setp(ax6.get_xticklabels(), visible=False)
+plt.setp(ax6.get_yticklabels(), rotation=0, fontsize=12)
+ax6.plot(my_days, my_class.daily_totals['ro'], 'k-', linewidth=2)
+ax6.set_ylabel('$RO$ (mm)', fontsize=14)
+ax6.set_xticks(my_xtks)
+ax6.set_yticks(range(0, 21, 5))
+plt.xlim([-15, 380])
+ax6.text(-5, 18, '(f)', fontsize=12)
+# [7]
+ax7 = fig.add_subplot(817)
+plt.setp(ax7.get_xticklabels(), visible=False)
+plt.setp(ax7.get_yticklabels(), rotation=0, fontsize=12)
+ax7.plot(my_days, data['tc'], 'k-', linewidth=2)
+ax7.set_ylabel('$T_{air}$ ($^{\circ}C$)', fontsize=14)
+ax7.set_xticks(my_xtks)
+ax7.set_yticks(range(10, 26, 5))
+plt.xlim([-15, 380])
+ax7.text(-5, 23, '(g)', fontsize=12)
+# [8]
+ax8 = fig.add_subplot(818)
+plt.setp(ax8.get_xticklabels(), rotation=0, fontsize=12)
+plt.setp(ax8.get_yticklabels(), rotation=0, fontsize=12)
+ax8.plot(my_days, my_class.daily_totals['ep_n'], 'k-', linewidth=2)
+ax8.plot(my_days, my_class.daily_totals['ea_n'], 'k--', linewidth=2)
+ax8.set_ylabel('$E_n$ (mm)', fontsize=14)
+ax8.set_xticks(my_xtks)
+ax8.set_yticks([1.5*i for i in range(5)])
+plt.xlim([-15, 380])
+ax8.text(-5, 5, '(h)', fontsize=12)
 
-# Plot monthly precip and runoff
-#my_daily_precip = []
-#fig = plt.figure()
-#ax1 = fig.add_subplot(111)
-#plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
-#plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
-#ax1.plot(months, data['ppt'], 'b-', linewidth=2, label='Precip')
-#ax1.plot(months, monthly_results['RO'], 'g--', linewidth=2, label='Runoff')
-#ax1.plot(months, monthly_results['W'], 'c-', linewidth=2, label='Soil Moisture')
-#ax1.set_xticks(months)
-#ax1.set_xlabel('Months', fontsize=18)
-#ax1.set_ylabel('Evapotranspiration, mm', fontsize=18)
-#ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-#            ncol=3, mode="expand", borderaxespad=0., fontsize=18)
-#plt.xlim([1, 12])
-#plt.show()
-
-
-# Plot daily radiation
-#x_data = range(1,367)
-#fig = plt.figure()
-#ax1 = fig.add_subplot(111)
-#plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
-#plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
-#ax1.plot(x_data, daily_results['ra_d'], 'k-', linewidth=2, label='Ho')
-#ax1.plot(x_data, daily_results['rn_d'], 'c--', linewidth=2, label='Hn')
-#ax1.set_xlabel('Day', fontsize=18)
-#ax1.set_ylabel('Radiation, J m$^{-2}$', fontsize=18)
-#ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-#            ncol=4, mode="expand", borderaxespad=0., fontsize=18)
-#plt.show()
+plt.show()

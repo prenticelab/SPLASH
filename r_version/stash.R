@@ -23,6 +23,8 @@
 # 06. updated evap function (similar to stash.py EVAP class) [15.01.13]
 # 07. updated monthly and daily results & process [15.01.13]
 # 08. updated plots of results [15.01.16]
+# 09. added example data CSV file [15.01.16]
+# 10. fixed Cramer-Prentice alpha definition [15.01.16]
 #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 #### Define functions #########################################################
@@ -645,23 +647,14 @@ if (0){
   my_evap <- evap(-0.641, 51.4, 172, 74, 2001, 0.43, 17.3, 0.5)
 }
 
-# Define constants:
-my_lon <- -0.641
-my_lat <- 51.4
-my_elv <- 74
-
-# Average Climate Data, Met Office (Ascot Racecourse)
-# [http://www.metoffice.gov.uk/public/weather/climate/gcps2xe58]
-# * total sunshine hours from Doorenbos & Pruitt (1977), Table 3
-#   $fsun, unitless
-#   $tair, deg C
-#   $pre, mm
-DATA <- matrix(nrow=12, ncol=3)
-DATA <- as.data.frame(DATA)
-names(DATA) <- c('fsun', 'tair', 'pre')
-DATA$fsun <- c(0.21, 0.27, 0.30, 0.40, 0.39, 0.39, 0.40, 0.43, 0.36, 0.32, 0.23, 0.19)
-DATA$tair <- c(4.80, 4.85, 7.10, 9.10, 12.4, 15.3, 17.6, 17.3, 14.6, 11.2, 7.55, 5.05)
-DATA$pre  <- c(61.0, 41.2, 44.5, 48.0, 46.4, 44.6, 46.0, 52.3, 50.3, 71.8, 66.3, 62.9)
+# Example data (San Francisco, 2000 CE)
+#   $sf, fractional sunshine hours, unitless
+#   $tair, air temperature, deg C
+#   $pn, daily precipitation, mm
+my_file <- 'example_data.csv'
+DATA <- read.csv(my_file)
+my_lat <- 37.7
+my_elv <- 142
 
 # Initialize daily results:
 daily_totals <- matrix(data=rep(0, 3660), nrow=366, ncol=10)
@@ -671,7 +664,6 @@ names(daily_totals) <- c('ho',   # daily solar irradiation, J/m2
                          'qn',   # daily PPFD, mol/m2
                          'cn',   # daily condensation, mm
                          'wn',   # daily soil moisture, mm
-                         'pn',   # daily precipitation, mm
                          'ro',   # daily runoff, mm
                          'eq_n', # daily equilibrium ET, mm
                          'ep_n', # daily potential ET, mm
@@ -713,13 +705,10 @@ for (m in all_months){
     sw <- kCw*daily_totals$wn[idx]/kWm
     #
     # Compute daily radiation and evaporations values:
-    ET <- evap(my_lat, n, my_elv, y, DATA$fsun[n], DATA$tair[n], sw)
-    #
-    # Calculate daily precip:
-    daily_totals$pn[n] <- DATA$pre[n]
+    ET <- evap(my_lat, n, my_elv, y, DATA$sf[n], DATA$tair[n], sw)
     #
     # Update daily soil moisture:
-    daily_totals$wn[n] <- daily_totals$wn[idx] + daily_totals$pn[n] + ET$cond_mm - ET$aet_mm
+    daily_totals$wn[n] <- daily_totals$wn[idx] + DATA$pn[n] + ET$cond_mm - ET$aet_mm
     #
     if (daily_totals$wn[n] > kWm){
       # Bucket is full:
@@ -751,7 +740,7 @@ for (m in all_months){
     monthly_totals$ea_m[m] <- monthly_totals$ea_m[m] + ET$aet_mm
     monthly_totals$q_m[m] <- monthly_totals$q_m[m] + ET$ppfd_mol.m2
   } # end daily
-  monthly_totals$cpa[m] <- monthly_totals$ea_m[m]/monthly_totals$ep_m[m]
+  monthly_totals$cpa[m] <- monthly_totals$ea_m[m]/monthly_totals$eq_m[m]
   monthly_totals$cwd[m] <- monthly_totals$ep_m[m] - monthly_totals$ea_m[m]
 } # end monthly
 
@@ -760,6 +749,7 @@ for (m in all_months){
 ##
 ## Plot monthly ET results
 ##
+par(mfrow=c(1,1))
 par(mar=c(4,4.5,1,1))
 plot(monthly_totals$ep_m,type='l',lwd=2, col='black',
      ylim=c(0, max(monthly_totals$ep_m)), xlab=NA, ylab=NA, axes=F)
@@ -777,6 +767,70 @@ legend('topleft',legend=c("PET", "AET", "EET", "CWD"),
        col=c('black', 'cyan', 'green', 'red'),
        lty=c(1,2,1,3), lwd=c(2,2,2,2), inset=0.01,
        y.intersp=1.2, horiz=FALSE, bty='n')
+
+
+##
+## Plot monthly results
+##
+tiff(out_file, width=900, height=1000, units='px', 
+     compression='none', pointsize=18, res=72)
+
+par(mfrow=c(4,1))
+# [1]
+par(mar=c(1,5,1,1))
+plot(monthly_totals$ep_m,type='l',lwd=2, col='black',
+     ylim=c(0, max(monthly_totals$ep_m)), xlab=NA, ylab=NA, axes=F)
+lines(monthly_totals$ea_m, lty=2, lwd=2)
+axis(side=1, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=12, by=1))
+axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=-50, to=175, by=25))
+axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=200, by=50), 
+     cex.axis=1.6)
+mtext(side=2, expression(italic(E[m])~(mm)), line=3, cex=1.1)
+legend('topright', legend=c(expression(italic(E^{p})),
+                            expression(italic(E^{a}))),
+       col=c('black', 'black'), lty=c(1, 2), cex=1.6, inset=0.02,
+       adj=c(0.5, 0.5), lwd=c(2, 2), horiz=TRUE, bty='n', seg.len=1)
+text(0.6, 150, "(a)", pos=4, cex=1.6)
+# [2]
+par(mar=c(1,5,1,1))
+plot(monthly_totals$cwd,type='l',lwd=2, col='black', 
+     ylim=c(0, max(monthly_totals$ep_m)), xlab=NA, ylab=NA, axes=F)
+axis(side=1, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=12, by=1))
+axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=-50, to=175, by=25))
+axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=150, by=50), 
+     cex.axis=1.6)
+mtext(side=2, expression(italic(CWD)~(mm)), line=3, cex=1.1)
+text(0.6, 150, "(b)", pos=4, cex=1.6)
+# [3]
+par(mar=c(1,5,1,1))
+plot(monthly_totals$eq_m,type='l',lwd=2, col='black',
+     ylim=c(0, max(monthly_totals$ep_m)), xlab=NA, ylab=NA, axes=F)
+lines(monthly_totals$ea_m, lty=2, lwd=2)
+axis(side=1, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=12, by=1))
+axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=-50, to=175, by=25))
+axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=150, by=50), 
+     cex.axis=1.6)
+mtext(side=2, expression(italic(E[m])~(mm)), line=3, cex=1.1)
+legend('topright', legend=c(expression(italic(E^{q})),
+                            expression(italic(E^{a}))),
+       col=c('black', 'black'), lty=c(1, 2), cex=1.6, inset=0.02,
+       adj=c(0.5, 0.5), lwd=c(2, 2), horiz=TRUE, bty='n', seg.len=1)
+text(0.6, 150, "(c)", pos=4, cex=1.6)
+# [4]
+par(mar=c(2,5,1,1))
+plot(monthly_totals$cpa,type='l',lwd=2, col='black', 
+     ylim=c(0, 1.3), xlab=NA, ylab=NA, axes=F)
+axis(side=1, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=12, by=1))
+axis(side=1, las=1, lwd=0, line=-0.4, at=seq(from=1, to=12, by=1),
+     cex.axis=1.6)
+axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=-0.3, to=1.2, by=0.3))
+axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-0.3, to=1.2, by=0.3), 
+     cex.axis=1.6)
+mtext(side=2, expression(alpha), line=3, cex=1.1)
+text(0.6, 1.1, "(d)", pos=4, cex=1.6)
+
+dev.off()
+
 
 ##
 ## Plot daily ET results
@@ -801,63 +855,6 @@ legend('top',legend=c("Potential",
        lty=c(1,1,2), lwd=c(2,2,2), inset=0.01, x.intersp=1.1,
        y.intersp=2.0, horiz=TRUE, bty='n', cex=1.2)
 
-##
-## Plot daily radiation results
-##
-par(mar=c(4,4.5,1,1))
-plot(daily_totals$hn, type='l', lwd=2, col='black', 
-     #ylim=c(0,1.25*max(daily_totals$ep_n)),
-     xlab=NA, ylab=NA, axes=F)
-box(lwd=2)
-axis(side=1, las=1, tck=-0.02, labels=NA)
-axis(side=1, las=1, lwd=0, line=-0.4)
-axis(side=2, las=1, tck=-0.02, labels=NA)
-axis(side=2, las=1, lwd=0, line=-0.4)
-
-mtext(side=1, 'Day', line=2)
-mtext(side=2, as.expression(ET~(mm)), line=3)
-legend('topleft',legend=c("Potential ET", "Equilibriumm ET", "Actual ET", "CWD"),
-       col=c('black', 'green', 'cyan', 'red'),
-       lty=c(1,1,2,3), lwd=c(2,2,2,2), inset=0.01,
-       y.intersp=2.0, horiz=FALSE, bty='n')
-
-##
-## Plot daily soil moisture (800x600)
-##
-par(mfrow=c(2,1))
-# [1]
-par(mar=c(1,4.5,1,1))
-plot(daily_totals$wn, type='l', lwd=2, col='blue', xlab=NA, ylab=NA, axes=F,
-     lty=2, ylim=c(0, max(daily_totals$wn)))
-lines(daily_totals$ro, lwd=2, lty=1, col='red')
-box(lwd=2)
-axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=0, to=360, by=60))
-axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=0, to=150, by=30))
-axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=0, to=150, by=30), cex.axis=1.1)
-mtext(side=2, expression(list(Daily~water~amount, mm)), line=3, cex=1.1)
-text(0, 150, "(a)", pos=1, cex=1.2)
-legend('topright', legend=c("Soil Moisture     ", "Runoff"),
-       col=c('blue', 'red'),
-       lty=c(2, 1), lwd=c(2, 2), inset=0.00,
-       y.intersp=2.0, horiz=TRUE, bty='n', cex=1.1)
-# [2]
-par(mar=c(2.5,4.5,1,1))
-plot((daily_totals$pn + daily_totals$cn), type='l', lwd=2, col='black', 
-     xlab=NA, ylab=NA, axes=F,
-     ylim=c(-1.25*max(daily_totals$ea_n), 1.25*max(daily_totals$pn + daily_totals$cn)))
-lines(-daily_totals$ea_n, lty=2, lwd=2, col='red')
-box(lwd=2)
-axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=0, to=360, by=60))
-axis(side=1, las=1, lwd=0, line=-0.4, at=seq(from=0, to=360, by=60), cex.axis=1.1)
-axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=-5, to=30, by=5))
-axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-5, to=30, by=5), cex.axis=1.1)
-mtext(side=2, expression(list(Daily~input~water, mm~d^{-1})), line=3, cex=1.1)
-text(0, 30, "(b)", pos=1, cex=1.2)
-legend('topright', legend=c("Precipitation + Condensation    ", "Actual Evapotranspiration"),
-       col=c('black', 'red'),
-       lty=c(1, 2), lwd=c(2, 2), inset=0.00,
-       y.intersp=2.0, horiz=TRUE, bty='n', cex=1.1)
-
 
 ##
 ## Plot daily results
@@ -868,7 +865,7 @@ tiff(out_file, width=900, height=1000, units='px',
 par(mfrow=c(8,1))
 # [1]
 par(mar=c(1,5,1,1))
-plot(DATA$fsun, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+plot(DATA$sf, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
 axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
 axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=0.3, to=0.7, by=0.1))
 axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6, 
@@ -895,7 +892,7 @@ mtext(side=2, expression(italic(C[n])~(mm)), line=3, cex=1.1)
 text(-12, 0.75, "(c)", pos=4, cex=1.7)
 # [4]
 par(mar=c(1,5,1,1))
-plot(DATA$pre, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+plot(DATA$pn, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
 axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
 axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=-5, to=25, by=5))
 axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6, 
