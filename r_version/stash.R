@@ -5,7 +5,7 @@
 # written by Tyler W. Davis
 # Imperial College London
 #
-# last updated: 2015-01-14
+# last updated: 2015-01-16
 #
 # ~~~~~~~~~~~~
 # description:
@@ -22,7 +22,7 @@
 # 05. reduced list of constants [15.01.13]
 # 06. updated evap function (similar to stash.py EVAP class) [15.01.13]
 # 07. updated monthly and daily results & process [15.01.13]
-# 08. updated plots of results [15.01.14]
+# 08. updated plots of results [15.01.16]
 #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 #### Define functions #########################################################
@@ -857,3 +857,90 @@ legend('topright', legend=c("Precipitation + Condensation    ", "Actual Evapotra
        col=c('black', 'red'),
        lty=c(1, 2), lwd=c(2, 2), inset=0.00,
        y.intersp=2.0, horiz=TRUE, bty='n', cex=1.1)
+
+
+##
+## Plot daily results
+##
+tiff(out_file, width=900, height=1000, units='px', 
+     compression='none', pointsize=16, res=72)
+
+par(mfrow=c(8,1))
+# [1]
+par(mar=c(1,5,1,1))
+plot(DATA$fsun, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
+axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=0.3, to=0.7, by=0.1))
+axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6, 
+     at=seq(from=0.3, to=0.7, by=0.1))
+mtext(side=2, expression(italic(S[f])), line=3, cex=1.1)
+text(-12, 0.65, "(a)", pos=4, cex=1.7)
+# [2]
+par(mar=c(1,5,1,1))
+plot(1e-6*daily_totals$hn, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
+axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=3, to=18, by=3))
+axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6,
+     at=seq(from=3, to=18, by=3))
+mtext(side=2, expression(italic(H[N])~(MJ~m^{-2})), line=3, cex=1.1)
+text(-12, 17, "(b)", pos=4, cex=1.7)
+# [3]
+par(mar=c(1,5,1,1))
+plot(daily_totals$cn, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
+axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=0.4, to=0.8, by=0.1))
+axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6, 
+     at=seq(from=0.4, to=0.8, by=0.1))
+mtext(side=2, expression(italic(C[n])~(mm)), line=3, cex=1.1)
+text(-12, 0.75, "(c)", pos=4, cex=1.7)
+# [4]
+par(mar=c(1,5,1,1))
+plot(DATA$pre, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
+axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=-5, to=25, by=5))
+axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6, 
+     at=seq(from=-5, to=25, by=5))
+mtext(side=2, expression(italic(P[n])~(mm)), line=3, cex=1.1)
+text(-12, 22, "(d)", pos=4, cex=1.7)
+# [5]
+par(mar=c(1,5,1,1))
+plot(daily_totals$wn, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
+axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=0, to=150, by=30))
+axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6,
+     , at=seq(from=0, to=150, by=30))
+mtext(side=2, expression(italic(W[n])~(mm)), line=3, cex=1.1)
+text(-12, 130, "(e)", pos=4, cex=1.7)
+# [6]
+par(mar=c(1,5,1,1))
+plot(daily_totals$ro, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
+axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=-5, to=20, by=5))
+axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6,
+     at=seq(from=-5, to=20, by=5))
+mtext(side=2, expression(italic(RO)~(mm)), line=3, cex=1.1)
+text(-12, 17, "(f)", pos=4, cex=1.7)
+# [7]
+par(mar=c(1,5,1,1))
+plot(DATA$tair, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
+axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=0, to=25, by=5))
+axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6, 
+     at=seq(from=0, to=25, by=5))
+mtext(side=2, expression(italic(T[air])~(degree*C)), line=3, cex=1.1)
+text(-12, 23, "(g)", pos=4, cex=1.7)
+# [8]
+par(mar=c(2,5,1,1))
+plot(daily_totals$ep_n, type='l', lwd=2, xlab=NA, ylab=NA, axes=F,
+     ylim=c(0, max(daily_totals$ep_n)))
+lines(daily_totals$ea_n, lty=2, lwd=2)
+axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
+axis(side=1, las=1, lwd=0, line=-0.4, at=seq(from=-60, to=720, by=60), 
+     cex.axis=1.6)
+axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=-1.5, to=6, by=1.5))
+axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6,
+     at=seq(from=-1.5, to=6, by=1.5))
+mtext(side=2, expression(italic(E[n])~(mm)), line=3, cex=1.1)
+text(-12, 5, "(h)", pos=4, cex=1.7)
+
+dev.off()
