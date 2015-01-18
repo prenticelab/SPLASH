@@ -8,7 +8,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2015-01-16 -- last updated
+# 2015-01-18 -- last updated
 #
 # ------------
 # description:
@@ -47,6 +47,7 @@
 # 20. added example data CSV file & updated data for daily input [15.01.16]
 # 21. fixed spin_up indexing in STASH class [15.01.16]
 # 22. fixed Cramer-Prentice alpha definition [15.01.16]
+# 23. updated plots [15.01.18]
 #
 # -----
 # todo:
@@ -871,6 +872,72 @@ ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
 plt.xlim([1, 12])
 plt.show()
 
+
+#
+# Plot monthly results
+#
+my_months = range(1, 13)
+my_y_max = my_class.monthly_totals['ep_m'].max()
+fig = plt.figure()
+# [1]
+ax1 = fig.add_subplot(411)
+plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=12)
+plt.setp(ax1.get_xticklabels(), visible=False)
+ax1.plot(my_months, my_class.monthly_totals['ep_m'], 'k-', linewidth=2, 
+         label='$E^p$')
+ax1.plot(my_months, my_class.monthly_totals['ea_m'], 'k--', linewidth=2,
+         label='$E^a$')
+ax1.set_ylabel('$E_m$ (mm)', fontsize=14)
+ax1.set_xticks(range(1, 13, 1))
+ax1.set_yticks(range(0, 176, 50))
+plt.xlim([1, 12])
+plt.ylim([0, my_y_max])
+ax1.text(1.25, 150, '(a)', fontsize=12)
+g1 = ax1.legend(loc=1, fontsize=14)
+f1 = g1.get_frame()
+f1.set_linewidth(0)
+# [2]
+ax2 = fig.add_subplot(412)
+plt.setp(ax2.get_yticklabels(), rotation=0, fontsize=12)
+plt.setp(ax2.get_xticklabels(), visible=False)
+ax2.plot(my_months, my_class.monthly_totals['cwd'], 'k-', linewidth=2)
+ax2.set_ylabel('$CWD$ (mm)', fontsize=14)
+ax2.set_xticks(range(1, 13, 1))
+ax2.set_yticks(range(0, 176, 50))
+plt.xlim([1, 12])
+plt.ylim([0, my_y_max])
+ax2.text(1.25, 150, '(b)', fontsize=12)
+# [3]
+ax3 = fig.add_subplot(413)
+plt.setp(ax3.get_yticklabels(), rotation=0, fontsize=12)
+plt.setp(ax3.get_xticklabels(), visible=False)
+ax3.plot(my_months, my_class.monthly_totals['eq_m'], 'k-', linewidth=2,
+         label='$E^q$')
+ax3.plot(my_months, my_class.monthly_totals['ea_m'], 'k--', linewidth=2,
+         label='$E^a$')
+ax3.set_ylabel('$E_m$ (mm)', fontsize=14)
+ax3.set_xticks(range(1, 13, 1))
+ax3.set_yticks(range(0, 176, 50))
+plt.xlim([1, 12])
+plt.ylim([0, my_y_max])
+ax3.text(1.25, 150, '(c)', fontsize=12)
+g3 = ax3.legend(loc=1, fontsize=14)
+f3 = g3.get_frame()
+f3.set_linewidth(0)
+# [4]
+ax4 = fig.add_subplot(414)
+plt.setp(ax4.get_yticklabels(), rotation=0, fontsize=12)
+plt.setp(ax4.get_xticklabels(), rotation=0, fontsize=12)
+ax4.plot(my_months, my_class.monthly_totals['cpa'], 'k-', linewidth=2)
+ax4.set_ylabel('$\\alpha$', fontsize=14)
+ax4.set_xticks(range(1, 13, 1))
+ax4.set_yticks([0.3*i for i in range(0, 5, 1)])
+plt.xlim([1, 12])
+plt.ylim([0, 1.3])
+ax4.text(1.25, 1.1, '(d)', fontsize=12)
+plt.show()
+
+
 #
 # Plot daily ET results
 #
@@ -889,6 +956,7 @@ ax1.set_ylabel('Evapotranspiration, mm d$^{-1}$', fontsize=18)
 ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
            ncol=3, mode="expand", borderaxespad=0., fontsize=18)
 plt.show()
+
 
 #
 # Plot daily results

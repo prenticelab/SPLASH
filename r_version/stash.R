@@ -772,7 +772,7 @@ legend('topleft',legend=c("PET", "AET", "EET", "CWD"),
 ##
 ## Plot monthly results
 ##
-tiff(out_file, width=900, height=1000, units='px', 
+tiff(out_file, width=900, height=500, units='px', 
      compression='none', pointsize=18, res=72)
 
 par(mfrow=c(4,1))
