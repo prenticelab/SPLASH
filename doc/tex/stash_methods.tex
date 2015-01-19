@@ -4,7 +4,7 @@
 % Imperial College London
 %
 % 2014-10-29 -- created
-% 2014-11-25 -- last updated
+% 2015-01-19 -- last updated
 %
 % ------------
 % description:
@@ -19,6 +19,8 @@
 % --> simpler for Git version control
 % 03. updated variable names [14.11.25]
 % 04. corrected Cooper's and Spencer's methods [14.11.25]
+% 05. removed the simplified Kepler method [15.01.19]
+% 06. removed cdot's from units of measure [15.01.19]
 %
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.00 -- THE METHODOLOGY
@@ -86,16 +88,6 @@ To get the current day of the year, $n$, using the \texttt{julian\textunderscore
 \indent $i$ = day of the month, (i.e., 1--31) \\
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
-%% PART 2.01.2 -- VERNAL EQUINOX
-%% //////////////////////////////////////////////////////////////////////// %%
-\subsubsection{Vernal equinox}
-\label{sec:equinox}
-The vernal equinox (i.e., spring or March equinox) falls on 19--21 March (day of the year 79--81). 
-A historical calendar of vernal equinox dates can be found online\footnotemark \footnotetext{\url{http://ns1763.ca/equinox/vern1788-2211.html}}. 
-While a constant value of 80 may be assumed, the day of the year of the vernal equinox, $n_{ve}$, can be calculated for a given year \parencite[Ch. 26]{meeus91}. 
-The algorithm for this calculation is given in Appendix \ref{app:equinox}.
-
-%% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.02 -- EVAPORATIVE SUPPLY, Sw
 %% //////////////////////////////////////////////////////////////////////// %%
 \subsection{Evaporative Supply}
@@ -113,13 +105,13 @@ The instantaneous evaporative supply, $S_w$, is prescribed as being linearly pro
 \end{equation}
 
 \noindent where: \\
-\indent $S_w$ = evaporative supply rate, mm$\cdot$h$^{-1}$\\
-\indent $S_c$ = maximum rate of evaporation, mm$\cdot$h$^{-1}$\\
+\indent $S_w$ = evaporative supply rate, mm h$^{-1}$\\
+\indent $S_c$ = maximum rate of evaporation, mm h$^{-1}$\\
 \indent $W_{n-1}$ = yesterday's soil moisture content, mm\\
 \indent $W_m$ = soil moisture capacity, mm\\
 
 \noindent The assumed constant values for $S_c$ and $W_m$ are given in Table \ref{tab:constants}. 
-The cumulative daily supply water, $S$, is integrated over the number of daylight hours, $d_s$ assuming a sinusoidal curve \parencite[Eq. 18b]{federer82}:
+The cumulative daily supply water, $S$, is integrated over the number of daylight hours, $d_s$ (see Eq. \ref{eq:ds}) assuming a sinusoidal curve \parencite[Eq. 18b]{federer82}:
 
 %% ------------------------------------------------------------------------ %%
 %% eq:sw | Evaporative supply
@@ -132,7 +124,7 @@ The cumulative daily supply water, $S$, is integrated over the number of dayligh
 
 \noindent where: \\
 \indent $S$ = daily evaporative supply, mm\\
-\indent $S_{w}$ = evaporative supply rate, mm$\cdot$h$^{-1}$\\
+\indent $S_{w}$ = evaporative supply rate, mm h$^{-1}$\\
 \indent $d_s$ = number of daylight hours, h\\
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
@@ -140,8 +132,8 @@ The cumulative daily supply water, $S$, is integrated over the number of dayligh
 %% //////////////////////////////////////////////////////////////////////// %%
 \subsection{Extraterrestrial Solar Radiation Flux}
 \label{sec:ra}
-Evaporative demand is calculated based on net radiation flux. 
-To begin, the solar irradiance at the top of the atmosphere, $I_o$, or extraterrestrial solar radiation flux, is calculated with the following \parencite[Eq.~1.10.2]{duffie13}:
+Evaporative demand is calculated based on net radiation flux, which may be derived beginning with the modeled extraterrestrial solar radiation flux, $I_o$, or the top-of-the-atmosphere solar irradiance. 
+The calculation of $I_o$ may be expressed as the product of three terms \parencite[Eq.~1.10.2]{duffie13}:
 
 %% ------------------------------------------------------------------------ %%
 %% eq:etsr | Extraterrestrial Solar Radiation Flux, W/m^2
@@ -154,12 +146,12 @@ To begin, the solar irradiance at the top of the atmosphere, $I_o$, or extraterr
 \end{equation}
 
 \noindent where: \\
-\indent $I_{o}$ = extraterrestrial solar radiation flux, W$\cdot$m$^{-2}$ \\
-\indent $I_{sc}$ = solar constant, W$\cdot$m$^{-2}$ \\
+\indent $I_{o}$ = extraterrestrial solar radiation flux, W m$^{-2}$ \\
+\indent $I_{sc}$ = solar constant, W m$^{-2}$ \\
 \indent $d_{r}$ = distance factor, unitless \\
 \indent $\cos \theta_z$ = inclination factor, unitless \\
 
-\noindent Note that negative values of $I_o$ represent when the sun is below the horizon and, having no physical meaning, should be set equal to zero.
+\noindent Note that negative values of $I_o$, which represent when the sun is below the horizon, have no physical meaning and therefore should be set equal to zero.
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.03.1 -- SOLAR CONSTANT, W/m^2
@@ -189,7 +181,7 @@ The solar constant that is adopted for use in this study is given in Table \ref{
 %% //////////////////////////////////////////////////////////////////////// %%
 \subsubsection{Distance factor}
 \label{sec:dr}
-The distance factor is the inverse square of the relative distance between the earth and sun, $\rho_{d}$:
+The distance factor accounts for the variability in $I_o$ that reaches the earth due to the relative change in distance between the earth and the sun caused by the eccentricity of earth’s elliptical orbit, $e$ (unitless), and is defined as the inverse square of the relative distance between the earth and sun, $\rho_{d}$:
 
 %% ------------------------------------------------------------------------ %%
 %% eq:dr | Distance factor
@@ -197,7 +189,7 @@ The distance factor is the inverse square of the relative distance between the e
 \nomenclature{$d_{r}$}{Distance factor, unitless}
 \begin{equation}
 \label{eq:dr}
-    d_{r} = \left(\frac{1}{\rho_{d}}\right)^2
+    d_{r} = \frac{1}{{\rho_{d}}^2}
 \end{equation}
 
 \noindent where: \\
@@ -233,12 +225,24 @@ The distance from the earth to the sun can be expressed through the equation of 
 
 \noindent where: \\
 \indent $e$ = eccentricity of earth's orbit, unitless \\
-\indent $\nu$ = heliocentric longitude relative to the perihelion, radians \\
+\indent $\nu$ = true anomaly, radians \\
+
+\noindent such that the distance factor may be expressed as:
+
+%% ------------------------------------------------------------------------ %%
+%% eq:dr_exp | Distance factor (expanded form)
+%% ------------------------------------------------------------------------ %%
+\nomenclature{$d_{r}$}{Distance factor, unitless}
+\begin{equation}
+\label{eq:dr_exp}
+    d_{r} = \left(\frac{1 + e\: \cos\nu}{1 - e^2}\right)^{2}
+\end{equation}
 
 \noindent A current value of eccentricity is given in Table \ref{tab:constants}.
 
-It is common that earth's position is given relative to the vernal equinox (not the perihelion). 
-The relationship between the two measures of heliocentric longitude is given by:
+The true anomaly is the position of the earth on its orbit around the sun with respect to the perihelion. 
+It is common that earth's position is given relative to the vernal equinox, $\lambda$ (true longitude). 
+The relationship between the true anomaly and true longitude is given by:
 
 %% ------------------------------------------------------------------------ %%
 %% eq:nu | Heliocentric longitude, radians
@@ -250,7 +254,7 @@ The relationship between the two measures of heliocentric longitude is given by:
 \end{equation}
 
 \noindent where: \\
-\indent $\lambda$ = heliocentric longitude relative to the vernal equinox, radians \\
+\indent $\lambda$ = true longitude, radians \\
 \indent $\tilde{\omega}$ = longitude of the perihelion, radians\\
 
 To approximate the distance factor, some researchers have simplified \ref{eq:dr} based on two assumptions. 
@@ -272,8 +276,8 @@ Based on these two assumptions, the distance factor can be approximated by \pare
     d_r = 1 + 2 e \: \cos \left( \frac{2 \pi \: n}{N} \right)
 \end{equation}
 
-The difference between Eq. \ref{eq:klein} and Eq. \ref{eq:dr}, with $\nu$ mapped to the day of the year using the simplified Kepler method, is about 0.16\% with a maximum error of about 0.30\% during the latter half of the year (see Figure \ref{fig:klein}). 
-This larger discrepancy is due to the slowing of earth's orbital velocity as it travels away from the sun, which is not modeled in Eq. \ref{eq:klein}.\\
+The difference between Eq. \ref{eq:klein} and Eq. \ref{eq:dr_exp}, with $\nu$ calculated based on Berger's method, is about 0.16\% with a maximum error of about 0.30\% during the latter half of the year (see Figure \ref{fig:klein}). 
+This larger discrepancy is due to the slowing of earth's orbital velocity as it travels away from the sun, which is not modeled in Eq. \ref{eq:klein} and therefore the use of Eq. \ref{eq:dr_exp} is preferred.\\
 
 %% ------------------------------------------------------------------------ %%
 %% fig:klein | Kepler vs Klein distance factor
@@ -332,7 +336,7 @@ For a given latitude, $\phi$, there are two terms that need to be computed for t
 %% //////////////////////////////////////////////////////////////////////// %%
 \subsubsection{Declination angle}
 \label{sec:delta}
-The declination angle is defined as the angular position between the sun at solar noon and the earth's equator (ranging from -23.45$^{\circ}$ during the winter solstice to 23.45$^{\circ}$ during the summer solstice). 
+The declination angle is defined as the angular position between the sun at solar noon and the earth's equator (ranging from -$\epsilon$ during the winter solstice to +$\epsilon$ during the summer solstice). 
 The following calculation method for $\delta$ is for any given time of year \parencite{woolf68, loutre03}:
 
 %% ------------------------------------------------------------------------ %%
@@ -391,7 +395,7 @@ The following assumes that earth's orbit is a perfect circle:
     \delta = \epsilon\:\sin\left(\frac{2\pi\:(n + 284)}{N} \right)
 \end{equation}
 
-The two approximations (i.e., Eq. \ref{eq:deltab} and Eq. \ref{eq:deltac}) are almost identical through the trigonometric identity: $-\cos x = \sin(x - \pi/2)$ (i.e., equivalence occurs at a value of 283.75 in Eq. \ref{eq:deltac}).
+The two approximations (i.e., Eq. \ref{eq:deltab} and Eq. \ref{eq:deltac}) are almost identical through the trigonometric identity: $-\cos x = \sin(x - \pi/2)$ (i.e., equivalence occurs using a value of 283.75 in Eq. \ref{eq:deltac} instead of 284).
 
 \cite{spencer71} derived a third approximation to $\delta$ based on a Fourier analysis of data presented in the Nautical Almanac (1950 C.E. epoch), given in units of radians:
 %% ------------------------------------------------------------------------ %%
@@ -417,7 +421,7 @@ Similar to Figure \ref{fig:klein}, the largest difference between the approximat
 %% //////////////////////////////////////////////////////////////////////// %%
 \subsubsection{Hour angle}
 \label{sec:hour}
-The hour angle, $h$, is the angular displacement of the sun east or west of the local meridian. 
+The hour angle, $h$, is the angular displacement of the sun east or west of the local meridian and is only necessary for expressing model results at the sub-daily time scale (e.g., hourly). 
 It is measured ranging from -180$^{\circ}$ to 180$^{\circ}$ with 0$^{\circ}$ occurring at solar noon. 
 An approximation of the hour angle is given as follows \parencite{cooper69}:
 
@@ -605,208 +609,15 @@ The mean longitude for a given day, $\lambda_m$, is then calculated assuming a c
 \end{equation}
 
 \noindent where $\nu_m = \lambda_m - \tilde{\omega}$. 
-
-A third approximation to $\lambda$ is derived from Kepler's laws of planetary motion. 
-The derivation begins with the formulaic expression of Kepler's second law of planetary motion:
-
-\begin{quote}
-	\textit{``A line joining a planet and the Sun sweeps out equal areas during equal intervals of time.''}--- Kepler's Second Law
-\end{quote}
-
-%% ------------------------------------------------------------------------ %%
-%% eq:keplerb | Kepler's Second Law
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:keplerb}
-	\frac{dA_s}{dt} = \frac{r^2}{2} \: \frac{d\nu}{dt}
-\end{equation} 
-
-\noindent where:\\
-\indent $A_s$ = sweep area of the ellipse, km$^{2}$ \\
-\indent $t$ = time during which a planet has traveled some distance, days\\
-\indent $\nu$ = heliocentric longitude relative to the perihelion, radians \\
-\indent $r$ = distance from a planet to the sun, km \\
-
-Integrating the left-hand side of Eq. \ref{eq:keplerb} results in the area of an ellipse, such that:
-
-%% ------------------------------------------------------------------------ %%
-%% eq:intkb | Integral of Kepler's Second Law
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:intkb}
-	\frac{2\pi \: a \: b}{N} = r^2\:\frac{d\nu}{dt}
-\end{equation} 
-
-\noindent where:\\
-\indent $a$ = length of the semi-major axis of earth's orbit, km \\
-\indent $b$ = length of the semi-minor axis of earth's orbit, km \\
-\indent $N$ = earth's orbital period, days\\
-
-To keep Eq. \ref{eq:intkb} in terms of the semi-major axis, $a$, and eccentricity, $e$, the equation for eccentricity can be solve for $b$:
-
-%% ------------------------------------------------------------------------ %%
-%% eq:b | Equation of ellipse solved for b
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:b}
-	b = a \: \sqrt{1 - e^2}
-\end{equation} 
-
-The angular velocity, $d\nu/dt$, can now be solved by replacing Eq. \ref{eq:b} into Eq. \ref{eq:intkb}:
-
-%% ------------------------------------------------------------------------ %%
-%% eq:nudota | Equation for orbital velocity
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:nudota}
-	\frac{d\nu}{dt} = \left(\frac{a}{r}\right)^2\:\frac{2\pi\sqrt{1-e^2}}{N}
-\end{equation} 
-
-Substituting Eq. \ref{eq:r} into Eq. \ref{eq:nudota} yields:
-
-%% ------------------------------------------------------------------------ %%
-%% eq:nudotb | Equation for orbital velocity
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:nudotb}
-	\frac{d\nu}{dt} = \frac{2\pi}{N}\:\frac{\left(1+e\:\cos\nu\right)^2}
-	                                      {\left(1-e^2\right)^{1.5}}
-\end{equation} 
-
-A methodology for solving the heliocentric longitude for a given time, $t$, follows \parencite{kutzbach88}:
-
-%% ------------------------------------------------------------------------ %%
-%% eq:dtdnu | Equation for dt given dnu
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:dtdnu}
-	dt = \frac{N\:\left(1-e^2\right)^{1.5}}{2\pi}\:\left(1+e\:\cos\nu\right)^{-2} d\nu
-\end{equation}
-
-\noindent Integrating both sides results in:
-
-%% ------------------------------------------------------------------------ %%
-%% eq:tdnu | Equation for t given dnu, days
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:tdnu}
-	t = \frac{N\:\left(1-e^2\right)^{1.5}}
-	         {2\pi}\:\int\left(1+e\:\cos\nu\right)^{-2} d\nu
-\end{equation}
-
-The non-trivial integrand on the right-hand side of Eq. \ref{eq:tdnu} has a long and complicated integral, which was solved using the Maxima computer algebra system\footnotemark \footnotetext{\url{http://maxima.sourceforge.net/}}. 
-
-%% ------------------------------------------------------------------------ %%
-%% eq:dnu | Integral of dnu
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:dnu}
-	\begin{split}
-		\int & \left(1+e\:\cos\nu\right)^{-2} d\nu = \\ 
-			& 2\:\frac{\arctan \left( 
-				\frac{(2e-2)\:\sin\nu}{2\sqrt{1-e^2}\:(\cos\nu +1)}
-			    \right)}
-			             {\sqrt{1-e^2}\:(e^2-1)} + \\
-			& -2 \:\frac{e\:\sin\nu}
-			    {(\cos\nu +1) \:\left(  
-			    	\frac{(e^3-e^2-e+1)\:\sin^2\nu}{(\cos\nu +1)^2}
-			    	- e^3 -e^2 + e + 1
-			    \right) }
-	\end{split}
-\end{equation}
-
-An approximation to this integral can be made assuming that eccentricity is small, such that higher powers of eccentricity can be ignored. 
-Following the elimination of high-powered eccentricity terms:
-
-%% ------------------------------------------------------------------------ %%
-%% eq:dnusimpa | Simplification (a) to integral of dnu
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:dnusimpa}
-	\begin{split}
-		\int & \left(1+e\:\cos\nu\right)^{-2} d\nu \approx \\ 
-			& -2\:\arctan \left[
-				\frac{(e-1)\:\sin\nu}{\cos\nu +1}
-			    \right] + \\
-			& -2\:\frac{e\:\sin\nu\:(\cos\nu +1)}
-			    {(1-e)\:\sin^2\nu + (1+e)\:(\cos\nu +1)^2}
-	\end{split}
-\end{equation}
-
-\noindent Now, assume that eccentricity in the quantities $(e-1)$, $(1-e)$, and $(1+e)$ is negligible.
-
-%% ------------------------------------------------------------------------ %%
-%% eq:dnusimpb | Simplification (b) to integral of dnu
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:dnusimpb}
-	\begin{split}
-		\int & \left(1+e\:\cos\nu\right)^{-2} d\nu \approx \\ 
-			& 2\:\arctan \left( 
-				\frac{\sin\nu}{\cos\nu +1}
-			    \right) - \frac{2e\:\sin\nu\:(\cos\nu +1)}
-			    {\sin^2\nu + \cos^2\nu + 2\cos\nu + 1}
-	\end{split}
-\end{equation}
-
-\noindent Finally, simplifying the second term leads to:
-
-%% ------------------------------------------------------------------------ %%
-%% eq:dnusimpc | Simplification (c) to integral of dnu
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:dnusimpc}
-		\int \left(1+e\:\cos\nu\right)^{-2} d\nu \approx 
-			2\:\arctan \left( \frac{\sin\nu}{\cos\nu +1}
-			\right) - e\:\sin\nu
-\end{equation}
-
-%% ------------------------------------------------------------------------ %%
-%% fig:dkepler | Difference betweeen full and simplified Kepler methods
-%% ------------------------------------------------------------------------ %%
-\begin{figure}[ht!]
-    \includegraphics[width=\textwidth]{kepler_diff.eps}
-    \caption{Difference between the full integral and simplified integral solutions of $t$ for a given $\nu$.}
-    \label{fig:dkepler}
-\end{figure}
-
-\noindent A comparison between the full derivative (i.e., Eq. \ref{eq:dnu}) and the simplification (i.e., Eq. \ref{eq:dnusimpc}) revealed a discrepancy in the magnitude of the second term in Eq. \ref{eq:dnusimpc} by a factor of two. 
-Following this addition, substituting it back into Eq. \ref{eq:tdnu}, and assuming that $(1-e^2)^{1.5} \approx 1$, the equation for the simplified Kepler mapping is:
-
-%% ------------------------------------------------------------------------ %%
-%% eq:tnu | Equation for t given nu, days
-%% ------------------------------------------------------------------------ %%
-\begin{equation}
-\label{eq:tnu}
-	t = \frac{N}{\pi}\:\left[ \arctan \left( \frac{\sin\nu}{\cos\nu + 1} \right) - e \:\sin\nu \right]
-\end{equation}
-
-Figure \ref{fig:dkepler} shows the difference between Eq. \ref{eq:tdnu} and Eq. \ref{eq:tnu} (full integral versus the simplified integral). 
-The magnitude of the difference between the two methods is approximately 35.2 minutes, which is more than reasonable given the amount of simplification that was made.
-
-To complete the mapping, the calendar days of a particular year need to be associated with $t$ in Eq. \ref{eq:tnu}. 
-This is accomplished through the definition of $\lambda$ (i.e., Eq. \ref{eq:nu}). 
-For a known $\tilde{\omega}$, $\nu$ at the vernal equinox can be solved by setting $\lambda = 0$. 
-First find the number of days it takes the earth to travel from the perihelion ($\nu = 0$) to the vernal equinox ($\nu_{ve} = 360 - \tilde{\omega}$) by solving Eq. \ref{eq:tnu}. 
-Next, either solve for specific day of the year, $n$, on which the vernal equinox falls (i.e., Appendix \ref{app:equinox}) or assume a constant day of the year (e.g., $n_{ve} = 80$). 
-The difference between $n_{ve}$ and $t(\nu_{ve})$ corresponds to the calendar day at the perihelion.
-
-For example, assuming the current value of $\tilde{\omega} = 283^{\circ}$, then $t(360 - \tilde{\omega}) = 76.2$ days. 
-The difference between a constant $n_{ve} = 80$ and $t$ at the vernal equinox is 3.8 days. 
-This is reasonable given that the date of the perihelion is typically within the first week of January. 
-
-In order to get $\lambda$ for a given $n$, solve Eq. \ref{eq:tnu} for each 1$^{\circ}$ of $\nu$. 
-Next, find the value of $t$ that is as close to, but not greater than $n$.   
-Then, move the earth forward in space equivalent to the orbital velocity at position $\nu(t)$ multiplied by the difference in time (i.e., $n-t$) using Eq. \ref{eq:nudotb}. 
-Lastly, use Eq. \ref{eq:nu} to solve for $\lambda(n)$, making certain to keep values of $\lambda \leq 360^{\circ}$.
+Note that the value of $\lambda$ should be limited to within the bounds of a single orbit (i.e., 0 $\leq$ $\lambda$ $\leq$ 360$^{\circ}$).
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.04 -- DAILY ET SOLAR RADIATION, J/m^2
 %% //////////////////////////////////////////////////////////////////////// %%
 \subsection{Daily Extraterrestrial Solar Radiation}
 \label{sec:dra}
-Often, it is necessary to calculate the total daily solar irradiance (i.e., the integration of instantaneous solar irradiance over the course of the day). 
-This can be analytically done by integrating the instantaneous extraterrestrial solar radiation curve, defined by Eq. \ref{eq:etsr} (see \S \ref{sec:ra}), over the daylight hours. 
+One of the key daily outputs is the total daily solar irradiance (i.e., the integration of instantaneous solar irradiance over the course of the day). 
+This can be analytically solved by integrating the instantaneous extraterrestrial solar radiation curve, defined by Eq. \ref{eq:etsr} (see \S \ref{sec:ra}), over the daylight hours. 
 
 Using the definition of the hour angle, $h$ (see \S \ref{sec:hour}), the sunset angle, $h_s$, can be calculated when $I_o = 0$. 
 Using the inclination factor for horizontal surfaces (i.e., Eq. \ref{eq:thetaz}) the equation for instantaneous solar radiation is:
@@ -841,7 +652,7 @@ Using the inclination factor for horizontal surfaces (i.e., Eq. \ref{eq:thetaz})
 \noindent Special care needs to be made when $\tan\delta\:\tan\phi \geq 1$ (i.e., polar day, no sunset, $h_s = \pi$) and when $\tan\delta\:\tan\phi \leq -1$ (i.e., polar night, no sunrise, $h_s = 0$).
 
 The daylight hours are calculated from sunrise, $-h_s$, to sunset, $h_s$. 
-To calculate the daylight hours, $d_s$, double the sunset hour (to accommodate for the time between sunrise and solar noon) and convert the angle to hours, based on the rate of earth's rotation (i.e., 24 hours per $2\pi$ radians):
+The daylight hours, $d_s$, is calculated by doubling the sunset hour (to accommodate for the time between sunrise and solar noon) and converting the angle to hours based on the rate of earth's rotation (i.e., 24 hours per $2\pi$ radians):
 
 %% ------------------------------------------------------------------------ %%
 %% eq:ds | Daylight hours, hr
@@ -891,7 +702,7 @@ The daily integral of solar radiation can now be solved by integrating Eq. \ref{
 \end{equation}
 
 \noindent where: \\
-\indent $H_o$ = daily total extraterrestrial solar radiation, J$\cdot$m$^{-2}$\\
+\indent $H_o$ = daily total extraterrestrial solar radiation, J m$^{-2}$\\
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.05 -- NET RADIATION FLUX, W/m^2
@@ -903,18 +714,18 @@ The net radiation is defined as \parencite[Eq. 4]{linacre68}:
 %% ------------------------------------------------------------------------ %%
 %% eq:rn | Net radiation, W/m^2
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$I_N$}{Net radiation flux, W$\cdot$m$^{-2}$}
+\nomenclature{$I_N$}{Net radiation flux, W m$^{-2}$}
 \begin{equation}
 \label{eq:rn}
 	I_N = I_{SW} - I_{LW}
 \end{equation}
 
 \noindent where: \\
-\indent $I_N$ = net radiation, W$\cdot$m$^{-2}$ \\
-\indent $I_{SW}$ = net shortwave downwelling solar radiation, W$\cdot$m$^{-2}$ \\
-\indent $I_{LW}$ = net longwave radiation, W$\cdot$m$^{-2}$ \\
+\indent $I_N$ = net radiation, W m$^{-2}$ \\
+\indent $I_{SW}$ = net shortwave downwelling solar radiation, W m$^{-2}$ \\
+\indent $I_{LW}$ = net longwave radiation, W m$^{-2}$ \\
 
-\noindent Due to the lack of observations of radiation quantities on the global scale, net shortwave and longwave radiation must be modeled.
+\noindent Due to the lack of observations of radiation quantities on the global scale, net shortwave and longwave radiation must often be modeled.
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.05.1 -- SHORTWAVE RADIATION FLUX, W/m^2
@@ -926,15 +737,15 @@ Net incoming shortwave solar radiation, $I_{SW}$, can be modeled after the extra
 %% ------------------------------------------------------------------------ %%
 %% eq:rns | Net shortwave radiation, W/m^2
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$I_{SW}$}{Net shortwave solar radiation flux, W$\cdot$m$^{-2}$}
+\nomenclature{$I_{SW}$}{Net shortwave solar radiation flux, W m$^{-2}$}
 \begin{equation}
 \label{eq:rns}
 	I_{SW} = \left(1 - \beta_{sw}\right)\: I_{S\downarrow}
 \end{equation}
 
 \noindent where: \\
-\indent $I_{SW}$ = net shortwave solar radiation flux, W$\cdot$m$^{-2}$ \\
-\indent $I_{S\downarrow}$ = incident shortwave solar radiation flux, W$\cdot$m$^{-2}$ \\
+\indent $I_{SW}$ = net shortwave solar radiation flux, W m$^{-2}$ \\
+\indent $I_{S\downarrow}$ = incident shortwave solar radiation flux, W m$^{-2}$ \\
 \indent $\beta_{sw}$ = shortwave albedo, unitless \\
 
 \noindent A value for the shortwave albedo, $\beta_{sw}$, is given in Table \ref{tab:constants}. 
@@ -943,15 +754,15 @@ The incident shortwave solar radiation can be expressed as the atmospheric trans
 %% ------------------------------------------------------------------------ %%
 %% eq:rs | Incident shortwave radiation, W/m^2
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$I_{S\downarrow}$}{Incident shortwave solar radiation flux, W$\cdot$m$^{-2}$}
+\nomenclature{$I_{S\downarrow}$}{Incident shortwave solar radiation flux, W m$^{-2}$}
 \begin{equation}
 \label{eq:rs}
 	I_{S\downarrow} = \tau\: I_o
 \end{equation}
 
 \noindent where: \\
-\indent $I_{S\downarrow}$ = incident shortwave solar radiation flux, W$\cdot$m$^{-2}$ \\
-\indent $I_o$ = extraterrestrial solar radiation flux, W$\cdot$m$^{-2}$ \\
+\indent $I_{S\downarrow}$ = incident shortwave solar radiation flux, W m$^{-2}$ \\
+\indent $I_o$ = extraterrestrial solar radiation flux, W m$^{-2}$ \\
 \indent $\tau$ = atmospheric transmittivity, unitless \\
 
 Atmospheric transmittivity may be modeled as a function of sunshine hours and elevation. 
@@ -1000,21 +811,21 @@ The net outgoing longwave radiation (i.e., thermal radiation) is comprised of th
 %% ------------------------------------------------------------------------ %%
 %% eq:rnl | Net longwave radiation, W/m^2
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$I_{LW}$}{Net longwave radiation flux, W$\cdot$m$^{-2}$}
+\nomenclature{$I_{LW}$}{Net longwave radiation flux, W m$^{-2}$}
 \begin{equation}
 \label{eq:rnl}
 	\begin{split}
-		I_{LW} & = \left(I_{L\uparrow} - I_{L\downarrow} \right) 
-		         \left(b + (1-b)\: S_f \right) \\
+		I_{LW} & = \left(b + (1-b)\: S_f \right) 
+		           \left(I_{L\uparrow} - I_{L\downarrow} \right) \\
 		       & \approx \left(b + (1-b)\: S_f \right) 
 		         \left(A - T_{air} \right)
 	\end{split}
 \end{equation}
 
 \noindent where: \\
-\indent $I_{LW}$ = net longwave radiation, W$\cdot$m$^{-2}$ \\
-\indent $I_{L\uparrow}$ = longwave upward radiation flux, W$\cdot$m$^{-2}$\\
-\indent $I_{L\downarrow}$ = longwave clear-sky downward radiation flux, W$\cdot$m$^{-2}$\\
+\indent $I_{LW}$ = net longwave radiation, W m$^{-2}$ \\
+\indent $I_{L\uparrow}$ = longwave upward radiation flux, W m$^{-2}$\\
+\indent $I_{L\downarrow}$ = longwave clear-sky downward radiation flux, W m$^{-2}$\\
 \indent $b$ = empirical constant\\
 \indent $S_f$ = fraction of daily bright sunshine hours \\
 \indent $A$ = empirical constant \\
@@ -1026,15 +837,15 @@ The upward flux of longwave radiation may be modeled assuming a constant emissiv
 %% ------------------------------------------------------------------------ %%
 %% eq:rlu | Longwave upward radiation, W/m^2
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$I_{L\uparrow}$}{Longwave upward radiation flux, W$\cdot$m$^{-2}$}
+\nomenclature{$I_{L\uparrow}$}{Longwave upward radiation flux, W m$^{-2}$}
 \begin{equation}
 \label{eq:rlu}
 	I_{L\uparrow} = \sigma_{sb}\: \left(T_{air} + 273.15\right)^4
 \end{equation}
 
 \noindent where: \\
-\indent $I_{L\uparrow}$ = longwave upward radiation flux, W$\cdot$m$^{-2}$\\
-\indent $\sigma_{sb}$ = Stefan-Boltzman constant, W$\cdot$m$^{-2}\cdot$K$^{-4}$\\
+\indent $I_{L\uparrow}$ = longwave upward radiation flux, W m$^{-2}$\\
+\indent $\sigma_{sb}$ = Stefan-Boltzman constant, W m$^{-2}$ K$^{-4}$\\
 \indent $T_{air}$ = mean daily air temperature, $^{\circ}$C \\
 
 \noindent The downward clear-sky atmospheric longwave radiation is given by \parencite[Eq. 20]{linacre68}:
@@ -1042,15 +853,15 @@ The upward flux of longwave radiation may be modeled assuming a constant emissiv
 %% ------------------------------------------------------------------------ %%
 %% eq:rld | Longwave downward radiation, W/m^2
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$I_{L\downarrow}$}{Longwave clear-sky downward radiation flux, W$\cdot$m$^{-2}$}
+\nomenclature{$I_{L\downarrow}$}{Longwave clear-sky downward radiation flux, W m$^{-2}$}
 \begin{equation}
 \label{eq:rld}
 	I_{L\downarrow} = 1.19\:\sigma_{sb}\: \left(T_{air} + 273.15 \right)^4 - 171
 \end{equation}
 
 \noindent where: \\
-\indent $I_{L\downarrow}$ = longwave clear-sky downward radiation flux, W$\cdot$m$^{-2}$\\
-\indent $\sigma_{sb}$ = Stefan-Boltzman constant, W$\cdot$m$^{-2}\cdot$K$^{-4}$\\
+\indent $I_{L\downarrow}$ = longwave clear-sky downward radiation flux, W m$^{-2}$\\
+\indent $\sigma_{sb}$ = Stefan-Boltzman constant, W m$^{-2}$ K$^{-4}$\\
 \indent $T_{air}$ = mean daily air temperature, $^{\circ}$C \\
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
@@ -1101,10 +912,10 @@ From Eq. \ref{eq:rn}, substituting Eq. \ref{eq:rns} and Eq. \ref{eq:rs} for the 
 
 \noindent where:\\
 \indent $h_n$ = net radiation flux cross-over hour angle, radians\\
-\indent $I_{LW}$ = net longwave radiation flux, W$\cdot$m$^{-2}$\\
+\indent $I_{LW}$ = net longwave radiation flux, W m$^{-2}$\\
 \indent $r_u = \sin\delta\: \sin\phi$, unitless \\
 \indent $r_v = \cos\delta\: \cos\phi$, unitless \\
-\indent $r_w = \left(1-\beta_{sw}\right)\:\tau\: I_{sc}\: d_r$, W$\cdot$m$^{-2}$\\
+\indent $r_w = \left(1-\beta_{sw}\right)\:\tau\: I_{sc}\: d_r$, W m$^{-2}$\\
 
 \noindent Special care needs to be made when $(I_{LW}-r_w\: r_u)/(r_w\: r_v) \geq 1$ (i.e., net radiation always less than zero, $h_n = 0$) and when $(I_{LW}-r_w\: r_u)/(r_w\: r_v) \leq -1$ (i.e., net radiation always greater than zero, $h_n = \pi$). 
 
@@ -1133,7 +944,7 @@ The half-day integral of net radiation can now be solved by integrating Eq. \ref
 %% ------------------------------------------------------------------------ %%
 %% eq:dayrn | Daily daytime net radiation, J/m^2
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$H_N$}{Daily daytime net radiation, J$\cdot$m$^{-2}$}
+\nomenclature{$H_N$}{Daily daytime net radiation, J m$^{-2}$}
 \begin{equation}
 \label{eq:dayrn}
 	H_N = \frac{86400}{\pi}\: \left[ 
@@ -1143,12 +954,12 @@ The half-day integral of net radiation can now be solved by integrating Eq. \ref
 \end{equation}
 
 \noindent where: \\
-\indent $H_N$ = daily daytime net radiation, J$\cdot$m$^{-2}$ \\
-\indent $I_{LW}$ = net longwave radiation flux, W$\cdot$m$^{-2}$\\
+\indent $H_N$ = daily daytime net radiation, J m$^{-2}$ \\
+\indent $I_{LW}$ = net longwave radiation flux, W m$^{-2}$\\
 \indent $h_n$ = net radiation flux cross-over hour angle, radians\\
 \indent $r_u = \sin\delta\: \sin\phi$, unitless \\
 \indent $r_v = \cos\delta\: \cos\phi$, unitless \\
-\indent $r_w = \left(1-\beta_{sw}\right)\:\tau\: I_{sc}\: d_r$, W$\cdot$m$^{-2}$\\
+\indent $r_w = \left(1-\beta_{sw}\right)\:\tau\: I_{sc}\: d_r$, W m$^{-2}$\\
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.07 -- DAILY NIGHTTIME NET RADIATION, J/m^2
@@ -1196,7 +1007,7 @@ The half-day integral for the nighttime net radiation consists of two parts: the
 %% ------------------------------------------------------------------------ %%
 %% eq:irnn | Integral of nightly net radiation relationship, J/m^2
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$H_N^{\ast}$}{Daily nighttime net radiation, J$\cdot$m$^{-2}$}
+\nomenclature{$H_N^{\ast}$}{Daily nighttime net radiation, J m$^{-2}$}
 \begin{equation}
 \label{eq:dayrnn}
 	\begin{split}
@@ -1207,13 +1018,13 @@ The half-day integral for the nighttime net radiation consists of two parts: the
 \end{equation}
 
 \noindent where: \\
-\indent $H_N^{\ast}$ = daily nighttime net radiation, J$\cdot$m$^{-2}$\\
-\indent $I_{LW}$ = net longwave radiation flux, W$\cdot$m$^{-2}$\\
+\indent $H_N^{\ast}$ = daily nighttime net radiation, J m$^{-2}$\\
+\indent $I_{LW}$ = net longwave radiation flux, W m$^{-2}$\\
 \indent $h_n$ = net radiation flux cross-over hour angle, radians\\
 \indent $h_s$ = sunset hour angle, radians\\
 \indent $r_u = \sin\delta\: \sin\phi$, unitless \\
 \indent $r_v = \cos\delta\: \cos\phi$, unitless \\
-\indent $r_w = \left(1-\beta\right)\:\tau\: I_{sc}\: d_r$, W$\cdot$m$^{-2}$\\
+\indent $r_w = \left(1-\beta\right)\:\tau\: I_{sc}\: d_r$, W m$^{-2}$\\
 
 \noindent Note that the integral is negative (make positive by taking the absolute value).
 
@@ -1227,7 +1038,7 @@ To calculate the daily total photosynthetic photon flux density (PPFD), $Q_n$, f
 %% ------------------------------------------------------------------------ %%
 %% eq:dayppfd | Daily total PPFD, mol/m^2
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$Q_n$}{Daily photosynthetic photon flux density, mol$\cdot$m$^{-2}$}
+\nomenclature{$Q_n$}{Daily photosynthetic photon flux density, mol m$^{-2}$}
 \begin{equation}
 \label{eq:dayppfd}
 	Q_n = 1 \times 10^{-6}\: \text{fFEC}\: 
@@ -1235,11 +1046,11 @@ To calculate the daily total photosynthetic photon flux density (PPFD), $Q_n$, f
 \end{equation}
 
 \noindent where: \\
-\indent $Q_n$ = daily photosynthetic photon flux density, mol$\cdot$m$^{-2}$\\
-\indent fFEC = from-flux-to-energy conversion, $\mu$mol$\cdot$J$^{-1}$\\
+\indent $Q_n$ = daily photosynthetic photon flux density, mol m$^{-2}$\\
+\indent fFEC = from-flux-to-energy conversion, $\mu$mol J$^{-1}$\\
 \indent $\beta_{vis}$ = visible light albedo, unitless \\
 \indent $\tau$ = atmospheric transmittivity, unitless \\
-\indent $H_o$ = daily extraterrestrial solar radiation, J$\cdot$m$^{-2}$\\
+\indent $H_o$ = daily extraterrestrial solar radiation, J m$^{-2}$\\
 
 \noindent The $1\times 10^{-6}$ factor is to convert micro-moles to moles.
 
@@ -1254,20 +1065,20 @@ The energy conversion factor for water depends on the ambient temperature and pr
 %% ------------------------------------------------------------------------ %%
 %% eq:econ | Water-energy conversion factor, m^3/J
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$E_{con}$}{Water--energy conversion factor, m$^{3}\cdot$J$^{-1}$}
+\nomenclature{$E_{con}$}{Water--energy conversion factor, m$^{3}$ J$^{-1}$}
 \begin{equation}
 \label{eq:econ}
 	E_{con} = \frac{s}{L_v\: \rho_w\: \left( s + \gamma \right)}
 \end{equation}
 
 \noindent where: \\
-\indent $E_{con}$ = water to energy conversion factor, m$^{3}\cdot$J$^{-1}$\\
-\indent $s$ = slope of saturation vapor pressure temperature curve, Pa$\cdot$K$^{-1}$ \\
-\indent $L_v$ = latent heat of vaporization of water, J$\cdot$kg$^{-1}$\\
-\indent $\rho_w$ = density of water, kg$\cdot$m$^{-3}$\\
-\indent $\gamma$ = psychrometric constant, Pa$\cdot^{\circ}$C$^{-1}$ \\
+\indent $E_{con}$ = water to energy conversion factor, m$^{3}$ J$^{-1}$\\
+\indent $s$ = slope of saturation vapor pressure temperature curve, Pa K$^{-1}$ \\
+\indent $L_v$ = latent heat of vaporization of water, J kg$^{-1}$\\
+\indent $\rho_w$ = density of water, kg m$^{-3}$\\
+\indent $\gamma$ = psychrometric constant, Pa K$^{-1}$ \\
 
-\noindent While standard values may be associated with some of these variables (e.g., $L_v \approx 2.5\times 10^6$ J$\cdot$kg$^{-1}$; $\rho_w \approx 1000$ kg$\cdot$m$^{-3}$; $\gamma \approx 65$ Pa$\cdot^{\circ}$C$^{-1}$), their associated dependencies on temperature and pressure are given in the subsections below.
+\noindent While standard values may be associated with some of these variables (e.g., $L_v \approx 2.5\times 10^6$ J kg$^{-1}$; $\rho_w \approx 1000$ kg m$^{-3}$; $\gamma \approx 65$ Pa K$^{-1}$), their associated dependencies on temperature and pressure are given in the subsections below.
 
 In conditions where atmospheric pressure data are not readily available, the barometric formula may be used to derive the atmospheric pressure based on the elevation above sea level, $z$.
 
@@ -1291,11 +1102,11 @@ The barometric formula for elevation-dependent atmospheric pressure can be calcu
 \indent $P_{atm}$ = atmospheric pressure, Pa \\
 \indent $P_o$ = base pressure, Pa \\
 \indent $T_o$ = base temperature, K \\
-\indent $L$ = temperature lapse rate, K$\cdot$m$^{-1}$ \\
+\indent $L$ = temperature lapse rate, K m$^{-1}$ \\
 \indent $z$ = elevation, m \\
-\indent $g$ = gravitational acceleration, m$\cdot$s$^{-2}$ \\
-\indent $M_a$ = molecular weight of dry air, kg$\cdot$mol$^{-1}$ \\
-\indent $R$ = universal gas constant, J$\cdot$mol$^{-1}\cdot$K${-1}$ \\
+\indent $g$ = gravitational acceleration, m s$^{-2}$ \\
+\indent $M_a$ = molecular weight of dry air, kg mol$^{-1}$ \\
+\indent $R$ = universal gas constant, J mol$^{-1}$ K${-1}$ \\
 
 \noindent Values for $P_o$, $T_o$, $L$, $g$, $M_a$, and $R$ are available in Table \ref{tab:constants}.
 
@@ -1327,7 +1138,7 @@ The slope of the saturation vapor pressure versus temperature curve, $s$, at a g
 \end{equation}
 
 \noindent where: \\
-\indent $s$ = slope of saturation vapor pressure temperature curve, Pa$\cdot$K$^{-1}$ \\
+\indent $s$ = slope of saturation vapor pressure temperature curve, Pa K$^{-1}$ \\
 \indent $T_{air}$ = ambient temperature, $^{\circ}$C \\
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
@@ -1342,14 +1153,14 @@ The enthalpy of vaporization (i.e., the latent heat of vaporization) of water ha
 %% ------------------------------------------------------------------------ %%
 \begin{figure}[ht!]
     \includegraphics[width=\textwidth]{latent.eps}
-    \caption{The latent heat of vaporization ($1\times 10^6$ J$\cdot$kg$^{-1}$) at temperatures from -20$^{\circ}$ to 40$^{\circ}$C.}
+    \caption{The latent heat of vaporization ($1\times 10^6$ J kg$^{-1}$) at temperatures from -20$^{\circ}$ to 40$^{\circ}$C.}
     \label{fig:latent}
 \end{figure}
 
 %% ------------------------------------------------------------------------ %%
 %% eq:latent | Latent heat of vaporization, J/kg
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$L_v$}{Latent heat of vaporization of water, J$\cdot$kg$^{-1}$}
+\nomenclature{$L_v$}{Latent heat of vaporization of water, J kg$^{-1}$}
 \begin{equation}
 \label{eq:latent}
 	L_v = 1.91846\times 10^6\: \left[
@@ -1358,7 +1169,7 @@ The enthalpy of vaporization (i.e., the latent heat of vaporization) of water ha
 \end{equation}
 
 \noindent where: \\
-\indent $L_v$ = latent heat of vaporization of water, J$\cdot$kg$^{-1}$\\
+\indent $L_v$ = latent heat of vaporization of water, J kg$^{-1}$\\
 \indent $T_{air}$ = ambient temperature, $^{\circ}$C\\
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
@@ -1380,7 +1191,7 @@ The density of water depends on the temperature and (weakly) on the pressure \pa
 %% ------------------------------------------------------------------------ %%
 %% eq:density | Density of water, kg/m^3
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$\rho_{w}$}{Density of water, kg$\cdot$m$^{-3}$}
+\nomenclature{$\rho_{w}$}{Density of water, kg m$^{-3}$}
 \begin{equation}
 \label{eq:density}
 	\rho_w = 1000\: \rho_o \:\frac{
@@ -1389,21 +1200,21 @@ The density of water depends on the temperature and (weakly) on the pressure \pa
 \end{equation}
 
 \noindent where: \\
-\indent $\rho_w$ = density of water, kg$\cdot$m$^{-3}$\\
-\indent $\rho_o$ = density of water at 1 atm, g$\cdot$cm$^{-3}$\\
+\indent $\rho_w$ = density of water, kg m$^{-3}$\\
+\indent $\rho_o$ = density of water at 1 atm, g cm$^{-3}$\\
 \indent $K_o$ = bulk modulus of water at 1 atm, bar\\
 \indent $C_A$ = temperature-dependent coefficient, unitless\\
 \indent $C_B$ = temperature-dependent coefficient, bar$^{-1}$\\
 \indent $P_{atm}^{\ast}$ = atmospheric pressure, bar\\
 
-\noindent The constant in Eq. \ref{eq:density} converts the units of density from g$\cdot$cm$^{-3}$ to kg$\cdot$m$^{-3}$. 
+\noindent The constant in Eq. \ref{eq:density} converts the units of density from g cm$^{-3}$ to kg m$^{-3}$. 
 The following relationship may be used to convert between the units of atmospheric pressure: 1 bar $= 1\times 10^5$ Pa. 
 The density of water at 1 atm may be calculated as \parencite{chen77, kell75}:
 
 %% ------------------------------------------------------------------------ %%
 %% eq:datm | Density of water at 1 atm, g/cm^3
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$\rho_o$}{Density of water at 1 atmosphere, g$\cdot$cm$^{-3}$}
+\nomenclature{$\rho_o$}{Density of water at 1 atmosphere, g cm$^{-3}$}
 \begin{equation}
 \label{eq:datm}
 	\begin{split}
@@ -1419,7 +1230,7 @@ The density of water at 1 atm may be calculated as \parencite{chen77, kell75}:
 \end{equation}
 
 \noindent where: \\
-\indent $\rho_o$ = density of water at 1 atm, g$\cdot$cm$^{-3}$\\
+\indent $\rho_o$ = density of water at 1 atm, g cm$^{-3}$\\
 \indent $T_{air}$ = ambient temperature, $^{\circ}$C\\
 
 \noindent The bulk modulus of water at 1 atm may be calculated as \parencite{chen77, kell75}:
@@ -1496,37 +1307,38 @@ The pressure dependency is defined as \parencite[Eq. 8]{allen98}:
 %% ------------------------------------------------------------------------ %%
 %% eq:psychro | Psychrometric constant, Pa/K
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$\gamma$}{Psychrometric constant,  Pa$\cdot$K$^{-1}$}
+\nomenclature{$\gamma$}{Psychrometric constant,  Pa K$^{-1}$}
 \begin{equation}
 \label{eq:psychro}
 	\gamma = \frac{C_p\: M_a\: P_{atm}}{M_v\: L_v}
 \end{equation}
 
 \noindent where: \\
-\indent $\gamma$ = psychrometric constant, Pa$\cdot$K$^{-1}$ \\
-\indent $C_p$ = specific heat capacity of humid air, J$\cdot$kg$^{-1}\cdot$K$^{-1}$\\
-\indent $M_a$ = molecular weight of dry air, kg$\cdot$mol$^{-1}$\\
-\indent $M_v$ = molecular weight of water vapor, kg$\cdot$mol$^{-1}$\\
+\indent $\gamma$ = psychrometric constant, Pa K$^{-1}$ \\
+\indent $C_p$ = specific heat capacity of humid air, J kg$^{-1}$ K$^{-1}$\\
+\indent $M_a$ = molecular weight of dry air, kg mol$^{-1}$\\
+\indent $M_v$ = molecular weight of water vapor, kg mol$^{-1}$\\
 \indent $P_{atm}$ = atmospheric pressure, Pa\\
-\indent $L_v$ = latent heat of vaporization of water, J$\cdot$kg$^{-1}$\\
+\indent $L_v$ = latent heat of vaporization of water, J kg$^{-1}$\\
 
 \noindent Standard constants for $M_a$ and $M_v$ are given in Table \ref{tab:constants}. 
 The latent heat of vaporization may either be assumed constant (e.g., $L_v \approx 2.5\times 10^6$ J$\cdot$kg$^{-1}$) or it can be calculated (see \S \ref{sec:latent}). 
-The specific heat capacity of humid air may either be assumed constant (e.g., $C_p \approx 1.013\times 10^3$ J$\cdot$kg$^{-1}\cdot$K$^{-1}$) or it can be calculated as a function of temperature \parencite[Eq. 47]{tsilingiris08}:
+The specific heat capacity of humid air may either be assumed constant (e.g., $C_p \approx 1.013\times 10^3$ J kg$^{-1}$ K$^{-1}$) or it can be calculated as a function of temperature \parencite[Eq. 47]{tsilingiris08}:
 
 %% ------------------------------------------------------------------------ %%
 %% fig:cp | Specific heat capacity of humid air, J/kg/K
 %% ------------------------------------------------------------------------ %%
 \begin{figure}[ht!]
     \includegraphics[width=\textwidth]{cp.eps}
-    \caption{The specific heat capacity ($1\times 10^3$ J$\cdot$kg$^{-1}\cdot$K$^{-1}$) of humid air at temperatures from $-20^{\circ}$ to 40$^{\circ}$C.}
+    \caption{The specific heat capacity ($1\times 10^3$ J kg$^{-1}$ K$^{-1}$) of humid air at temperatures from $-20^{\circ}$ to 40$^{\circ}$C.}
     \label{fig:cp}
 \end{figure}
 
 %% ------------------------------------------------------------------------ %%
 %% eq:cp | Specific heat capacity of humid air, J/kg/K
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$C_p$}{Specific heat capacity of humid air,   J$\cdot$kg$^{-1}\cdot$K$^{-1}$}\begin{equation}
+\nomenclature{$C_p$}{Specific heat capacity of humid air, J kg$^{-1}$ K$^{-1}$}
+\begin{equation}
 \label{eq:cp}
 	\begin{split}
 		C_p = 1000\: ( & 1.0045714270 
@@ -1539,7 +1351,7 @@ The specific heat capacity of humid air may either be assumed constant (e.g., $C
 \end{equation}
 
 \noindent where: \\ 
-\indent $C_p$ = specific heat capacity of humid air, J$\cdot$kg$^{-1}\cdot$K$^{-1}$\\
+\indent $C_p$ = specific heat capacity of humid air, J kg$^{-1}$ K$^{-1}$\\
 \indent $T_{air}$ = ambient temperature, $^{\circ}$C\\
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
@@ -1560,32 +1372,32 @@ Condensation may be assumed equal to the water-equivalent of the nighttime net r
 
 \noindent where: \\
 \indent $C_n$ = daily nighttime condensation, mm\\
-\indent $E_{con}$ = water to energy conversion factor, m$^{3}\cdot$J$^{-1}$\\
-\indent $H_N^{\ast}$ = daily nighttime total net radiation, J$\cdot$m$^{-2}$\\
+\indent $E_{con}$ = water to energy conversion factor, m$^{3}$ J$^{-1}$\\
+\indent $H_N^{\ast}$ = daily nighttime total net radiation, J m$^{-2}$\\
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.11 -- EQUILIBRIUM EVAPOTRANSPIRATION, mm/hr
 %%///////////////////////////////////////////////////////////////////////// %%
 \subsection{Equilibrium Evapotranspiration Rate}
 \label{sec:eet}
-The equilibrium evapotranspiration (EET) rate may be calculated as the water-equivalent of the net daytime radiation \parencite[Eq. 5]{prentice93}:
+The equilibrium evapotranspiration rate ($E^q$) may be calculated as the water-equivalent of the net daytime radiation \parencite[Eq. 5]{prentice93}:
 
 %% ------------------------------------------------------------------------ %%
 %% eq:eet | Equilibrium evapotranspiration, mm/hr
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$E^q$}{Equilibrium evapotranspiration rate, mm$\cdot$h$^{-1}$}
+\nomenclature{$E^q$}{Equilibrium evapotranspiration rate, mm h$^{-1}$}
 \begin{equation}
 \label{eq:eet}
 	E^q = 3.6\times 10^6\: E_{con}\: I_N
 \end{equation}
 
 \noindent where:\\
-\indent $E^q$ = equilibrium evapotranspiration rate, mm$\cdot$h$^{-1}$\\
-\indent $E_{con}$ = water to energy conversion factor, m$^{3}\cdot$J$^{-1}$\\
-\indent $I_N$ = net radiation flux, W$\cdot$m$^{-2}$ \\
+\indent $E^q$ = equilibrium evapotranspiration rate, mm h$^{-1}$\\
+\indent $E_{con}$ = water to energy conversion factor, m$^{3}$ J$^{-1}$\\
+\indent $I_N$ = net radiation flux, W m$^{-2}$ \\
 
-\noindent Note that the constant in Eq. \ref{eq:eet} converts the units from m$\cdot$s$^{-1}$ to mm$\cdot$h$^{-1}$. 
-There is no physical meaning for negative EET, and therefore EET should be set equal to zero when $I_N$ is negative. 
+\noindent Note that the constant in Eq. \ref{eq:eet} converts the units from m s$^{-1}$ to mm h$^{-1}$. 
+There is no physical meaning for negative $E^q$, and therefore $E^q$ should be set equal to zero when $I_N$ is negative. 
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.12 -- DAILY EQUILIBRIUM EVAPOTRANSPIRATION, mm
@@ -1615,23 +1427,23 @@ The daily total equilibrium evapotranspiration can be calculated, as in \S \ref{
 %%///////////////////////////////////////////////////////////////////////// %%
 \subsection{Potential Evapotranspiration Rate}
 \label{sec:pet}
-The potential evapotranspiration (PET) rate, $E^p$, may exceed the equilibrium evapotranspiration rate (i.e., Eq. \ref{eq:eet}) by an entrainment factor \parencite{lhomme97, priestley72}:
+Experimental results have shown that the potential evapotranspiration rate, $E^p$, may exceed the equilibrium evapotranspiration rate (i.e., Eq. \ref{eq:eet}) by a constant entrainment factor, $\omega$, whereby a minimal amount of advection introduces dry air into the saturation layer above a well-watered surface, which may be written as \parencite{lhomme97, priestley72}:
 
 %% ------------------------------------------------------------------------ %%
 %% eq:pet | Potential evapotranspiration rate, mm/hr
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$E^p$}{Potential evapotranspiration rate, mm$\cdot$h$^{-1}$}
+\nomenclature{$E^p$}{Potential evapotranspiration rate, mm h$^{-1}$}
 \begin{equation}
 \label{eq:pet}
 	E^p = \left(1 + \omega \right)\: E^q
 \end{equation}
 
 \noindent where:\\
-\indent $E^p$ = potential evapotranspiration rate, mm$\cdot$h$^{-1}$\\
-\indent $E^q$ = equilibrium evapotranspiration rate, mm$\cdot$h$^{-1}$\\
+\indent $E^p$ = potential evapotranspiration rate, mm h$^{-1}$\\
+\indent $E^q$ = equilibrium evapotranspiration rate, mm h$^{-1}$\\
 \indent $\omega$ = entrainment factor, unitless \\
 
-\noindent Setting the entrainment factor, $\omega$, equal to zero sets $E^p$ equal to $E^q$. 
+\noindent Setting $\omega = 0$ makes $E^p$ equal to $E^q$. 
 A value of $\omega$ is given Table \ref{tab:constants}.
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
@@ -1639,7 +1451,7 @@ A value of $\omega$ is given Table \ref{tab:constants}.
 %%///////////////////////////////////////////////////////////////////////// %%
 \subsection{Daily Potential Evapotranspiration}
 \label{sec:dpet}
-The daily total potential evapotranspiration is calculated by scaling the daily total equilibrium evapotranspiration (i.e., \S \ref{sec:deet}) by the entrainment factor, $\omega$:
+The daily total potential evapotranspiration is calculated by scaling the daily equilibrium evapotranspiration (i.e., \S \ref{sec:deet}) by the entrainment factor, $\omega$:
 
 %% ------------------------------------------------------------------------ %%
 %% eq:daypet | Daily potential evapotranspiration, mm
@@ -1665,19 +1477,19 @@ The instantaneous evaporative demand is based on the potential evapotranspiratio
 %% ------------------------------------------------------------------------ %%
 %% eq:dp | Evaporative demand rate, mm/hr
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$D_p$}{Evaporative demand rate, mm$\cdot$h$^{-1}$}
+\nomenclature{$D_p$}{Evaporative demand rate, mm h$^{-1}$}
 \begin{equation}
 \label{eq:dp}
 	D_p = E^p = \left(1 + \omega \right)\: E^q
 \end{equation}
 
 \noindent where: \\
-\indent $D_p$ = evaporative demand rate, mm$\cdot$h$^{-1}$\\
-\indent $E^p$ = potential evapotranspiration rate, mm$\cdot$h$^{-1}$\\
-\indent $E^q$ = equilibrium evapotranspiration rate, mm$\cdot$h$^{-1}$\\
+\indent $D_p$ = evaporative demand rate, mm h$^{-1}$\\
+\indent $E^p$ = potential evapotranspiration rate, mm h$^{-1}$\\
+\indent $E^q$ = equilibrium evapotranspiration rate, mm h$^{-1}$\\
 
 \noindent The evaporative demand, $D_p$ may also be expressed in terms of radiation fluxes. 
-Based on Eq. \ref{eq:eet}, EET is related to the net radiation flux, which, based on Eq. \ref{eq:rn}, is the difference between net shortwave, $I_{SW}$ and net longwave, $I_{LW}$ radiation fluxes. 
+Based on Eq. \ref{eq:eet}, $E^q$ is related to the net radiation flux, which, based on Eq. \ref{eq:rn}, is the difference between net shortwave, $I_{SW}$ and net longwave, $I_{LW}$ radiation fluxes. 
 The net shortwave radiation flux is related to the extraterrestrial radiation flux, $I_o$, through Eq. \ref{eq:rs} and Eq. \ref{eq:rns}, such that $D_p$ may be expressed as:
 
 %% ------------------------------------------------------------------------ %%
@@ -1693,11 +1505,11 @@ The net shortwave radiation flux is related to the extraterrestrial radiation fl
 \indent $\omega$ = entrainment factor, unitless \\
 \indent $\beta_{sw}$ = shortwave albedo, unitless \\
 \indent $\tau$ = atmospheric transmittivity, unitless \\
-\indent $I_o$ = extraterrestrial solar radiation flux, W$\cdot$m$^{-2}$ \\
-\indent $I_{LW}$ = net longwave radiation, W$\cdot$m$^{-2}$ \\
-\indent $E_{con}$ = water to energy conversion factor, m$^{3}\cdot$J$^{-1}$\\
+\indent $I_o$ = extraterrestrial solar radiation flux, W m$^{-2}$ \\
+\indent $I_{LW}$ = net longwave radiation, W m$^{-2}$ \\
+\indent $E_{con}$ = water to energy conversion factor, m$^{3}$ J$^{-1}$\\
 
-\noindent Note the constants in Eq. \ref{eq:dpa} convert the units from m$\cdot$s$^{-1}$ to mm$\cdot$h$^{-1}$. 
+\noindent Note the constants in Eq. \ref{eq:dpa} convert the units from m s$^{-1}$ to mm h$^{-1}$. 
 The total daily demand is based on $E^p_n$ (i.e., \S \ref{sec:dpet}) or the total daily daytime net radiation (i.e., \S \ref{sec:drn}):
 
 %% ------------------------------------------------------------------------ %%
@@ -1713,7 +1525,7 @@ The total daily demand is based on $E^p_n$ (i.e., \S \ref{sec:dpet}) or the tota
 \noindent where:\\
 \indent $D$ = evaporative demand, mm\\
 \indent $E^q_n$ = daily equilibrium evapotranspiration, mm\\
-\indent $H_N$ = daily daytime net radiation, J$\cdot$m$^{-2}$ \\
+\indent $H_N$ = daily daytime net radiation, J m$^{-2}$ \\
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.16 -- ACTUAL EVAPOTRANSPIRATION RATE, mm/hr
@@ -1727,25 +1539,25 @@ The actual evapotranspiration rate, $E^a$, is based on the minimum of the supply
 %% ------------------------------------------------------------------------ %%
 \begin{figure}[ht!]
     \includegraphics[width=\textwidth]{aet.eps}
-    \caption{Example of the $E^a$ for a given $D_p$ when $S_w = 0.3$ mm$\cdot$h$^{-1}$.}
+    \caption{Example of the $E^a$ for a given $D_p$ when $S_w = 0.3$ mm h$^{-1}$.}
     \label{fig:aet}
 \end{figure}
 
 %% ------------------------------------------------------------------------ %%
 %% eq:aet | Actual evapotranspiration rate, mm/hr
 %% ------------------------------------------------------------------------ %%
-\nomenclature{$E^a$}{Actual evapotranspiration rate, mm$\cdot$h$^{-1}$}
+\nomenclature{$E^a$}{Actual evapotranspiration rate, mm h$^{-1}$}
 \begin{equation}
 \label{eq:aet}
 	E^a = \min\left(S_w\text{, }D_p\right)
 \end{equation}
 
 \noindent where:\\
-\indent $E^a$ = actual evapotranspiration rate, mm$\cdot$h$^{-1}$\\
-\indent $S_w$ = evaporative supply rate, mm$\cdot$h$^{-1}$\\
-\indent $D_p$ = evaporative demand rate, mm$\cdot$h$^{-1}$\\
+\indent $E^a$ = actual evapotranspiration rate, mm h$^{-1}$\\
+\indent $S_w$ = evaporative supply rate, mm h$^{-1}$\\
+\indent $D_p$ = evaporative demand rate, mm h$^{-1}$\\
 
-\noindent Note that the minimization is based on the instantaneous rates and not the daily totals!
+\noindent \textit{Note that the minimization is based on the instantaneous rates and not the daily totals!}
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.17 -- DAILY ACTUAL EVAPOTRANSPIRATION, mm
@@ -1782,11 +1594,11 @@ Using the variable substitutions defined in \S \ref{sec:drn} and letting $r_x = 
 
 \noindent where:\\
 \indent $h_i$ = supply and demand intersecting hour angle, radians\\
-\indent $S_w$ = evaporative supply rate, mm$\cdot$h$^{-1}$\\
+\indent $S_w$ = evaporative supply rate, mm h$^{-1}$\\
 \indent $r_u = \sin\delta\cdot\sin\phi$, unitless \\
 \indent $r_v = \cos\delta\cdot\cos\phi$, unitless \\
-\indent $r_w = \left(1-\beta_{sw}\right)\: \tau\: I_{sc}\: d_r$, W$\cdot$m$^{-2}$\\
-\indent $r_x = 3.6\times10^6\: \left(1 + \omega \right)\: E_{con}$, mm$\cdot$m$^{2}\cdot$W$^{-1}\cdot$h$^{-1}$\\
+\indent $r_w = \left(1-\beta_{sw}\right)\: \tau\: I_{sc}\: d_r$, W m$^{-2}$\\
+\indent $r_x = 3.6\times10^6\: \left(1 + \omega \right)\: E_{con}$, mm m$^{2}$ W$^{-1}$ h$^{-1}$\\
 
 \noindent Special care needs to be made when $\cos\left( h_i\right) \geq 1$ (i.e., supply rate exceeds demand, $h_i = 0$) and when $\cos\left( h_i\right) \leq -1$ (i.e., supply rate limits demand everywhere, $h_i = \pi$). Note that as $S_w$ approaches zero, $h_i$ approaches $h_n$ (i.e., Eq. \ref{eq:hns}).
 
@@ -1834,13 +1646,13 @@ The daily actual evapotranspiration, $E^a_n$, is found by doubling the quantity 
 
 \noindent where:\\
 \indent $E^a_n$ = daily actual evapotranspiration, mm\\
-\indent $S_w$ = evaporative supply rate, mm$\cdot$hr$^{-1}$\\
+\indent $S_w$ = evaporative supply rate, mm hr$^{-1}$\\
 \indent $h_i$ = supply and demand intersecting hour angle, radians\\
 \indent $h_n$ = net radiation flux cross-over hour angle, radians\\
 \indent $r_u = \sin\delta\cdot\sin\phi$, unitless \\
 \indent $r_v = \cos\delta\cdot\cos\phi$, unitless \\
-\indent $r_w = \left(1-\beta_{sw}\right)\: \tau\: I_{sc}\: d_r$, W$\cdot$m$^{-2}$\\
-\indent $r_x = 3.6\times10^6\: \left(1 + \omega\right)\: E_{con}$, mm$\cdot$m$^{2}\cdot$W$^{-1}\cdot$h$^{-1}$\\
+\indent $r_w = \left(1-\beta_{sw}\right)\: \tau\: I_{sc}\: d_r$, W m$^{-2}$\\
+\indent $r_x = 3.6\times10^6\: \left(1 + \omega\right)\: E_{con}$, mm m$^{2}$ W$^{-1}$ h$^{-1}$\\
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.18 -- DAILY SOIL MOISTURE, mm

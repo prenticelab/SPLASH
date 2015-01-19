@@ -47,50 +47,44 @@ To test whether the algorithm is correctly implemented, the Julian day of 13 Aug
 \newpage
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
-%% APPENDIX A.2 -- EQUINOX
+%% APPENDIX A.2 -- Berger's Method
 %% //////////////////////////////////////////////////////////////////////// %%
-\subsection{Equinox}
-\label{app:equinox}
+\subsection{Berger's Method}
+\label{app:berger}
 \texttt{ \\
-\noindent 01~~def equinox(y, opt=0):\\
-\noindent 02 \indent \# Table 26.A: jde\textunderscore table\textunderscore a \\
-\noindent 03 \indent \# Table 26.B: jde\textunderscore table\textunderscore b \\
-\noindent 04 \indent \# Table 26.C: periodic\textunderscore terms \\
-\noindent 05 \indent if y < 1000:\\
-\noindent 06 \indent \indent jde\textunderscore table = jde\textunderscore table\textunderscore a \\
-\noindent 07 \indent \indent y = y/1000.0 \\
-\noindent 08 \indent else: \\
-\noindent 09 \indent \indent jde\textunderscore table = jde\textunderscore table\textunderscore b \\
-\noindent 10 \indent \indent y = (y-2000.0)/1000.0 \\
-\noindent 11 \indent jde0 = ( \\
-\noindent 12 \indent \indent jde\textunderscore table[opt,0] + \\
-\noindent 13 \indent \indent jde\textunderscore table[opt,1]*y + \\
-\noindent 14 \indent \indent jde\textunderscore table[opt,2]*y**2 + \\
-\noindent 15 \indent \indent jde\textunderscore table[opt,3]*y**3 + \\
-\noindent 16 \indent \indent jde\textunderscore table[opt,4]*y**4 \\
-\noindent 17 \indent ) \\
-\noindent 18 \indent t = (jde0-2451545.0)/36525.0 \\
-\noindent 19 \indent w = (35999.373*t)-2.47 \\
-\noindent 20 \indent dl = ( \\
-\noindent 21 \indent \indent 1.0 + \\
-\noindent 22 \indent \indent (0.0334 * numpy.cos(numpy.pi/180*w)) + \\
-\noindent 23 \indent \indent (0.0007 * numpy.cos(numpy.pi/180*2*w)) \\
-\noindent 24 \indent ) \\
-\noindent 25 \indent s = 0 \\
-\noindent 26 \indent j = 0 \\
-\noindent 28 \indent for i in xrange(24): \\
-\noindent 29 \indent \indent s += periodic\textunderscore terms[j]*numpy.cos( \\
-\noindent 30 \indent \indent \indent numpy.pi/180.0*(\\
-\noindent 31 \indent \indent \indent \indent periodic\textunderscore terms[j+1] + \\
-\noindent 32 \indent \indent \indent \indent (periodic\textunderscore terms[j+2]*t) \\
-\noindent 33 \indent \indent \indent ) \\
-\noindent 34 \indent \indent ) \\
-\noindent 35 \indent \indent j=j+3 \\
-\noindent 36 \indent jde = jde0+((s*0.00001)/dl) \\
-\noindent 37 \indent jde\textunderscore year = julian\textunderscore day(y, 1, 1) \\
-\noindent 38 \indent return (jde-jde\textunderscore year+1) \\
+\noindent 01~~def berger_tls(n):\\
+\noindent 02 \indent pir = numpy.pi/180.0 \\
+\noindent 03 \indent xee = ke**2 \\
+\noindent 04 \indent xec = ke**3 \\
+\noindent 05 \indent xse = numpy.sqrt(1.0 - xee) \\
+\noindent 06 \indent \# Mean longitude: \\
+\noindent 07 \indent xlam = ( \\
+\noindent 08 \indent \indent (ke/2.0 + xec/8.0)*(1.0 + xse)*numpy.sin(komega*pir) -  \\
+\noindent 09 \indent \indent xee/4.0*(0.5 + xse)*numpy.sin(2.0*komega*pir) +  \\
+\noindent 10 \indent \indent xec/8.0*(1.0/3.0 + xse)*numpy.sin(3.0*komega*pir) \\
+\noindent 11 \indent \indent ) \\
+\noindent 12 \indent xlam = numpy.degrees(2.0*xlam) \\
+\noindent 13 \indent \# Mean longitude for day of year: \\
+\noindent 14 \indent dlamm = xlam + (n - 80.0)*(360.0/kN) \\
+\noindent 15 \indent \# Mean anomaly: \\
+\noindent 16 \indent anm = dlamm - komega \\
+\noindent 17 \indent ranm = numpy.radians(anm) \\
+\noindent 18 \indent \# True anomaly (uncorrected): \\
+\noindent 19 \indent ranv = (ranm + (2.0*ke - xec/4.0)*numpy.sin(ranm) +  \\
+\noindent 20 \indent \indent 5.0/4.0*xee*numpy.sin(2.0*ranm) +  \\
+\noindent 21 \indent \indent 13.0/12.0*xec*numpy.sin(3.0*ranm)) \\
+\noindent 22 \indent anv = numpy.degrees(ranv) \\
+\noindent 23 \indent \# True longitude: \\
+\noindent 24 \indent my\_tls = anv + komega \\
+\noindent 25 \indent if my\_tls < 0: \\
+\noindent 26 \indent \indent my\_tls += 360.0 \\
+\noindent 28 \indent elif my\_tls > 360: \\
+\noindent 29 \indent \indent my\_tls -= 360.0 \\
+\noindent 30 \indent \# True anomaly: \\
+\noindent 31 \indent my\_nu = (my\_tls - komega) \\
+\noindent 32 \indent if my\_nu < 0: \\
+\noindent 33 \indent \indent my\_nu += 360.0 \\
+\noindent 34 \indent return(my\_nu, my\_tls) \\
 }
 
-This algorithm calculates the corresponding Julian day of the vernal equinox (i.e., \texttt{opt=0}) for a given year \parencite[Ch. 26]{meeus91}. 
-In this example, numpy is used for defining the arrays, calculating the cosine, and for the numerical definition of $\pi$. 
-The three tables that are referenced on Lines 02--04 need to be defined. 
+This algorithm calculates the true anomaly and true longitude for a given day

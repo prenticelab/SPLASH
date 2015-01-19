@@ -4,7 +4,7 @@
 % Imperial College London
 %
 % 2014-10-29 -- created
-% 2014-11-25 -- last updated
+% 2015-01-19 -- last updated
 %
 % ------------
 % description:
@@ -19,13 +19,14 @@
 % --> simpler for Git version control
 % 03. updated values in Table [14.11.25]
 % 04. updated variable names [14.11.25]
+% 05. updated intro & constant references [15.01.19]
 %
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 1 -- INTRODUCTION
 %% //////////////////////////////////////////////////////////////////////// %%
 \section{Introduction}
 \label{sec:intro}
-This work aims to model monthly global radiation, evaporation, and soil moisture quantities and indexes using simple but theoretically-based simulation.
+With a growing need of global ecophysiological datasets for the study of vegetation dynamics under changing climate scenarios, the simple process-based bioclimatic model (STASH) presents an analytical solution that provides daily, monthly, and annual estimates of key modeling parameters (e.g., net radiation, actual evapotranspiration, soil moisture index).
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 1.2 -- THEORY
@@ -38,11 +39,11 @@ The methodology is based on the psuedo-code presented by \parencite{cramer88}:
 	\item Daily
 	\begin{enumerate}
 		\item Estimate the evaporative supply rate, $S_w$ (\S \ref{sec:sw})
-		\item Calculate (or estimate) the heliocentric longitudes, 
+		\item Calculate the heliocentric longitudes, 
 		      $\nu$ and $\lambda$ (\S \ref{sec:lambda})
-		\item Calculate (or estimate) the distance factor, $d_r$ 
+		\item Calculate the distance factor, $d_r$ 
 		      (\S \ref{sec:dr})
-		\item Calculate (or estimate) the declination angle, $\delta$ 
+		\item Calculate the declination angle, $\delta$ 
 		      (\S \ref{sec:delta})
 		\item Calculate the sunset angle, $h_s$ (Eq. \ref{eq:hs})
 		\item Calculate daily extraterrestrial solar radiation flux, $H_o$ 
@@ -85,27 +86,53 @@ The methodology is based on the psuedo-code presented by \parencite{cramer88}:
 %%///////////////////////////////////////////////////////////////////////// %%
 \subsection{Key Outputs}
 \label{sec:outputs}
-The key outputs from this model are:
+The key daily outputs from this model are:
 \begin{enumerate}
-	\item monthly PPFD ($Q_m$), mol$\cdot$m$^{-2}$
-	\item monthly equilibrium evapotranspiration ($E_m^q$), mm
-	\item monthly potential evapotranspiration ($E_m^p$), mm
-	\item monthly Cramer-Prentice moisture index ($\alpha$), unitless
-	\item monthly climatic water deficit ($\Delta E_m$), mm
+	\item extraterrestrial solar irradiation ($H_o$), J m$^{-2}$
+	\item net radiation ($H_N$), J m$^{-2}$
+	\item photosynthetic photon flux density ($Q_n$), mol $m^{-2}$
+	\item condensation ($C_n$), mm
+	\item soil moisture ($W_n$), mm
+	\item runoff ($RO$), mm
+	\item equilibrium evapotranspiration ($E_n^q$), mm
+	\item potential evapotranspiration ($E_n^p$), mm
+	\item actual evapotranspiration ($E_n^a$), mm
 \end{enumerate}
+
+The key monthly outputs from this model are:
+\begin{enumerate}
+	\item PPFD ($Q_m$), mol$\cdot$m$^{-2}$
+	\item equilibrium evapotranspiration ($E_m^q$), mm
+	\item potential evapotranspiration ($E_m^p$), mm
+	\item Cramer-Prentice moisture index ($\alpha$), unitless
+	\item climatic water deficit ($\Delta E_m$), mm
+\end{enumerate}
+
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 1.3 -- MODEL INPUTS
 %%///////////////////////////////////////////////////////////////////////// %%
 \subsection{Model Inputs}
 \label{sec:inputs}
-The model simulation of radiation fluxes requires basic inputs on the time of the year (i.e., year, month, and day) and geographic position (i.e., longitude, $\theta_{lon}$, latitude, $\phi$, and elevation, $z$). 
-For modeling evaporation, the basic meteorological variables needed are: air temperature, precipitation, and fraction of sunlight hours. 
+The model simulation of radiation fluxes requires basic inputs on the time of the year (i.e., year, month, and day) and geographic position:
+
+\begin{enumerate}
+	\item longitude ($\theta_{lon}$), degrees---for subdaily results only
+	\item latitude ($\phi$), degrees
+	\item elevation ($z$), meters
+\end{enumerate} 
+ 
+For modeling evaporation, the basic daily meteorological variables needed are: 
+\begin{enumerate}
+	\item air temperature ($T_{air}$, $^{\circ}$C
+	\item precipitation ($P_n$), mm
+	\item fraction of sunlight hours ($S_f$), percent
+\end{enumerate}
 
 In most cases, daily values of the necessary meteorological variables are not available (especially for global coverage). 
 It is possible, then, to use CRU TS datasets\footnotemark, which provide 0.5$^{\circ}$ resolution global monthly climate variables including: monthly mean daily air temperature, $^{\circ}$C (TMP), monthly precipitation totals, millimeters (PRE), and percent cloudiness, unitless (CLD).\footnotetext{\url{http://badc.nerc.ac.uk/view/badc.nerc.ac.uk\textunderscore \textunderscore ATOM\textunderscore \textunderscore dataent\textunderscore 1256223773328276}} 
 
-Based on CRU TS climatic data, the mean daily temperature, $T_c$, may be assumed constant for each day in the month. 
+Based on CRU TS climatic data, the mean daily temperature, $T_{air}$, may be assumed constant for each day in the month. 
 The daily precipitation, $P_n$, may be assumed as a constant fraction of the monthly precipitation (i.e., the monthly total precipitation divided by the number of days in the month, $N_m$). 
 The percent cloudiness data is derived on fractional sunshine hours \parencite{harris14}; therefore, the fraction of sunshine hours, $S_f$, may be calculated (albeit only loosely analogous) as the complementary fraction of cloudiness (i.e., $1-$CLD) and may be assumed constant for each day in the month.
 
@@ -193,7 +220,7 @@ Table \ref{tab:constants} presents the constant values used in this model with t
         \parencite{kopp11} \\
     $L$ & \texttt{kL} & 0.0065 & 
         Lapse rate, K$\cdot$m$^{-1}$ 
-        \parencite{cavcar00} \\
+        \parencite{allen73} \\
     $M_a$ & \texttt{kMa} & 0.028963 &
         Molecular weight of dry air, kg$\cdot$mol$^{-1}$ 
         \parencite{tsilingiris08} \\
@@ -208,7 +235,7 @@ Table \ref{tab:constants} presents the constant values used in this model with t
         \parencite{berger78} \\
     $P_o$ & \texttt{kPo} & 101325 &
         Base pressure, Pa 
-        \parencite{cavcar00} \\
+        \parencite{allen73} \\
     $R$ & \texttt{kR} & 8.3143 &
         Universal gas constant, J$\cdot$mol$^{-1}\cdot$K$^{-1}$ 
         \parencite{allen73} \\
