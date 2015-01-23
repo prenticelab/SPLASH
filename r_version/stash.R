@@ -5,7 +5,7 @@
 # written by Tyler W. Davis
 # Imperial College London
 #
-# last updated: 2015-01-16
+# last updated: 2015-01-22
 #
 # ~~~~~~~~~~~~
 # description:
@@ -25,6 +25,7 @@
 # 08. updated plots of results [15.01.16]
 # 09. added example data CSV file [15.01.16]
 # 10. fixed Cramer-Prentice alpha definition [15.01.16]
+# 11. updated monthly results plot [15.01.22]
 #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 #### Define functions #########################################################
@@ -786,8 +787,8 @@ axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=-50, to=175, by=25))
 axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=200, by=50), 
      cex.axis=1.6)
 mtext(side=2, expression(italic(E[m])~(mm)), line=3, cex=1.1)
-legend('topright', legend=c(expression(italic(E^{p})),
-                            expression(italic(E^{a}))),
+legend('topright', legend=c(expression(italic(E[m]^{p})),
+                            expression(italic(E[m]^{a}))),
        col=c('black', 'black'), lty=c(1, 2), cex=1.6, inset=0.02,
        adj=c(0.5, 0.5), lwd=c(2, 2), horiz=TRUE, bty='n', seg.len=1)
 text(0.6, 150, "(a)", pos=4, cex=1.6)
@@ -799,7 +800,7 @@ axis(side=1, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=12, by=1))
 axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=-50, to=175, by=25))
 axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=150, by=50), 
      cex.axis=1.6)
-mtext(side=2, expression(italic(CWD)~(mm)), line=3, cex=1.1)
+mtext(side=2, expression(Delta*italic(E[m])~(mm)), line=3, cex=1.1)
 text(0.6, 150, "(b)", pos=4, cex=1.6)
 # [3]
 par(mar=c(1,5,1,1))
@@ -811,8 +812,8 @@ axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=-50, to=175, by=25))
 axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=150, by=50), 
      cex.axis=1.6)
 mtext(side=2, expression(italic(E[m])~(mm)), line=3, cex=1.1)
-legend('topright', legend=c(expression(italic(E^{q})),
-                            expression(italic(E^{a}))),
+legend('topright', legend=c(expression(italic(E[m]^{q})),
+                            expression(italic(E[m]^{a}))),
        col=c('black', 'black'), lty=c(1, 2), cex=1.6, inset=0.02,
        adj=c(0.5, 0.5), lwd=c(2, 2), horiz=TRUE, bty='n', seg.len=1)
 text(0.6, 150, "(c)", pos=4, cex=1.6)
