@@ -81,58 +81,60 @@ This directory holds the R version of the STASH 2.0 code.
     * Includes plotting examples of monthly and daily results
 
 
-## STASH 2.0: Evapotranspiration and Radiation Module
+## STASH 2.0: Radiation, Evapotranspiration and Moisture Availability
 ----------------------------------------------------------------------------
-This work aims to model monthly global radiation, evaporation, and soil moisture quantities and indexes using simple but theoretically-based simulation. The methodology follows the pseudo-code presented by Cramer & Prentice (1988).
+### Theory
+With a growing need of global ecophysiological datasets for the study of vegetation dynamics under changing climate scenarios, the simple process-based bioclimatic model (STASH) presents an algorithm of analytical formulae, under a set of practical assumptions and simplifications, that provides key modeling parameters (e.g., radiation, evapotranspiration, and soil moisture) at the daily time scale. The model, currently designed to run for a specific location (i.e., latitude and elevation), operates on a minimum of three meteorological inputs including: precipitation (mm), air temperature (Celsius), and fraction of bright sunshine (unitless).
+
+The methodology follows the pseudo-code presented by Cramer & Prentice (1988) where daily soil moisture (*Wn*) is calculated based on the previous day's moisture content, incremented by daily precipitation (*Pn*) and condensation (*Cn*), and reduced by the daily actual evapotranspiration (*Ea*):
+
+![equation](http://www.sciweavers.org/tex2img.php?eq=W_n%20%3D%20W_%7Bn-1%7D%20%2B%20P_n%20%2B%20C_n%20-%20E%5Ea_n&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)
+
+To solve the simple bucket model presented above, the following steps are taken at the daily timescale: calculate the radiation terms, estimate the condensation, estimate the evaporative supply, estimate the evaporative demand, calculate the actual evapotranspiration, and update the daily soil moisture. At the end of each month, daily quantities may be aggregated into monthly totals and additional moisture indexes may be calculated.
+
+#### Radiation
+Extraterrestrial solar radiation is based on the integral of the extraterrestrial solar radiation flux (i.e., the product of the solar flux constant, the distance factor, and the inclination factor), which can be written as twice the half-day integral of the extraterrestrial solar radiation flux curve (i.e., between solar noon and the sunset angle, *hs*) (Duffie and Beckman, 2013):
+
+![equation](http://www.sciweavers.org/tex2img.php?eq=H_o%20%3D%202%20%5Cint_%7Bh%3D0%7D%5E%7Bh_s%7D%20I_o%20%3D%20%20%5Cfrac%7B86400%7D%7B%5Cpi%7D%20I_%7Bsc%7D%5C%3B%20d_r%5C%3B%20%5Cleft%28h_s%5C%3B%20%5Csin%20%5Cdelta%5C%3B%20%5Csin%20%5Cphi%20%2B%20%5Ccos%20%5Cdelta%5C%3B%20%5Ccos%20%5Cphi%5C%3B%20%5Csin%20h_s%20%5Cright%29%20%20%20&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)
 
 ### Key Outputs
-* monthly photosynthetic photon flux density (PPFD), mol/m^2
-* monthly equilibrium evapotranspiration (EET), mm
-* monthly potential evapotranspiration (PET), mm
-* monthly Cramer-Prentice bioclimatic moisture index, α (CPA), unitless
-* monthly climatic water deficit (ΔE), mm
+* Daily
+    * Extraterrestrial solar irradiation
+    * Net surface radiation
+    * Photosynthetic photon flux density
+    * Condensation
+    * Soil moisture
+    * Runoff
+    * Equilibrium evapotranspiration
+    * Potential evapotranspiration
+    * Actual evapotranspiration
+* Monthly
+    * Photosynthetic photon flux density
+    * Equilibrium evapotranspiration
+    * Potential evapotranspiration
+    * Cramer-Prentice bioclimatic moisture index
+    * Climatic water deficit
 
 ### Model Inputs
 For radiation, the basic geographic coordinates and time parameters needed are:
 
-* year (y)
-* month (m)
-* day of month (i)
-* longitude (θlon), degrees
-* latitude (φ), degrees
+* year (*y*)
+* day of year (*n*)
+* latitude (φ), radians
 * elevation (z), meters
 
 For evapotranspiration, the basic meteorological variables needed are:
 
-* mean daily air temperature (Tc), °C
-* daily precipitation (Pn), mm
-* fraction of sunshine hours (Sf), %
+* daily air temperature (*Tair*), °C
+* daily precipitation (*Pn*), mm
+* daily fraction of bright sunshine hours (*Sf*), %
 
-For spatial analyses, the 0.5° x 0.5° gridded [CRU TS 3.21](http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__ACTIVITY_0c08abfc-f2d5-11e2-a948-00163e251233) data sets may be used, for example: TMP (monthly mean daily air temperature); PRE (monthly precipitation totals); CLD (cloudiness fraction); and CRU TS 3.0 ELV (mean pixel elevation).
+For spatial analyses, the 0.5° x 0.5° gridded [CRU TS 3.21](http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__ACTIVITY_0c08abfc-f2d5-11e2-a948-00163e251233) data sets may be used (Harris et al., 2014), for example: TMP (monthly mean daily air temperature); PRE (monthly precipitation totals); CLD (cloudiness fraction); and CRU TS 3.0 ELV (mean pixel elevation). Daily precipitation and air temperature are also available from the [WATCH](http://www.eu-watch.org/data_availability) dataset (Weedon et al., 2014).
 
-### Theory
-The model theory is as follows:
-
-1. Estimate the evaporative supply rate (Sw)
-2. Calculate (or estimate) the heliocentric longitudes (ν and λ)
-3. Calculate (or estimate) the distance factor (dr)
-4. Calculate (or estimate) the declination angle (δ)
-5. Calculate the sunset angle (Hs)
-6. Calculate daily extraterrestrial solar radiation flux (RDa)
-7. Estimate transmittivity (τ) 
-8. Calculate daily photosynthetic photon flux density (PPFDD)
-9. Estimate net longwave radiation flux (Rnl)
-10. Calculate net radiation cross-over hour angle (Hn)
-11. Calculate daytime net radiation (RDn)
-12. Calculate nighttime net radiation (RDnn) 
-13. Calculate energy conversion factor (Econ)
-14. Estimate daily condensation (Wc)
-15. Estimate daily equilibrium evapotranspiration (EETD)
-16. Estimate daily potential evapotranspiration (PETD)
-17. Calculate the intersection hour angle (Hi) 
-18. Estimate daily actual evapotranspiration (AETD)
-19. Update daily soil moisture (Wn) 
 
 ## References
 --------------------
 * Cramer, W. and I. C. Prentice (1988) Simulation of regional soil moisture deficits on a European scale, _Norsk Geografisk Tidsskrift - Norwegian Journal of Geography_, 42:2-3, pp. 149-151.
+* Duffie, J. A. and W. A. Beckman (2013) Solar Engineering of Thermal Processes, 4th ed., John Wiley and Sons, New Jersey, 936 pp.
+* Harris, I., P. D. Jones, T. J. Osborn, and D. H. Lister (2014) Updated high-resolution grids of monthly climatic observations - the CRU TS3.10 Dataset, _Int. J. Climatol._, 34, 623–642, doi:10.1002/joc.3711.
+* Weedon, G. P., G. Balsamo, N. Bellouin, S. Gomes, M. J. Best, and P. Viterbo (2014) The WFDEI meteorological forcing data set: WATCH Forcing Data methodology applied to ERA-Interim reanalysis data, _Water Resour. Res._, 50, doi:10.1002/2014WR015638.
