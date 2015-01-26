@@ -7,6 +7,14 @@
 
 ## Contents
 --------------------
+### data/
+This directory holds a script for producing input data for the STASH 2.0 code.
+
+* __stash_getdata.py__
+    * Script that produces a CSV with daily input data (i.e., sunshine fraction, air temperature, and precipitation)
+* __example_data.csv__
+    * Example daily data for San Francisco, United States (37.7 N, 122.4 W, 142 m, 2000 CE)
+
 ### doc/
 This directory holds the current documentation for the STASH 2.0 code.
 
