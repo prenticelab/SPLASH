@@ -5,7 +5,7 @@
 # written by Tyler W. Davis
 # Imperial College London
 #
-# last updated: 2015-01-22
+# last updated: 2015-01-27
 #
 # ~~~~~~~~~~~~
 # description:
@@ -26,6 +26,9 @@
 # 09. added example data CSV file [15.01.16]
 # 10. fixed Cramer-Prentice alpha definition [15.01.16]
 # 11. updated monthly results plot [15.01.22]
+# 12. added fix to daily soil moisture when n and ny are 365 [15.01.27]
+# 13. added write out for daily/monthly results [15.01.27]
+# 14. added example of yearly looping [15.01.27]
 #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 #### Define functions #########################################################
@@ -648,15 +651,6 @@ if (0){
   my_evap <- evap(-0.641, 51.4, 172, 74, 2001, 0.43, 17.3, 0.5)
 }
 
-# Example data (San Francisco, 2000 CE)
-#   $sf, fractional sunshine hours, unitless
-#   $tair, air temperature, deg C
-#   $pn, daily precipitation, mm
-my_file <- 'example_data.csv'
-DATA <- read.csv(my_file)
-my_lat <- 37.7
-my_elv <- 142
-
 # Initialize daily results:
 daily_totals <- matrix(data=rep(0, 3660), nrow=366, ncol=10)
 daily_totals <- as.data.frame(daily_totals)
@@ -680,9 +674,20 @@ names(monthly_totals) <- c("eq_m",  # monthly equilibrium ET, mm
                            "cwd",   # climatic water deficit, mm 
                            "q_m")   # monthly PPFD, mol/m2
 
+# Location constants:
+my_lat <- 37.7
+my_elv <- 142
+
 # Calculate days in the year
 y <- 2000
 ny <- julian_day(y+1, 1, 1) - julian_day(y, 1, 1)
+
+# Example data (San Francisco, 2000 CE)
+#   $sf, fractional sunshine hours, unitless
+#   $tair, air temperature, deg C
+#   $pn, daily precipitation, mm
+my_file <- 'example_data.csv'
+DATA <- read.csv(my_file)
 
 # monthly:
 all_months <- seq(from=1, to=12, by=1)
@@ -726,6 +731,10 @@ for (m in all_months){
       daily_totals$ro[n] <- 0
     }
     #
+    if ((ny == 365) & (n == 365)){
+      daily_totals$wn[n+1] <- daily_totals$wn[n]
+    }
+    #
     # Save daily results:
     daily_totals$ho[n] <- ET$ra_j.m2
     daily_totals$hn[n] <- ET$rn_j.m2
@@ -745,6 +754,12 @@ for (m in all_months){
   monthly_totals$cwd[m] <- monthly_totals$ep_m[m] - monthly_totals$ea_m[m]
 } # end monthly
 
+#### Save Results ####
+daily_outfile <- '/home/user/Desktop/out/stash_results_daily.csv'
+write.csv(daily_totals, file=daily_outfile)
+
+monthly_outfile <- '/home/user/Desktop/out/stash_results_monthly.csv'
+write.csv(monthly_totals, file=monthly_outfile)
 
 #### View Results ####
 ##
@@ -942,3 +957,85 @@ mtext(side=2, expression(italic(E[n])~(mm)), line=3, cex=1.1)
 text(-12, 5, "(h)", pos=4, cex=1.7)
 
 dev.off()
+
+#### Example Yearly Loop ####
+data_dir <- '/home/user/Projects/STASH/'
+my_files <- list.files(data_dir, pattern='^stash_data_.*csv$')
+for (f in sort(my_files)){
+  #
+  my_file <- paste(data_dir, f, sep='')
+  DATA <- read.csv(my_file)
+  y <- as.numeric(substr(f, 17, 20))
+  ny <- julian_day(y+1, 1, 1) - julian_day(y, 1, 1)
+  #
+  monthly_totals <- monthly_totals*0
+  for (m in all_months){
+    # Calculate days of current month:
+    nm <- julian_day(y, m+1, 1) - julian_day(y, m, 1)
+    #
+    # daily:
+    for (i in seq(from=1, to=nm, by=1)){
+      # Calculate day of year:
+      n <- julian_day(y, m, i) - julian_day(y, 1 , 1) + 1
+      #
+      # Calculate evaporative supply (mm/hr)
+      # * based on yesterday's available soil moisture
+      #   ref: Federer (1982); Eq. 4, Prentice et al. (1993)
+      idx <- (n - 1)
+      if (idx < 1){
+        idx <- ny
+      }
+      sw <- kCw*daily_totals$wn[idx]/kWm
+      #
+      # Compute daily radiation and evaporations values:
+      ET <- evap(my_lat, n, my_elv, y, DATA$sf[n], DATA$tair[n], sw)
+      #
+      # Update daily soil moisture:
+      daily_totals$wn[n] <- daily_totals$wn[idx] + DATA$pn[n] + ET$cond_mm - ET$aet_mm
+      #
+      if (daily_totals$wn[n] > kWm){
+        # Bucket is full:
+        # - set soil moisture to capacity
+        # - add remaining water to runoff
+        daily_totals$ro[n] <- daily_totals$wn[n] - kWm
+        daily_totals$wn[n] <- kWm
+      } else if (daily_totals$wn[n] < 0){
+        # Bucket is empty:
+        # - set runoff and soil moisture equal to zero
+        daily_totals$ro[n] <- 0
+        daily_totals$wn[n] <- 0
+      } else{
+        daily_totals$ro[n] <- 0
+      }
+      #
+      if ((ny == 365) & (n == 365)){
+        daily_totals$wn[n+1] <- daily_totals$wn[n]
+      }
+      #
+      # Save daily results:
+      daily_totals$ho[n] <- ET$ra_j.m2
+      daily_totals$hn[n] <- ET$rn_j.m2
+      daily_totals$qn[n] <- ET$ppfd_mol.m2
+      daily_totals$cn[n] <- ET$cond_mm
+      daily_totals$eq_n[n] <- ET$eet_mm
+      daily_totals$ep_n[n] <- ET$pet_mm
+      daily_totals$ea_n[n] <- ET$aet_mm
+      #
+      # Update monthly totals:
+      monthly_totals$eq_m[m] <- monthly_totals$eq_m[m] + ET$eet_mm
+      monthly_totals$ep_m[m] <- monthly_totals$ep_m[m] + ET$pet_mm
+      monthly_totals$ea_m[m] <- monthly_totals$ea_m[m] + ET$aet_mm
+      monthly_totals$q_m[m] <- monthly_totals$q_m[m] + ET$ppfd_mol.m2
+    } # end daily
+    monthly_totals$cpa[m] <- monthly_totals$ea_m[m]/monthly_totals$eq_m[m]
+    monthly_totals$cwd[m] <- monthly_totals$ep_m[m] - monthly_totals$ea_m[m]
+  } # end monthly
+  #
+  # Save results to file:
+  daily_outfile <- paste('/home/user/Desktop/out/stash_results_', 
+                         as.character(y), '-daily.csv', sep='')
+  write.csv(daily_totals, file=daily_outfile)
+  monthly_outfile <- paste('/home/user/Desktop/out/stash_results_', 
+                           as.character(y), '-monthly.csv', sep='')
+  write.csv(monthly_totals, file=monthly_outfile)
+}
