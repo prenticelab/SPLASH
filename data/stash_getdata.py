@@ -6,7 +6,7 @@
 # Imperial College London
 #
 # 2015-01-22 -- created
-# 2015-01-26 -- last updated
+# 2015-01-27 -- last updated
 #
 # ------------
 # description:
@@ -19,7 +19,9 @@
 #   Sf:
 #    * CRU TS3.2 Cld (monthly cloudiness fraction)
 #   Tair:
-#    * CRU TS3.2 Tmn (monthly mean daily air temperature)
+#    * CRU TS3.2x Tmn (monthly min daily air temperature)
+#    * CRU TS3.2x Tmp (monthly mean daily air temperature)
+#    * CRU TS3.2x Tmx (monthly max daily dair temperature)
 #    * WATCH daily Tair (daily mean air temperature)
 #   Pn
 #    * CRU TS3.2 Pre (monthly total precipitation)
@@ -29,6 +31,7 @@
 # changelog:
 # ----------
 # 01. created STASH_DATA class [15.01.26]
+# 02. corrected mean daily CRU air temperature (tmp not tmn) [15.01.27]
 #
 ###############################################################################
 ## IMPORT MODULES
@@ -67,7 +70,7 @@ class STASH_DATA:
         # Initialize data directory and source preference dictionaries:
         self.data_dir = {'cld' : '',
                          'pre' : '',
-                         'tmn' : '',
+                         'tmp' : '',
                          'Rainf' : '',
                          'Tair' : ''}
         #
@@ -112,14 +115,14 @@ class STASH_DATA:
         """
         self.data_dir['pre'] = d
     #
-    def set_cru_tmn_dir(self, d):
+    def set_cru_tmp_dir(self, d):
         """
         Name:     STASH_DATA.set_tmn_cld_dir
         Input:    str, directory path (d)
         Features: Define the directory to CRU monthly mean air temperature  
                   netCDF file
         """
-        self.data_dir['tmn'] = d
+        self.data_dir['tmp'] = d
     #
     def set_watch_rainf_dir(self, d):
         """
@@ -650,7 +653,7 @@ class STASH_DATA:
             # Check to see if you already have this month's data processed:
             if not self.is_same_month or not self.cru_tair_is_set:
                 # Either in new month or no CRU-based Tair data is set:
-                voi = 'tmn'
+                voi = 'tmp'
                 d = self.get_monthly_cru(voi, ct)
                 tair = d[self.px_y, self.px_x]
                 self.cru_tair_is_set = True
@@ -730,7 +733,7 @@ my_class = STASH_DATA(user_lat, user_lon, user_elv)
 # Set the data input/output directories for your machine:
 my_class.set_cru_cld_dir('/usr/local/share/database/cru/')
 my_class.set_cru_pre_dir('/usr/local/share/database/cru/')
-my_class.set_cru_tmn_dir('/usr/local/share/database/cru/')
+my_class.set_cru_tmp_dir('/usr/local/share/database/cru/')
 my_class.set_watch_rainf_dir('/usr/local/share/database/watch/netcdf/rainf/')
 my_class.set_watch_tair_dir('/usr/local/share/database/watch/netcdf/tair/')
 my_class.set_output_dir('/home/user/Desktop/out/')
