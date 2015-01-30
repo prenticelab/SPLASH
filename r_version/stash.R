@@ -5,7 +5,7 @@
 # written by Tyler W. Davis
 # Imperial College London
 #
-# last updated: 2015-01-27
+# last updated: 2015-01-30
 #
 # ~~~~~~~~~~~~
 # description:
@@ -29,6 +29,7 @@
 # 12. added fix to daily soil moisture when n and ny are 365 [15.01.27]
 # 13. added write out for daily/monthly results [15.01.27]
 # 14. added example of yearly looping [15.01.27]
+# 15. updated year extraction from filename in yearly loop example [15.01.30]
 #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 #### Define functions #########################################################
@@ -965,7 +966,9 @@ for (f in sort(my_files)){
   #
   my_file <- paste(data_dir, f, sep='')
   DATA <- read.csv(my_file)
-  y <- as.numeric(substr(f, 17, 20))
+  # 
+  # Extract year from file name (the only numbers in the file name!)
+  y <- as.numeric(gsub("[^0-9]", "", f))
   ny <- julian_day(y+1, 1, 1) - julian_day(y, 1, 1)
   #
   monthly_totals <- monthly_totals*0
