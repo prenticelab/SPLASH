@@ -8,7 +8,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2015-01-18 -- last updated
+# 2015-01-29 -- last updated
 #
 # ------------
 # description:
@@ -48,11 +48,14 @@
 # 21. fixed spin_up indexing in STASH class [15.01.16]
 # 22. fixed Cramer-Prentice alpha definition [15.01.16]
 # 23. updated plots [15.01.18]
+# 24. updated reference to kL [15.01.29]
 #
 # -----
 # todo:
 # -----
-# 1. finish with STASH class
+# 1. Add a check to make certain the actual daily evapotranspiration does not 
+#    exceed inputs (i.e., precipitation and condensatin) plus reserves (i.e., 
+#    yesterday's soil moisture content).
 #
 ###############################################################################
 ## IMPORT MODULES:
@@ -75,7 +78,7 @@ keps = 23.44   # obliquity for 2000 CE, degrees (Berger, 1978)
 kfFEC = 2.04   # from flux to energy conversion, umol/J (Meek et al., 1984)
 kG = 9.80665   # gravitational acceleration, m/s^2 (Allen, 1973)
 kGsc = 1360.8  # solar constant, W/m^2 (Kopp & Lean, 2011)
-kL = 0.0065    # temperature lapse rate, K/m (Cavcar, 2000)
+kL = 0.0065    # temperature lapse rate, K/m (Allen, 1973)
 kMa = 0.028963 # molecular weight of dry air, kg/mol (Tsilingiris, 2008)
 kMv = 0.01802  # molecular weight of water vapor, kg/mol (Tsilingiris, 2008)
 kPo = 101325   # standard atmosphere, Pa (Allen, 1973)
