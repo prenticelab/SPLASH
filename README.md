@@ -1,7 +1,7 @@
 # README
 ---------------
 
-* LAST UPDATED: 2015-01-26
+* LAST UPDATED: 2015-02-06
 * TEAM: labprentice
 * REPO: stash (private)
 
@@ -28,6 +28,12 @@ This directory holds the current documentation for the STASH 2.0 code.
     * Contains the EPS figures for the documentation
 * __tex/__
     * Contains the modular LaTeX chapter files (and appendix)
+
+### cpp_version/
+This directory holds the C++ version of the STASH 2.0 code.
+
+* __EVAP.cpp__
+    * C++ class definition file.
 
 ### f90_version/
 This directory holds the FORTRAN90 version of the STASH 2.0 code. 
