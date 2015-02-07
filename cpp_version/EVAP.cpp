@@ -4,6 +4,30 @@
 
 using namespace std;
 
+/* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+ * EVAP.cpp
+ * 
+ * written by Tyler W. Davis
+ * Imperial College London
+ * 
+ * 2015-02-06 -- created
+ * 2015-02-07 -- last updated
+ * 
+ * ------------
+ * description:
+ * ------------
+ * This script includes the definitions for the EVAP class, which calculates 
+ * the daily quantities of radiation, evaporation, and condensation for the 
+ * STASH model.
+ * 
+ * ----------
+ * changelog:
+ * ----------
+ * 01. finished class function definitions and debugged [15.02.07]
+ * 
+ * //////////////////////////////////////////////////////////////////////// */
+
+
 class EVAP {
     private:
         // Constants:

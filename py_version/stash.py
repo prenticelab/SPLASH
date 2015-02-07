@@ -8,7 +8,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2015-01-29 -- last updated
+# 2015-02-07 -- last updated
 #
 # ------------
 # description:
@@ -49,12 +49,14 @@
 # 22. fixed Cramer-Prentice alpha definition [15.01.16]
 # 23. updated plots [15.01.18]
 # 24. updated reference to kL [15.01.29]
+# 25. general housekeeping on EVAP class [15.02.07]
+# 25. changed condensation variable name from 'wc' to 'cn' [15.02.07]
 #
 # -----
 # todo:
 # -----
 # 1. Add a check to make certain the actual daily evapotranspiration does not 
-#    exceed inputs (i.e., precipitation and condensatin) plus reserves (i.e., 
+#    exceed inputs (i.e., precipitation and condensation) plus reserves (i.e., 
 #    yesterday's soil moisture content).
 #
 ###############################################################################
@@ -100,7 +102,7 @@ class EVAP:
               - daily EET (eet_d), mm
               - daily PET (pet_d), mm
               - daily AET (aet_d), mm
-              - daily condensation (wc), mm
+              - daily condensation (cn), mm
     Refs:     Allen, R.G. (1996), Assessing integrity of weather data for 
                 reference evapotranspiration estimation, Journal of Irrigation
                 and Drainage Engineering, vol. 122, pp. 97--106.
@@ -184,120 +186,120 @@ class EVAP:
         # 1. Calculate number of days in year (kN), days
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if y == 0:
-            self.kN = 365
+            kN = 365
             self.user_year = 2001
         else:
-            self.kN = (
-                self.julian_day((self.user_year+1),1,1) - 
-                self.julian_day(self.user_year, 1, 1)
-            )
+            kN = self.julian_day((y+1),1,1) - self.julian_day(y, 1, 1)
+        self.kN = kN
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Calculate heliocentric longitudes (nu and lambda), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Berger (1978)
-        self.my_nu, self.my_lambda = self.berger_tls(n)
+        my_nu, my_lambda = self.berger_tls(n)
+        self.my_nu = my_nu
+        self.my_lambda = my_lambda
         # 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate distance factor (dr), unitless
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Berger et al. (1993)
-        my_rho = (1.0 - ke**2)/(1.0 + ke*self.dcos(self.my_nu))
-        self.dr = (1.0/my_rho)**2
+        kee = ke**2
+        my_rho = (1.0 - kee)/(1.0 + ke*self.dcos(my_nu))
+        dr = (1.0/my_rho)**2
+        self.dr = dr
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate declination angle (delta), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Woolf (1968)
-        self.delta = numpy.arcsin(self.dsin(self.my_lambda)*self.dsin(keps))
-        self.delta *= (180.0/numpy.pi)
+        pir = (numpy.pi/180.0)
+        delta = numpy.arcsin(self.dsin(my_lambda)*self.dsin(keps))
+        delta /= pir
+        self.delta = delta
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Calculate variable substitutes (u and v), unitless
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ru = self.dsin(self.delta)*self.dsin(lat)
-        rv = self.dcos(self.delta)*self.dcos(lat)
+        ru = self.dsin(delta)*self.dsin(lat)
+        rv = self.dcos(delta)*self.dcos(lat)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 6. Calculate the sunset hour angle (hs), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Note: u/v == tan(delta)*tan(lat)
         # Eq. 3.22, Stine & Geyer (2001)
         if (ru/rv) >= 1.0:
             # Polar day (no sunset)
-            self.hs = 180.0 
+            hs = 180.0 
         elif (ru/rv) <= -1.0:
             # Polar night (no sunrise)
-            self.hs = 0.0
+            hs = 0.0
         else:
-            self.hs = numpy.arccos(-1.0*ru/rv)
-            self.hs *= (180.0/numpy.pi)
+            hs = -1.0*ru/rv
+            hs = numpy.arccos(hs)
+            hs /= pir
+        self.hs = hs
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 7. Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 1.10.3, Duffy & Beckman (1993)
-        self.ra_d = (86400.0/numpy.pi)*kGsc*self.dr*(
-            ru*(numpy.pi/180.0)*self.hs + rv*self.dsin(self.hs)
-        )
+        ra_d = (86400.0/numpy.pi)*kGsc*dr*(ru*pir*hs + rv*self.dsin(hs))
+        self.ra_d = ra_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 8. Calculate transmittivity (tau), unitless
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 11, Linacre (1968)
+        # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
         tau_o = (kc + kd*sf)
-        #
-        # Eq. 2, Allen (1996)
         tau = tau_o*(1.0 + (2.67e-5)*elv)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 9. Calculate daily PPFD (ppfd_d), mol/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 57, STASH 2.0 Documentation
-        self.ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*self.ra_d
+        ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*ra_d
+        self.ppfd_d = ppfd_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 10. Estimate net longwave radiation (rnl), W/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
-        self.rnl = (kb + (1.0 - kb)*sf)*(kA - tc)
+        rnl = (kb + (1.0 - kb)*sf)*(kA - tc)
+        self.rnl = rnl
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 11. Calculate variable substitute (rw), W/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rw = (1.0 - kalb_sw)*tau*kGsc*self.dr
+        rw = (1.0 - kalb_sw)*tau*kGsc*dr
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 12. Calculate net radiation cross-over hour angle (hn), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if (self.rnl - rw*ru)/(rw*rv) >= 1.0:
+        if (rnl - rw*ru)/(rw*rv) >= 1.0:
             # Net radiation negative all day
-            self.hn = 0
-        elif (self.rnl - rw*ru)/(rw*rv) <= -1.0:
+            hn = 0
+        elif (rnl - rw*ru)/(rw*rv) <= -1.0:
             # Net radiation positive all day
-            self.hn = 180.0
+            hn = 180.0
         else:
-            self.hn = numpy.arccos((self.rnl - rw*ru)/(rw*rv))
-            self.hn *= (180.0/numpy.pi)
+            hn = (rnl - rw*ru)/(rw*rv)
+            hn = numpy.arccos(hn)
+            hn /= pir
+        self.hn = hn
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 13. Calculate daytime net radiation (rn_d), J/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 53, STASH 2.0 Documentation
-        self.rn_d = (86400.0/numpy.pi)*(self.hn*(numpy.pi/180.0)*(
-            rw*ru - self.rnl) + rw*rv*self.dsin(self.hn)
-        )
+        rn_d = (86400.0/numpy.pi)*(hn*pir*(rw*ru - rnl) + rw*rv*self.dsin(hn))
+        self.rn_d = rn_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 14. Calculate nighttime net radiation (rnn_d), J/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 56, STASH 2.0 Documentation
-        rnn_d = (86400.0/numpy.pi)*(
-            rw*ru*(self.hs - self.hn)*(numpy.pi/180.0) + 
-            rw*rv*(self.dsin(self.hs) - self.dsin(self.hn)) + 
-            self.rnl*(numpy.pi - 2.0*self.hs*(numpy.pi/180.0) + 
-                self.hn*(numpy.pi/180.0))
-        )
+        rnn_d = rw*ru*(hs - hn)*pir
+        rnn_d += rw*rv*(self.dsin(hs) - self.dsin(hn))
+        rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
+        rnn_d *= (86400.0/numpy.pi)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 15. Calculate water-to-energy conversion (econ), m^3/J
@@ -311,55 +313,55 @@ class EVAP:
         # Psychrometric constant, Pa/K
         g = self.psychro(tc, self.elv2pres(elv))
         #
-        # Eq. 58, STASH 2.0 Documentation
-        self.econ = s/(lv*pw*(s + g))
+        econ = s/(lv*pw*(s + g))
+        self.econ = econ
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 16. Calculate daily condensation (wc), mm
+        # 16. Calculate daily condensation (cn), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 68, STASH 2.0 Documentation
-        self.wc = (1e3)*self.econ*numpy.abs(rnn_d)
+        cn = (1e3)*econ*numpy.abs(rnn_d)
+        self.cn = cn
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 17. Estimate daily EET (eet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 70, STASH 2.0 Documentation
-        self.eet_d = (1e3)*self.econ*self.rn_d
+        eet_d = (1e3)*econ*rn_d
+        self.eet_d = eet_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 18. Estimate daily PET (pet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 72, STASH 2.0 Documentation
-        self.pet_d = (1.0 + kw)*self.eet_d
+        pet_d = (1.0 + kw)*eet_d
+        self.pet_d = pet_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 19. Calculate variable substitute (rx), (mm/hr)/(W/m^2)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rx = (3.6e6)*(1.0 + kw)*self.econ
+        rx = (3.6e6)*(1.0 + kw)*econ
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 20. Calculate the intersection hour angle (hi), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        cos_hi = sw/(rw*rv*rx) + self.rnl/(rw*rv) - ru/rv
+        cos_hi = sw/(rw*rv*rx) + rnl/(rw*rv) - ru/rv
         if cos_hi >= 1.0:
             # Supply exceeds demand:
-            self.hi = 0.0
+            hi = 0.0
         elif cos_hi <= -1.0:
             # Supply limits demand everywhere:
-            self.hi = 180.0
+            hi = 180.0
         else:
-            self.hi = numpy.arccos(cos_hi)
-            self.hi *= (180.0/numpy.pi)
+            hi = numpy.arccos(cos_hi)
+            hi /= pir
+        self.hi = hi
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 21. Estimate daily AET (aet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 81, STASH 2.0 Documentation
-        self.aet_d = (24.0/numpy.pi)*(
-            self.user_sw*self.hi*(numpy.pi/180.0) + 
-            rx*rw*rv*(self.dsin(self.hn) - self.dsin(self.hi)) + 
-            (rx*rw*ru - rx*self.rnl)*(self.hn - self.hi)*(numpy.pi/180.0)
-        )
+        aet_d = sw*hi*pir
+        aet_d += rx*rw*rv*(self.dsin(hn) - self.dsin(hi))
+        aet_d += (rx*rw*ru - rx*rnl)*(hn - hi)*pir
+        aet_d *= (24.0/numpy.pi)
+        self.aet_d = aet_d
     #
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -400,27 +402,28 @@ class EVAP:
         xee = ke**2 
         xec = ke**3
         xse = numpy.sqrt(1.0 - xee)
+        pir = numpy.pi/180.0
         #
         # Mean longitude for vernal equinox:
-        xlam = (
-            (ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega) - 
-            xee/4.0*(0.5 + xse)*self.dsin(2.0*komega) + 
-            xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
-            )
-        xlam = numpy.degrees(2.0*xlam)
+        xlam =(ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega)
+        xlam -= xee/4.0*(0.5 + xse)*self.dsin(2.0*komega)
+        xlam += xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
+        xlam *= 2.0
+        xlam /= pir
         #
         # Mean longitude for day of year:
         dlamm = xlam + (n - 80.0)*(360.0/self.kN)
         #
         # Mean anomaly:
-        anm = dlamm - komega
-        ranm = numpy.radians(anm)
+        anm = (dlamm - komega)
+        ranm = (anm*pir)
         #
         # True anomaly:
-        ranv = (ranm + (2.0*ke - xec/4.0)*numpy.sin(ranm) + 
-            5.0/4.0*xee*numpy.sin(2.0*ranm) + 
-            13.0/12.0*xec*numpy.sin(3.0*ranm))
-        anv = numpy.degrees(ranv)
+        ranv = ranm
+        ranv += (2.0*ke - xec/4.0)*numpy.sin(ranm)
+        ranv += 5.0/4.0*xee*numpy.sin(2.0*ranm)
+        ranv += 13.0/12.0*xec*numpy.sin(3.0*ranm)
+        anv = ranv/pir
         #
         # True longitude:
         my_tls = anv + komega
@@ -510,52 +513,44 @@ class EVAP:
         Ref:      Chen et al. (1977)
         """
         # Calculate density at 1 atm:
-        po = (
-            0.99983952 + 
-            (6.788260e-5)*tc + 
-            -(9.08659e-6)*tc*tc +
-            (1.022130e-7)*tc*tc*tc + 
-            -(1.35439e-9)*tc*tc*tc*tc +
-            (1.471150e-11)*tc*tc*tc*tc*tc +
-            -(1.11663e-13)*tc*tc*tc*tc*tc*tc + 
-            (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc + 
-            -(1.00659e-18)*tc*tc*tc*tc*tc*tc*tc*tc
-        )
+        po = 0.99983952
+        po += (6.788260e-5)*tc
+        po += -(9.08659e-6)*tc*tc
+        po += (1.022130e-7)*tc*tc*tc
+        po += -(1.35439e-9)*tc*tc*tc*tc
+        po += (1.471150e-11)*tc*tc*tc*tc*tc
+        po += -(1.11663e-13)*tc*tc*tc*tc*tc*tc
+        po += (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc
+        po += -(1.00659e-18)*tc*tc*tc*tc*tc*tc*tc*tc
         #
         # Calculate bulk modulus at 1 atm:
-        ko = (
-            19652.17 +
-            148.1830*tc + 
-            -2.29995*tc*tc + 
-            0.01281*tc*tc*tc + 
-            -(4.91564e-5)*tc*tc*tc*tc + 
-            (1.035530e-7)*tc*tc*tc*tc*tc
-        )
+        ko = 19652.17
+        ko += 148.1830*tc
+        ko += -2.29995*tc*tc
+        ko += 0.01281*tc*tc*tc
+        ko += -(4.91564e-5)*tc*tc*tc*tc
+        ko += (1.035530e-7)*tc*tc*tc*tc*tc
         #
         # Calculate temperature dependent coefficients:
-        ca = (
-            3.26138 + 
-            (5.223e-4)*tc + 
-            (1.324e-4)*tc*tc + 
-            -(7.655e-7)*tc*tc*tc + 
-            (8.584e-10)*tc*tc*tc*tc
-        )
-        cb = (
-            (7.2061e-5) +
-            -(5.8948e-6)*tc + 
-            (8.69900e-8)*tc*tc + 
-            -(1.0100e-9)*tc*tc*tc + 
-            (4.3220e-12)*tc*tc*tc*tc
-        )
+        ca = 3.26138
+        ca += (5.223e-4)*tc
+        ca += (1.324e-4)*tc*tc
+        ca += -(7.655e-7)*tc*tc*tc
+        ca += (8.584e-10)*tc*tc*tc*tc
+        #
+        cb = (7.2061e-5)
+        cb += -(5.8948e-6)*tc
+        cb += (8.69900e-8)*tc*tc
+        cb += -(1.0100e-9)*tc*tc*tc
+        cb += (4.3220e-12)*tc*tc*tc*tc
         #
         # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
         pbar = (1.0e-5)*p
         #
-        pw = (
-            (1e3)*po*(ko + ca*pbar + cb*pbar**2.0)/(
-                ko + ca*pbar + cb*pbar**2.0 - pbar
-            )
-        )
+        pw = (ko + ca*pbar + cb*pbar**2.0)
+        pw /= (ko + ca*pbar + cb*pbar**2.0 - pbar)
+        pw *= (1e3)*po
+        #
         return pw
     #
     def psychro(self, tc, p):
@@ -573,14 +568,13 @@ class EVAP:
         """
         # Calculate the specific heat capacity of water, J/kg/K
         # Eq. 47, Tsilingiris (2008)
-        cp = (1.0e3)*(
-            1.0045714270 +
-            (2.050632750e-3)*tc -
-            (1.631537093e-4)*tc*tc +
-            (6.212300300e-6)*tc*tc*tc -
-            (8.830478888e-8)*tc*tc*tc*tc +
-            (5.071307038e-10)*tc*tc*tc*tc*tc
-        )
+        cp = 1.0045714270
+        cp += (2.050632750e-3)*tc
+        cp += -(1.631537093e-4)*tc*tc
+        cp += (6.212300300e-6)*tc*tc*tc
+        cp += -(8.830478888e-8)*tc*tc*tc*tc
+        cp += (5.071307038e-10)*tc*tc*tc*tc*tc
+        cp *= (1e3)
         #
         # Calculate latent heat of vaporization, J/kg
         lv = self.enthalpy_vap(tc)
@@ -722,7 +716,7 @@ class STASH:
                 #
                 # Update soil moisture:
                 self.daily_totals['wn'][n-1] = (self.daily_totals['wn'][idx] +
-                    self.daily_totals['pn'][n-1] + my_evap.wc - my_evap.aet_d)
+                    self.daily_totals['pn'][n-1] + my_evap.cn - my_evap.aet_d)
                 if self.daily_totals['wn'][n-1] > kWm:
                     # Bucket is full 
                     # * set soil moisture to capacity
@@ -742,7 +736,7 @@ class STASH:
                 self.daily_totals['ho'][n-1] = my_evap.ra_d
                 self.daily_totals['hn'][n-1] = my_evap.rn_d
                 self.daily_totals['qn'][n-1] = my_evap.ppfd_d
-                self.daily_totals['cn'][n-1] = my_evap.wc
+                self.daily_totals['cn'][n-1] = my_evap.cn
                 self.daily_totals['eq_n'][n-1] = my_evap.eet_d
                 self.daily_totals['ep_n'][n-1] = my_evap.pet_d
                 self.daily_totals['ea_n'][n-1] = my_evap.aet_d
