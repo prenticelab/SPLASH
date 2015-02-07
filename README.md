@@ -35,6 +35,15 @@ This directory holds the C++ version of the STASH 2.0 code.
 * __EVAP.cpp__
     * C++ class definition file.
 
+* __EVAP.h__
+    * C++ header file for EVAP class.
+
+* __main.cpp__
+    * Main function for the STASH code.
+
+* __Makefile__
+    * Makefile for C++ STASH code.
+
 ### f90_version/
 This directory holds the FORTRAN90 version of the STASH 2.0 code. 
 
