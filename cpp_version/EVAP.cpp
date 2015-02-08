@@ -27,7 +27,6 @@ using namespace std;
  * 
  * //////////////////////////////////////////////////////////////////////// */
 
-
 class EVAP {
     private:
         // Constants:
@@ -94,8 +93,8 @@ class EVAP {
         // Constructors
         //EVAP(double lat, int n, double elv);  // default constructor
         //EVAP(double lat, int n, double elv, int y);  // default w/ year
-        EVAP(double lat, int n, double elv, int y, float sf, float tc, 
-             float sw);
+        EVAP(double lat, int n, double elv, int y, double sf, double tc, 
+             double sw);
         
         // Get Variable Functions:
         double get_ho();
@@ -110,7 +109,8 @@ class EVAP {
 // \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // Class Constructors: 
 // ////////////////////////////////////////////////////////////////////////
-EVAP::EVAP(double lat, int n, double elv, int y, float sf, float tc, float sw){
+EVAP::EVAP(double lat, int n, double elv, int y, double sf, double tc, 
+           double sw){
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 0. Initialize constants:
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

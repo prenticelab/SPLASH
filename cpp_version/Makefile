@@ -4,9 +4,9 @@ CXXFLAGS = -g
 
 MAKEFILE = Makefile
 
-OBJS = EVAP.o main.o
+OBJS = DATA.o EVAP.o main.o
 
-OFILES = EVAP.o main.o
+OFILES = DATA.o EVAP.o main.o
 PFILES = main
 
 %.o: %.cpp
@@ -25,4 +25,4 @@ nice:
 	rm -f $(OFILES)
 
 #---------- Dependencies ----------#
-main.o:		EVAP.h
+main.o:		DATA.h EVAP.h
