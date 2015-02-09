@@ -662,7 +662,7 @@
         ! 7. Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ! Eq. 1.10.3, Duffy & Beckman (1993)
-        ra_d = (86400.0/pi)*kGsc*dr*(radians(ru)*hs + rv * dgsin(hs))
+        ra_d = (86400.0/pi)*kGsc*dr*(ru*radians(hs) + rv * dgsin(hs))
 
         ! xxx debug
         !print*,'ra_d', ra_d
