@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 #
 # stash.py
-# * based on cramer_prentice.py
 #
 # written by Tyler W. Davis
 # Imperial College London
@@ -22,7 +21,7 @@
 # ----------
 # changelog:
 # ----------
-# 00. based on cramer_prentice.py created [14.01.30]
+# 00. created script based on cramer_prentice.py [14.01.30]
 # 01. global constants [14.08.26]
 # 02. EVAP class [14.08.26]
 # 03. moved class constants to global constants
@@ -52,22 +51,23 @@
 # 25. general housekeeping on EVAP class [15.02.07]
 # 25. changed condensation variable name from 'wc' to 'cn' [15.02.07]
 # 26. created DATA class for file IO handling [15.02.09]
+#     --> read all data from single CSV file
+#     --> OR read each variable from individual text files
+# 27. updated STASH class to run for one day [15.02.09]
+#     --> spin-up function still creates a soil moisture array
 #
 # -----
 # todo:
 # -----
-# 1. Add a check to make certain the actual daily evapotranspiration does not 
-#    exceed inputs (i.e., precipitation and condensation) plus reserves (i.e., 
-#    yesterday's soil moisture content).
-# 2. Change STASH class to hold only daily status.
-# 3. Create DATA class to read input and write output files.
+# 1. create a function in DATA class to run STASH, saving daily, monthly, and
+#    annual quantities & write out
+# 2. upate plot commands
 #
 ###############################################################################
 ## IMPORT MODULES:
 ###############################################################################
 import matplotlib.pyplot as plt
 import numpy
-import os.path
 
 ###############################################################################
 ## GLOBAL CONSTANTS:
@@ -321,10 +321,10 @@ class EVAP:
         self.econ = econ
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 16. Calculate daily condensation (cn), mm
+        # 16. Calculate daily condensation (cond), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         cn = (1e3)*econ*numpy.abs(rnn_d)
-        self.cn = cn
+        self.cond = cn
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 17. Estimate daily EET (eet_d), mm
@@ -587,241 +587,6 @@ class EVAP:
         # Eq. 8, Allen et al. (1998)
         return (cp*kMa*p/(kMv*lv))
 #
-class STASH:
-    """
-    Name:     STASH
-    Features: This class maintains daily, monthly and annual quantities of 
-              radiation, evapotranspiration, and soil moisture based on the 
-              STASH methods
-    """
-    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    # Class Initialization 
-    # ////////////////////////////////////////////////////////////////////////
-    def __init__(self, lat, elv):
-        """
-        Name:     STASH.__init__
-        Input:    - float, latitude, degrees (lat)
-                  - float, elevation, meters (elv)
-        """
-        # Error handle and assign required public variables:
-        self.elv = elv
-        #
-        if lat > 90.0 or lat < -90.0:
-            print "Latitude outside range of validity (-90 to 90)!"
-            exit(1)
-        else:
-            self.lat = lat
-        #
-        # Initialize daily totals
-        self.daily_totals = numpy.empty(
-            shape=(366,), 
-            dtype=[('ho',numpy.float),    # daily solar irradiation, J/m2
-                   ('hn', numpy.float),   # daily net radiation, J/m2
-                   ('qn', numpy.float),   # daily PPFD, mol/m2
-                   ('cn', numpy.float),   # daily condensation water, mm
-                   ('wn', numpy.float),   # daily soil moisture, mm
-                   ('pn', numpy.float),   # daily precipitation, mm
-                   ('ro', numpy.float),   # daily runoff, mm
-                   ('eq_n', numpy.float), # daily equilibrium ET, mm
-                   ('ep_n', numpy.float), # daily potential ET, mm
-                   ('ea_n', numpy.float)] # daily actual ET, mm
-        )
-        #
-        # Initialize monthly totals
-        self.monthly_totals = numpy.zeros(shape=(12,),
-                                          dtype=[('eq_m', numpy.float),
-                                                 ('ep_m', numpy.float),
-                                                 ('ea_m', numpy.float),
-                                                 ('cpa', numpy.float),
-                                                 ('cwd', numpy.float),
-                                                 ('qm', numpy.float)])
-    #
-    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    # Class Function Definitions
-    # ////////////////////////////////////////////////////////////////////////
-    def spin_up(self, y, ppt, tc, sf):
-        """
-        Name:     STASH.spin
-        Input:    - int, year (y)
-                  - numpy.ndarray, daily precip, mm (ppt) 
-                  - numpy.ndarray, daily air temperature, deg C (tc) 
-                  - numpy.ndarray, daily sunshine fraction (sf)
-        Output:   None.
-        Features: Spins up the daily soil moisture
-        """
-        # Determine end-of-year index:
-        ny = self.julian_day(y+1, 1, 1) - self.julian_day(y, 1, 1)
-        idx = int(ny-1)
-        #
-        # Run once:
-        self.run_one_year(y, ppt, tc, sf)
-        #
-        # Check to see if 1 Jan soil moisture matches 31 Dec:
-        start_sm = self.daily_totals['wn'][0]
-        end_sm = self.daily_totals['wn'][idx]
-        diff_sm = numpy.abs(end_sm - start_sm)
-        #
-        # If not, spin again!
-        self.spin_count = 1
-        while (diff_sm > 1):
-            self.run_one_year(y, ppt, tc, sf)
-            start_sm = self.daily_totals['wn'][0]
-            end_sm = self.daily_totals['wn'][idx]
-            diff_sm = numpy.abs(end_sm - start_sm)
-            self.spin_count += 1
-
-        # Once in equilibrium, write daily and monthly values 
-        # of one year to file
-        #self.write_to_file()
-
-    #
-    def run_one_year(self, y, ppt, tc, sf):
-        """
-        Name:     STASH.run_one_year
-        Input:    - int, year (y)
-                  - numpy.ndarray, monthly total precip, mm (ppt)
-                  - numpy.ndarray, mean monthly temp, deg C (tc)
-                  - numpy.ndarray, mean fractional sunshine (sf)
-        Output:   None.
-        Features: Calculates daily and monthly quantities for one year
-        """
-        # Reset monthly totals:
-        self.reset_monthly_totals()
-        #
-        # Calculates days in year:
-        ny = self.julian_day(y+1, 1, 1) - self.julian_day(y, 1, 1)
-        #
-        # Iterate through the months:
-        months = [j+1 for j in xrange(12)]
-        for m in months:
-            nm = self.julian_day(y, m+1, 1) - self.julian_day(y, m, 1)
-            days = [j+1 for j in xrange(int(nm))]
-            for i in days:
-                # Calculate the day of the year:
-                n = self.julian_day(y, m, i) - self.julian_day(y, 1, 1) + 1
-                #
-                # Get index for yesterday (Note: zero indexing)
-                # xxx in effect, idx is TWO days before -- is this correct? xxx
-                # Note that 'n' represents day of year and runs from 1 to 365 
-                # (366), whereas idx is the index and runs from 0 to 364 (365) 
-                # (zero-indexing in Python!)
-                idx = int(n - 1) - 1
-                if idx < 0:
-                    idx = int(ny - 1)
-                #
-                # Calculate evaporative supply rate, mm/h
-                sw = kCw*self.daily_totals['wn'][idx]/kWm
-                #
-                # Calculate radiation and evaporation quantities
-                my_evap = EVAP(self.lat, n, self.elv, y, sf[n-1], tc[n-1], sw)
-                #
-                # Calculate daily precipitation:
-                self.daily_totals['pn'][n-1] = ppt[n-1]
-                #
-                # Update soil moisture:
-                self.daily_totals['wn'][n-1] = (self.daily_totals['wn'][idx] +
-                    self.daily_totals['pn'][n-1] + my_evap.cn - my_evap.aet_d)
-                if self.daily_totals['wn'][n-1] > kWm:
-                    # Bucket is full 
-                    # * set soil moisture to capacity
-                    # * add remaining water to monthly runoff total
-                    self.daily_totals['ro'][n-1] = self.daily_totals['wn'][n-1]
-                    self.daily_totals['ro'][n-1] -= kWm
-                    self.daily_totals['wn'][n-1] = kWm
-                elif self.daily_totals['wn'][n-1] < 0:
-                    # Bucket is empty
-                    # * set soil moisture to zero
-                    self.daily_totals['wn'][n-1] = 0
-                    self.daily_totals['ro'][n-1] = 0
-                else:
-                    self.daily_totals['ro'][n-1] = 0
-                #
-                # Save the daily totals:
-                self.daily_totals['ho'][n-1] = my_evap.ra_d
-                self.daily_totals['hn'][n-1] = my_evap.rn_d
-                self.daily_totals['qn'][n-1] = my_evap.ppfd_d
-                self.daily_totals['cn'][n-1] = my_evap.cn
-                self.daily_totals['eq_n'][n-1] = my_evap.eet_d
-                self.daily_totals['ep_n'][n-1] = my_evap.pet_d
-                self.daily_totals['ea_n'][n-1] = my_evap.aet_d
-                #
-                # Update monthly totals:
-                self.monthly_totals['eq_m'][m-1] += my_evap.eet_d
-                self.monthly_totals['ep_m'][m-1] += my_evap.pet_d
-                self.monthly_totals['ea_m'][m-1] += my_evap.aet_d
-                self.monthly_totals['qm'][m-1] += my_evap.ppfd_d
-                #
-            # END LOOP ON DAYS
-            # Calculate other monthly totals:
-            self.monthly_totals['cpa'][m-1] = self.monthly_totals['ea_m'][m-1]
-            self.monthly_totals['cpa'][m-1] /= self.monthly_totals['eq_m'][m-1]
-            self.monthly_totals['cwd'][m-1] = self.monthly_totals['ep_m'][m-1]
-            self.monthly_totals['cwd'][m-1] -= self.monthly_totals['ea_m'][m-1]
-        # END LOOP ON MONTHS
-    #
-    def reset_monthly_totals(self):
-        """
-        Name:     STASH.reset_monthly_totals
-        Input:    None.
-        Output:   None.
-        Features: Resets the monthly results to zero
-        """
-        self.monthly_totals = numpy.zeros(shape=(12,),
-                                          dtype=[('eq_m', numpy.float),
-                                                 ('ep_m', numpy.float),
-                                                 ('ea_m', numpy.float),
-                                                 ('cpa', numpy.float),
-                                                 ('cwd', numpy.float),
-                                                 ('qm', numpy.float)])
-    #
-    def write_to_file(self):
-        """
-        Name:     STASH.write_to_file
-        Input:    None.
-        Output:   None.
-        Features: Writes daily and monthly values to files
-        """
-        #
-        print "writing daily totals to files"
-        numpy.savetxt('./output/ho.d.out', self.daily_totals['ho'])
-        numpy.savetxt('./output/hn.d.out', self.daily_totals['hn'])
-        numpy.savetxt('./output/qn.d.out', self.daily_totals['qn'])
-        numpy.savetxt('./output/cn.d.out', self.daily_totals['cn'])
-        numpy.savetxt('./output/eq_n.d.out', self.daily_totals['eq_n'])
-        numpy.savetxt('./output/ep_n.d.out', self.daily_totals['ep_n'])
-        numpy.savetxt('./output/ea_n.d.out', self.daily_totals['ea_n'])
-        #
-        print "writing monthly totals to files"
-        numpy.savetxt('./output/eq_m.m.out',self.monthly_totals['eq_m'])
-        numpy.savetxt('./output/ep_m.m.out',self.monthly_totals['ep_m'])
-        numpy.savetxt('./output/ea_m.m.out',self.monthly_totals['ea_m'])
-        numpy.savetxt('./output/qm.m.out',self.monthly_totals['qm'])
-        numpy.savetxt('./output/cpa.m.out',self.monthly_totals['cpa'])
-        numpy.savetxt('./output/cwd.m.out',self.monthly_totals['cwd'])
-    #
-    def julian_day(self, y, m, i):
-        """
-        Name:     STASH.julian_day
-        Input:    - int, year (y)
-                  - int, month (m)
-                  - int, day of month (i)
-        Output:   float, Julian Ephemeris Day
-        Features: Converts Gregorian date (year, month, day) to Julian 
-                  Ephemeris Day
-        Ref:      Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," Astronomical 
-                  Algorithms
-        """
-        if m <= 2.0:
-            y -= 1.0
-            m += 12.0
-        #
-        a = int(y/100)
-        b = 2 - a + int(a/4)
-        #
-        jde = int(365.25*(y+4716)) + int(30.6001*(m+1)) + i + b - 1524.5
-        return jde
-    #
-
 class DATA:
     """
     Name:     DATA
@@ -837,6 +602,7 @@ class DATA:
         Features: Initialize empty class variables
         """
         self.file_name = ""
+        self.year = 0
         self.num_lines = 0.
         self.sf_vec = numpy.array([])
         self.tair_vec = numpy.array([])
@@ -845,10 +611,11 @@ class DATA:
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
-    def read_csv(self, fname):
+    def read_csv(self, fname, y=-1):
         """
         Name:     DATA.read_csv
-        Input:    str, input CSV filename (fname)
+        Input:    - str, input CSV filename (fname)
+                  - int, year (y)
         Output:   None
         Features: Reads all three daily input variables (sf, tair, and pn) for 
                   a single year from a CSV file that includes a headerline.
@@ -868,16 +635,26 @@ class DATA:
             self.tair_vec = data['tair']
             self.pn_vec = data['pn']
             self.num_lines = data.shape[0]
+            #
+            if y == -1:
+                if data.shape[0] == 366:
+                    self.year = 2000
+                elif data.shape[0] == 365:
+                    self.year = 2001
+            else:
+                self.year = y
     #
-    def read_txt(self, fname, var):
+    def read_txt(self, fname, var, y=-1):
         """
         Name:     DATA.read_txt
         Input:    - str, input text file (fname)
                   - str, variable name (i.e., 'pn', 'sf', 'tair')
+                  - int, year (y)
         Output:   None.
         Features: Reads plain text file (no header) into one of daily input
                   arrays.
         """
+        # Add filename to list:
         if not isinstance(self.file_name, list):
 	        self.file_name = []
         self.file_name.append(fname)
@@ -896,8 +673,268 @@ class DATA:
             else:
                 print 'Variable type not recognized!'
             #
-            self.num_lines
-    
+            # Add line numbers to list:
+            if not isinstance(self.num_lines, list):
+                self.num_lines = []
+            self.num_lines.append(data.shape[0])
+            #
+            if y == -1:
+                if data.shape[0] == 366:
+                    self.year = 2000
+                elif data.shape[0] == 365:
+                    self.year = 2001
+            else:
+                self.year = y
+#
+class STASH:
+    """
+    Name:     STASH
+    Features: This class updates daily quantities of radiation, 
+              evapotranspiration, soil moisture and runoff based on the
+              STASH methodology.
+    """
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Initialization 
+    # ////////////////////////////////////////////////////////////////////////
+    def __init__(self, lat, elv):
+        """
+        Name:     STASH.__init__
+        Input:    - float, latitude, degrees (lat)
+                  - float, elevation, meters (elv)
+        """
+        # Error handle and assign required public variables:
+        self.elv = elv
+        #
+        if lat > 90.0 or lat < -90.0:
+            print "Latitude outside range of validity (-90 to 90)!"
+            exit(1)
+        else:
+            self.lat = lat
+        #
+        # Initialize daily status variables:
+        self.ho = 0.     # daily solar irradiation, J/m2
+        self.hn = 0.     # daily net radiation, J/m2
+        self.ppfd = 0.   # daily PPFD, mol/m2
+        self.cond = 0.   # daily condensation water, mm
+        self.wn = 0.     # daily soil moisture, mm
+        self.precip = 0. # daily precipitation, mm
+        self.ro = 0.     # daily runoff, mm
+        self.eet = 0.    # daily equilibrium ET, mm
+        self.pet = 0.    # daily potential ET, mm
+        self.aet = 0.    # daily actual ET, mm
+    #
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Function Definitions
+    # ////////////////////////////////////////////////////////////////////////
+    def spin_up(self, d):
+        """
+        Name:     STASH.spin
+        Input:    - DATA class, (d)
+                  - bool, (to_write)
+        Output:   None.
+        Features: Spins up the daily soil moisture.
+        Depends:  quick_run
+        """
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 1. Create a soil moisture array:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if isinstance(d.num_lines, list):
+            n = d.num_lines[0]
+            if (numpy.array(d.num_lines) == n).all():
+                wn_vec = numpy.zeros((n,))
+            else:
+                print "Invalid number of lines read from DATA class!"
+        else:
+            n = d.num_lines
+            wn_vec = numpy.zeros((n,))
+        print "Created soil moisture array of length", len(wn_vec)
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 2. Run one year:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        for i in xrange(n):
+            # Get preceding soil moisture status:
+            if i == 0:
+                wn = wn_vec[-1]
+            else:
+                wn = wn_vec[i-1]
+            #
+            # Calculate soil moisture and runoff:
+            sm, ro = self.quick_run(n=i+1, 
+                                    y=d.year,
+                                    wn=wn,
+                                    sf=d.sf_vec[i], 
+                                    tc=d.tair_vec[i], 
+                                    pn=d.pn_vec[i])
+            wn_vec[i] = sm
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 3. Calculate change in starting soil moisture:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        start_sm = wn_vec[0]
+        end_sm, ro = self.quick_run(n=1,
+                                    y=d.year,
+                                    wn=wn_vec[-1],
+                                    sf=d.sf_vec[0],
+                                    tc=d.tair_vec[0],
+                                    pn=d.pn_vec[0])
+        diff_sm = numpy.abs(end_sm - start_sm)
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 4. Equilibrate:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        spin_count = 1
+        while diff_sm > 1.0:
+            for i in xrange(n):
+                # Get preceding soil moisture status:
+                if i == 0:
+                    wn = wn_vec[-1]
+                else:
+                    wn = wn_vec[i-1]
+                #
+                # Calculate soil moisture and runoff:
+                sm, ro = self.quick_run(n=i+1, 
+                                        y=d.year,
+                                        wn=wn,
+                                        sf=d.sf_vec[i], 
+                                        tc=d.tair_vec[i], 
+                                        pn=d.pn_vec[i])
+                wn_vec[i] = sm
+            #
+            start_sm = wn_vec[0]
+            end_sm, ro = self.quick_run(n=1,
+                                        y=d.year,
+                                        wn=wn_vec[-1],
+                                        sf=d.sf_vec[0],
+                                        tc=d.tair_vec[0],
+                                        pn=d.pn_vec[0])
+            diff_sm = numpy.abs(end_sm - start_sm)
+            spin_count += 1
+        #
+        print "Spun", spin_count, "years"
+        self.wn_vec = wn_vec
+        self.wn = wn_vec[-1]
+        #
+    #
+    def quick_run(self, n, y, wn, sf, tc, pn):
+        """
+        Name:     STASH.quick_run
+        Inputs:   - int, day of year (n)
+                  - int, year (y)
+                  - float, daily soil water content, mm (wn)
+                  - float, daily fraction of bright sunshine (sf)
+                  - float, daily air temperature, deg C (tc)
+                  - float, daily precipitation, mm (pn)
+        Output:   - float, soil moisture, mm (sm)
+                  - float, runoff, mm (ro)
+        Features: Returns daily soil moisture and runoff.
+        Depends:  - kCw
+                  - kWm
+                  - EVAP
+        """
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 1. Calculate evaporative supply rate, mm/h
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        sw = kCw*(wn/kWm)
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 2. Calculate radiation and evaporation quantities
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        my_evap = EVAP(self.lat, n, self.elv, y, sf, tc, sw)
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 3. Calculate today's soil moisture, mm
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        sm = wn + pn + my_evap.cond - my_evap.aet_d
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 4. Calculate runoff, mm
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if sm > kWm:
+            # Bucket is too full 
+            #   allocate excess water to runoff
+            #   set soil moisture to capacity (i.e., kWm)
+            ro = sm - kWm
+            sm = kWm
+        elif sm < 0:
+            # Bucket is too empty
+            #   set soil moisture and runoff to zero
+            sm = 0
+            ro = 0
+        else:
+            ro = 0
+        #
+        return(sm, ro)
+    #
+    def run_one_day(self, n, y, wn, sf, tc, pn):
+        """
+        Name:     STASH.run_one_day
+        Inputs:   - int, day of year (n)
+                  - int, year (y)
+                  - float, soil water content, mm (wn)
+                  - float, fraction of bright sunshine (sf)
+                  - float, air temperature, deg C (tc)
+                  - float, precipitation, mm (pn)
+        Outputs:  None
+        Features: Runs STASH model for one day.
+                  model.
+        Depends:  - kCw
+                  - kWm
+                  - EVAP
+        """
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 0. Set meteorological variables:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        self.precip = pn    # daily precipitation, mm
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 1. Calculate evaporative supply rate (sw), mm/h
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        sw = kCw*(wn/kWm)
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 2. Calculate radiation and evaporation quantities
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        my_evap = EVAP(self.lat, n, self.elv, y, sf, tc, sw)
+        self.ho = my_evap.ra_d     # daily solar irradiation, J/m2
+        self.hn = my_evap.rn_d     # daily net radiation, J/m2
+        self.ppfd = my_evap.ppfd_d # daily PPFD, mol/m2
+        self.cond = my_evap.cond   # daily condensation water, mm
+        self.eet = my_evap.eet_d   # daily equilibrium ET, mm
+        self.pet = my_evap.pet_d   # daily potential ET, mm
+        self.aet = my_evap.aet_d   # daily actual ET, mm
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 3. Calculate today's soil moisture (sm), mm
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        sm = wn + pn + my_evap.cond - my_evap.aet_d
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 4. Calculate runoff (ro), mm
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if sm > kWm:
+            # Bucket is too full 
+            #   allocate excess water to runoff
+            #   set soil moisture to capacity (i.e., kWm)
+            ro = sm - kWm
+            sm = kWm
+        elif sm < 0:
+            # Bucket is too empty
+            #   reduce actual ET by discrepancy amount
+            #   set soil moisture and runoff to zero
+            self.aet += sm
+            sm = 0
+            ro = 0
+        else:
+            ro = 0
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 5. Update soil moisture & runoff
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        self.wn = sm  # daily soil moisture, mm
+        self.ro = ro  # daily runoff, mm
+    #
+
 ###############################################################################
 ## MAIN PROGRAM 
 ###############################################################################
@@ -910,19 +947,35 @@ if 0:
                    tc = 17.3,
                    sw = 0.5)
 
-# Example data (San Francisco, 2000 CE)
+# Example 1: read CSV file:
 my_file = 'example_data.csv'
 my_data = DATA()
 my_data.read_csv(my_file)
 
-my_lat = 37.7   # latitude, degrees
-my_elv = 142.   # elevation, m
+# Example 2: read TXT files:
+my_sf_file = 'daily_sf_2000_cruts.txt'
+my_pn_file = 'daily_pn_2000_wfdei.txt'
+my_tair_file = 'daily_tair_2000_wfdei.txt'
+my_data = DATA()
+my_data.read_txt(my_sf_file, 'sf')
+my_data.read_txt(my_pn_file, 'pn')
+my_data.read_txt(my_tair_file, 'tair')
 
-# Create STASH class and spin up soil moisture:
-my_class = STASH(my_lat, my_elv)
-my_class.spin_up(2000, data['pn'], data['tair'], data['sf'])
-#my_class.run_one_year(2000, data['ppt'], data['tc'], data['sf'])
+# Create STASH class for San Francisco, 2000 CE
+my_lat = 37.7                     # latitude, degrees
+my_elv = 142.                     # elevation, m
+my_stash = STASH(my_lat, my_elv)
+my_stash.spin_up(my_data)
+my_stash.run_one_day(n=1, 
+                     y=my_data.year, 
+                     wn=my_stash.wn, 
+                     sf=my_data.sf_vec[0], 
+                     tc=my_data.tair_vec[0], 
+                     pn=my_data.pn_vec[0])
 
+
+
+########################## NEEDS UPDATED ##########################
 #
 # Plot monthly ET results
 #
