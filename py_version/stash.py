@@ -8,7 +8,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2015-02-07 -- last updated
+# 2015-02-09 -- last updated
 #
 # ------------
 # description:
@@ -58,12 +58,15 @@
 # 1. Add a check to make certain the actual daily evapotranspiration does not 
 #    exceed inputs (i.e., precipitation and condensation) plus reserves (i.e., 
 #    yesterday's soil moisture content).
+# 2. Change STASH class to hold only daily status.
+# 3. Create DATA class to read input and write output files.
 #
 ###############################################################################
 ## IMPORT MODULES:
 ###############################################################################
 import matplotlib.pyplot as plt
 import numpy
+import os.path
 
 ###############################################################################
 ## GLOBAL CONSTANTS:
@@ -818,6 +821,82 @@ class STASH:
         return jde
     #
 
+class DATA:
+    """
+    Name:     DATA
+    Features: This class handles the file IO for reading and writing data.
+    """
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Initialization 
+    # ////////////////////////////////////////////////////////////////////////
+    def __init__(self):
+        """
+        Name:     DATA.__init__
+        Input:    str, input file name (fname)
+        Features: Initialize empty class variables
+        """
+        self.file_name = ""
+        self.num_lines = 0.
+        self.sf_vec = numpy.array([])
+        self.tair_vec = numpy.array([])
+        self.pn_vec = numpy.array([])
+    #
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Function Definitions
+    # ////////////////////////////////////////////////////////////////////////
+    def read_csv(self, fname):
+        """
+        Name:     DATA.read_csv
+        Input:    str, input CSV filename (fname)
+        Output:   None
+        Features: Reads all three daily input variables (sf, tair, and pn) for 
+                  a single year from a CSV file that includes a headerline.
+        """
+        self.file_name = fname
+        #
+        try:
+            data = numpy.loadtxt(fname, 
+                                 dtype={'names': ('sf', 'tair', 'pn'),
+                                        'formats' : ('f4', 'f4', 'f4')},
+                                 delimiter=',',
+                                 skiprows=1)
+        except IOError:
+            print "Could not read input file", fname
+        else:
+            self.sf_vec = data['sf']
+            self.tair_vec = data['tair']
+            self.pn_vec = data['pn']
+            self.num_lines = data.shape[0]
+    #
+    def read_txt(self, fname, var):
+        """
+        Name:     DATA.read_txt
+        Input:    - str, input text file (fname)
+                  - str, variable name (i.e., 'pn', 'sf', 'tair')
+        Output:   None.
+        Features: Reads plain text file (no header) into one of daily input
+                  arrays.
+        """
+        if not isinstance(self.file_name, list):
+	        self.file_name = []
+        self.file_name.append(fname)
+        #
+        try:
+            data = numpy.loadtxt(fname, dtype='f4')
+        except IOError:
+            print "Could not read input file", fname
+        else:
+            if var == 'sf':
+                self.sf_vec = data
+            elif var == 'pn':
+                self.pn_vec = data
+            elif var == 'tair':
+                self.tair_vec = data
+            else:
+                print 'Variable type not recognized!'
+            #
+            self.num_lines
+    
 ###############################################################################
 ## MAIN PROGRAM 
 ###############################################################################
@@ -832,11 +911,9 @@ if 0:
 
 # Example data (San Francisco, 2000 CE)
 my_file = 'example_data.csv'
-data = numpy.loadtxt(my_file, 
-                     dtype={'names': ('sf', 'tair', 'pn'),
-                            'formats' : ('f4', 'f4', 'f4')},
-                     delimiter=',',
-                     skiprows=1)
+my_data = DATA()
+my_data.read_csv(my_file)
+
 my_lat = 37.7   # latitude, degrees
 my_elv = 142.   # elevation, m
 
