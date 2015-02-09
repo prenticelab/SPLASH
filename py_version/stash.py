@@ -51,6 +51,7 @@
 # 24. updated reference to kL [15.01.29]
 # 25. general housekeeping on EVAP class [15.02.07]
 # 25. changed condensation variable name from 'wc' to 'cn' [15.02.07]
+# 26. created DATA class for file IO handling [15.02.09]
 #
 # -----
 # todo:
