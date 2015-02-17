@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -22,28 +23,31 @@ using namespace std;
  * ----------
  * changelog:
  * ----------
- * 
+ * 01. Added iostream to module list [15.02.17]
+ * 02. Created read_csv and read_txt class member functions [15.02.17]
+ * 03. Added year to class member variables [15.02.17]
  * 
  * //////////////////////////////////////////////////////////////////////// */
 
 class DATA {
     private:
         // Variables:
-        string file_name;
         int num_lines;                  // number of lines read from file
+        int year;                       // year for data from file
+        string file_name;
+        vector<string> file_names;       // all file names
         vector<double> sf_vec;          // sun hours fraction
         vector<double> tair_vec;        // air temperature, deg C
         vector<double> pn_vec;          // precipitation, mm
         
-        // Functions:
-        int count_lines(string fname);
-        bool inValidDouble(string mystring);
-    
     public:
         // Constructors:
-        DATA(string fname);
+        DATA();
         
         // Functions:
+        void read_csv(string fname, int y=-1);
+        void read_txt(string fname, string var, int y=-1);
+        
         vector<double> get_all_sf();
         vector<double> get_all_tair();
         vector<double> get_all_pn();
@@ -51,20 +55,37 @@ class DATA {
         double get_one_tair(int n);
         double get_one_pn(int n);
         int nlines();
+        int get_year();
 };
 
 // \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // Class Constructors: 
 // ////////////////////////////////////////////////////////////////////////
-DATA::DATA(string fname)
-    : file_name(fname)
+DATA::DATA()
+    : num_lines(0), year(0)
 {
+}
+
+// \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+// Class Function Definitions
+// ////////////////////////////////////////////////////////////////////////
+void DATA::read_csv(string fname, int y) {
+    /* ***********************************************************************
+    Name:     DATA.read_csv
+    Input:    - string, file name (fname)
+              - int, year (y)
+    Output:   None.
+    Features: Reads all three daily input variables (sf, tair, and pn) for 
+              a single year from a CSV file that includes a headerline.
+    *********************************************************************** */
     string line;
     string sf_str, tair_str, pn_str;
     double sf_val, tair_val, pn_val;
     size_t pos;
     vector<int> posit;
     int commas;
+    
+    file_name = fname;
     
     // Open stream to file:
     ifstream my_file( fname.c_str() );
@@ -120,58 +141,75 @@ DATA::DATA(string fname)
             i++;
         } // end while file != eof
         num_lines = (i - 1);  // subtract one for last iteration
-        num_lines--;          // subtract one for the headerline
-    } // end if file is open
+        num_lines--;          // subtract one more for the headerline
+    } else {
+        cout << "! Could not read " << fname << endl;
+    }
+    my_file.close();
+    
+    // Set class variable for year:
+    if (y == -1){
+        if (num_lines == 366){
+            year = 2000;
+        } else if (num_lines == 365) {
+            year = 2001;
+        }
+    } else {
+        year = y;
+    }
 }
 
-// \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-// Class Function Definitions
-// ////////////////////////////////////////////////////////////////////////
-bool DATA::inValidDouble(string mystring){
+void DATA::read_txt(string fname, string var, int y){
     /* ***********************************************************************
-    Name:     DATA.inValidDouble
-    Input:    string (mystring)
-    Output:   bool
-    Features: This function returns 'false' if string is a valid double. The 
-              checks include non-digits, minus signs and decimal places.
-    Ref:      Based partially from code found at http://programmersheaven.com/
+    Name:     DATA.read_txt
+    Input:    - string, file name (fname)
+              - string, variable name (var)
+              - int, year (y)
+    Output:   None.
+    Features: Reads plain text file (no header) into one of daily input 
+              arrays.
     *********************************************************************** */
-    int n = 0;             // number of decimals
-    int m = 0;             // number of minus signs
-    bool invstr = false;  // invalid string boolean
+    string line;
+    double val;
     
-    for (int i=0; i < (mystring.size()); i++){
-        // Check to see if character is a digit //
-        if (mystring[i] < '0' || mystring[i] > '9'){
-            if (mystring[i] != '.'){
-                // Check to see if non-digit is a period or minus
-                if (mystring[i] != '-'){
-                    // Non-digit is not a period, check for minus sign
-                    invstr = true;
-                } else if (mystring.size() == 1){
-                    // Non-digit was a minus sign; is it a number?
-                    invstr = true;
-                } else {
-                    // add 1 to number of minus signs found
-                    m += 1;
-                }
-            } else if (mystring.size() == 1) {
-                // Non-digit was a period, is it a number?
-                invstr = true;
-            } else {
-                // add 1 to number of periods found
-                n += 1;
+    // Add file name to list of file names:
+    file_names.push_back(fname);
+    
+    // Open stream to file:
+    ifstream my_file( fname.c_str() );
+    if ( my_file.is_open() ){
+        int i = 0;
+        while ( getline(my_file, line) ){
+            // Read and convert string to double:
+            val = atof( line.c_str() );
+            
+            // Append to appropriate array:
+            if (var == "pn"){
+                pn_vec.push_back(val);
+            } else if (var == "sf"){
+                sf_vec.push_back(val);
+            } else if (var == "tair"){
+                tair_vec.push_back(val);
             }
-        }
-        if (n > 1 || m > 1) {
-            // There was more than 1 period or minus  present
-            invstr = true;
-        } else if ( (n == 1) && (m == 1) && (mystring.size() == 2) ) {
-            // String consists of only a minus and a period //
-            invstr = true;
-        }
+            
+            i++;
+        } // end while file != eof
+        num_lines = i;
+    } else {
+        cout << "! Could not read " << fname << endl;
     }
-    return invstr;
+    my_file.close();
+    
+    // Set class variable for year:
+    if (y == -1){
+        if (num_lines == 366){
+            year = 2000;
+        } else if (num_lines == 365) {
+            year = 2001;
+        }
+    } else {
+        year = y;
+    }
 }
 
 vector<double> DATA::get_all_sf() {
@@ -242,4 +280,14 @@ int DATA::nlines(){
     Features: This function returns the number of lines in the input file.
     *********************************************************************** */
     return num_lines;
+}
+
+int DATA::get_year(){
+    /* ***********************************************************************
+    Name:     DATA.year
+    Input:    None
+    Output:   int
+    Features: This function returns the year of the input file.
+    *********************************************************************** */
+    return year;
 }
