@@ -11,7 +11,7 @@ using namespace std;
  * Imperial College London
  * 
  * 2015-02-06 -- created
- * 2015-02-07 -- last updated
+ * 2015-02-17 -- last updated
  * 
  * ------------
  * description:
@@ -24,6 +24,8 @@ using namespace std;
  * changelog:
  * ----------
  * 01. finished class function definitions and debugged [15.02.07]
+ * 02. removed kCw and kWm from constants (moved to STASH class) [15.02.17]
+ * 03. changed get_cn to get_cond [15.02.17]
  * 
  * //////////////////////////////////////////////////////////////////////// */
 
@@ -35,7 +37,6 @@ class EVAP {
         double kalb_vis; // visible light albedo
         double kb;       // constant for Rnl
         double kc;       // cloudy transmittivity
-        double kCw;      // supply constant, mm/hr 
         double kd;       // angular coefficient of transmittivity
         double ke;       // eccentricity
         double keps;     // obliquity, degrees 
@@ -48,7 +49,6 @@ class EVAP {
         double kPo;      // standard atmosphere, Pa 
         double kR;       // universal gas constant, J/mol/K 
         double kTo;      // base temperature, K 
-        double kWm;      // soil moisture capacity, mm 
         double kw;       // entrainment factor
         double komega;   // longitude of perihelion, degrees 
         double kPI;      // pi
@@ -98,9 +98,11 @@ class EVAP {
         
         // Get Variable Functions:
         double get_ho();
+        double get_hn();
         double get_ppfd();
         double get_aet();
-        double get_cn();
+        double get_eet();
+        double get_cond();
         
         // Print variables to screen:
         void display();
@@ -119,7 +121,6 @@ EVAP::EVAP(double lat, int n, double elv, int y, double sf, double tc,
     kalb_vis = 0.03;  // (Sellers, 1985)
     kb = 0.20;        // (Linacre, 1968)
     kc = 0.25;        // (Linacre, 1968)
-    kCw = 1.05;       // (Federer, 1982)
     kd = 0.50;        // (Linacre, 1968)
     ke = 0.0167;      // (Berger, 1978)
     keps = 23.44;     // (Berger, 1978)
@@ -132,7 +133,6 @@ EVAP::EVAP(double lat, int n, double elv, int y, double sf, double tc,
     kPo = 101325;     // (Allen, 1973)
     kR = 8.3143;      // (Allen, 1973)
     kTo = 298.15;     // (Prentice, unpublished)
-    kWm = 150.0;      // (Cramer & Prentice, 1988)
     kw = 0.26;        // (Lhomme, 1997; Priestley & Taylor, 1972)
     komega = 283.0;   // (Berger, 1978)
     kPI = 3.14159265; // pi
@@ -551,6 +551,10 @@ double EVAP::get_ho(){
     return ra_d;
 }
 
+double EVAP::get_hn(){
+    return rn_d;
+}
+
 double EVAP::get_ppfd(){
     return ppfd_d;
 }
@@ -559,7 +563,7 @@ double EVAP::get_aet(){
     return aet_d;
 }
 
-double EVAP::get_cn(){
+double EVAP::get_cond(){
     return cn;
 }
 

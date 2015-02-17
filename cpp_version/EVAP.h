@@ -26,7 +26,6 @@ class EVAP {
         double kalb_vis; // visible light albedo
         double kb;       // constant for Rnl
         double kc;       // cloudy transmittivity
-        double kCw;      // supply constant, mm/hr 
         double kd;       // angular coefficient of transmittivity
         double ke;       // eccentricity
         double keps;     // obliquity, degrees 
@@ -39,7 +38,6 @@ class EVAP {
         double kPo;      // standard atmosphere, Pa 
         double kR;       // universal gas constant, J/mol/K 
         double kTo;      // base temperature, K 
-        double kWm;      // soil moisture capacity, mm 
         double kw;       // entrainment factor
         double komega;   // longitude of perihelion, degrees 
         double kPI;      // pi
@@ -89,9 +87,11 @@ class EVAP {
         
         // Get Variable Functions:
         double get_ho();
+        double get_hn();
         double get_ppfd();
         double get_aet();
-        double get_cn();
+        double get_eet();
+        double get_cond();
         
         // Print variables to screen:
         void display();
