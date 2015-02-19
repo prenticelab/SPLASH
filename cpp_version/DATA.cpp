@@ -1,8 +1,7 @@
+#include "DATA.h"
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <string>
-#include <vector>
 
 using namespace std;
 
@@ -13,7 +12,7 @@ using namespace std;
  * Imperial College London
  * 
  * 2015-02-08 -- created
- * 2015-02-17 -- last updated
+ * 2015-02-19 -- last updated
  * 
  * ------------
  * description:
@@ -23,40 +22,11 @@ using namespace std;
  * ----------
  * changelog:
  * ----------
- * 01. Added iostream to module list [15.02.17]
- * 02. Created read_csv and read_txt class member functions [15.02.17]
- * 03. Added year to class member variables [15.02.17]
+ * 01. Created read_csv and read_txt class member functions [15.02.17]
+ * 02. Added year to class member variables [15.02.17]
+ * 03. Added DATA header file to include [15.02.19]
  * 
  * //////////////////////////////////////////////////////////////////////// */
-
-class DATA {
-    private:
-        // Variables:
-        int num_lines;                  // number of lines read from file
-        int year;                       // year for data from file
-        string file_name;
-        vector<string> file_names;       // all file names
-        vector<double> sf_vec;          // sun hours fraction
-        vector<double> tair_vec;        // air temperature, deg C
-        vector<double> pn_vec;          // precipitation, mm
-        
-    public:
-        // Constructors:
-        DATA();
-        
-        // Functions:
-        void read_csv(string fname, int y=-1);
-        void read_txt(string fname, string var, int y=-1);
-        
-        vector<double> get_all_sf();
-        vector<double> get_all_tair();
-        vector<double> get_all_pn();
-        double get_one_sf(int n);
-        double get_one_tair(int n);
-        double get_one_pn(int n);
-        int nlines();
-        int get_year();
-};
 
 // \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // Class Constructors: 

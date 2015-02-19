@@ -1,6 +1,6 @@
+#include "EVAP.h"
 #include <cmath>
 #include <iostream>
-#include <vector>
 
 using namespace std;
 
@@ -11,7 +11,7 @@ using namespace std;
  * Imperial College London
  * 
  * 2015-02-06 -- created
- * 2015-02-17 -- last updated
+ * 2015-02-19 -- last updated
  * 
  * ------------
  * description:
@@ -26,87 +26,9 @@ using namespace std;
  * 01. finished class function definitions and debugged [15.02.07]
  * 02. removed kCw and kWm from constants (moved to STASH class) [15.02.17]
  * 03. changed get_cn to get_cond [15.02.17]
+ * 04. added EVAP header file to include list [15.02.19]
  * 
  * //////////////////////////////////////////////////////////////////////// */
-
-class EVAP {
-    private:
-        // Constants:
-        double kA;       // constant for Rnl
-        double kalb_sw;  // shortwave albedo
-        double kalb_vis; // visible light albedo
-        double kb;       // constant for Rnl
-        double kc;       // cloudy transmittivity
-        double kd;       // angular coefficient of transmittivity
-        double ke;       // eccentricity
-        double keps;     // obliquity, degrees 
-        double kfFEC;    // from flux to energy conversion, umol/J 
-        double kG;       // gravitational acceleration, m/s^2 
-        double kGsc;     // solar constant, W/m^2 
-        double kL;       // temperature lapse rate, K/m 
-        double kMa;      // molecular weight of dry air, kg/mol 
-        double kMv;      // molecular weight of water vapor, kg/mol 
-        double kPo;      // standard atmosphere, Pa 
-        double kR;       // universal gas constant, J/mol/K 
-        double kTo;      // base temperature, K 
-        double kw;       // entrainment factor
-        double komega;   // longitude of perihelion, degrees 
-        double kPI;      // pi
-        
-        // Variables:
-        int kN;                    // days in year
-        double my_nu;              // true anomaly, degrees
-        double my_lambda;          // true longitude, degrees
-        double my_rho;             // rel. earth-sun distance
-        double dr;                 // distance factor
-        double delta;              // declination, degrees
-        double ru, rv, rw, rx;     // variable substitutions
-        double hs, hn, hi;         // hour angles, degrees
-        double ra_d;               // daily solar irradiation, J/m^2
-        double tau_o;              // surface transmittivity
-        double tau;                // elv. corrected transmittivity
-        double ppfd_d;             // daily PPFD, mol/m^2
-        double rnl;                // longwave radiation flux, W/m^2
-        double rn_d;               // daily net radiation, J/m^2
-        double rnn_d;              // daily nighttime net radiation, J/m^2
-        double s;                  // slope sat. vap. press. temp. curve, Pa/K
-        double lv;                 // enthalpy of vaporization, J/kg
-        double pw;                 // density of water, kg/m^3
-        double g;                  // psychrometric constant, Pa/K
-        double econ;               // water-to-energy conversion, m^3/J
-        double cn;                 // daily condensation, mm
-        double eet_d, pet_d, aet_d; // daily ET, mm
-        double cos_hi;             // cosine of hour angle, hi
-        
-        // Functions:
-        double dcos(double x);
-        double dsin(double x);
-        vector<double> berger_tls(int n);
-        int julian_day(int y, int m, int i);
-        double sat_slope(double tc);
-        double enthalpy_vap(double tc);
-        double elv2pres(double z);
-        double density_h2o(double tc, double p);
-        double psychro(double tc, double p);
-    
-    public:
-        // Constructors
-        //EVAP(double lat, int n, double elv);  // default constructor
-        //EVAP(double lat, int n, double elv, int y);  // default w/ year
-        EVAP(double lat, int n, double elv, int y, double sf, double tc, 
-             double sw);
-        
-        // Get Variable Functions:
-        double get_ho();
-        double get_hn();
-        double get_ppfd();
-        double get_aet();
-        double get_eet();
-        double get_cond();
-        
-        // Print variables to screen:
-        void display();
-};
 
 // \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // Class Constructors: 
@@ -547,27 +469,30 @@ double EVAP::psychro(double tc, double p){
     return ps;
 }
 
-double EVAP::get_ho(){
-    return ra_d;
-}
-
-double EVAP::get_hn(){
-    return rn_d;
-}
-
-double EVAP::get_ppfd(){
-    return ppfd_d;
-}
-
-double EVAP::get_aet(){
-    return aet_d;
-}
-
-double EVAP::get_cond(){
-    return cn;
+etr EVAP::get_vals(){
+    /* ***********************************************************************
+    Name:     EVAP.get_vals
+    Input:    None
+    Output:   etr struct, daily ET and radiation values
+    Features: Returns the current set of daily ET and radiation values
+    *********************************************************************** */
+    d_etr.ho = ra_d;
+    d_etr.hn = rn_d;
+    d_etr.ppfd = ppfd_d;
+    d_etr.cond = cn;
+    d_etr.eet = eet_d;
+    d_etr.pet = pet_d;
+    d_etr.aet = aet_d;
+    return d_etr;
 }
 
 void EVAP::display(){
+    /* ***********************************************************************
+    Name:     EVAP.display
+    Input:    None
+    Output:   None
+    Features: Prints the current set of daily STASH variables
+    *********************************************************************** */
     cout<<"Variable list:"<<endl;
     cout<<"  nu: " << my_nu << " degrees" << endl;
     cout<<"  lambda: " << my_lambda << " degrees" << endl;

@@ -25,4 +25,7 @@ nice:
 	rm -f $(OFILES)
 
 #---------- Dependencies ----------#
+DATA.o:		DATA.h
+EVAP.o:		EVAP.h
+STASH.o:	STASH.h
 main.o:		DATA.h EVAP.h STASH.h

@@ -1,6 +1,5 @@
 #include <vector>
-
-using namespace std;
+#include "etr.h"
 
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * EVAP.h
@@ -9,15 +8,26 @@ using namespace std;
  * Imperial College London
  * 
  * 2015-02-07 -- created
- * 2015-02-07 -- last updated
+ * 2015-02-19 -- last updated
  * 
  * ------------
  * description:
  * ------------
  * This is the C++ header file for the EVAP class.
  * 
+ * ----------
+ * changelog:
+ * ----------
+ * 01. removed kCw and kWm from constants (moved to STASH class) [15.02.17]
+ * 02. changed get_cn to get_cond [15.02.17]
+ * 03. added all necessary inputs from cpp file [15.02.19]
+ * 04. created header guard [15.02.19]
+ * 05. added etr struct to include list [15.02.19]
+ * 06. removed the unnecessary get() functions [15.02.19]
+ * 
  * //////////////////////////////////////////////////////////////////////// */
-
+#ifndef EVAP_H
+#define EVAP_H
 class EVAP {
     private:
         // Constants:
@@ -66,11 +76,12 @@ class EVAP {
         double cn;                 // daily condensation, mm
         double eet_d, pet_d, aet_d; // daily ET, mm
         double cos_hi;             // cosine of hour angle, hi
+        etr d_etr;               // daily etr struct 
         
         // Functions:
         double dcos(double x);
         double dsin(double x);
-        vector<double> berger_tls(int n);
+        std::vector<double> berger_tls(int n);
         int julian_day(int y, int m, int i);
         double sat_slope(double tc);
         double enthalpy_vap(double tc);
@@ -86,13 +97,9 @@ class EVAP {
              double sw);
         
         // Get Variable Functions:
-        double get_ho();
-        double get_hn();
-        double get_ppfd();
-        double get_aet();
-        double get_eet();
-        double get_cond();
+        etr get_vals();
         
         // Print variables to screen:
         void display();
 };
+#endif

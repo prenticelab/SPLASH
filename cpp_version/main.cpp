@@ -64,8 +64,10 @@ int main() {
     double lat = 37.7;
     double elv = 142.0;
     STASH my_stash(lat, elv);
-    
-    cout << "Created STASH class at " << my_stash.get_elv() << " m" << endl;
+    //my_stash.run_one_day(172, 2001, 145.0, 0.5, 17.3, 10.0);
+    my_stash.spin_up(my_data);
+    my_stash.print_vals();
+    //cout << "Created STASH class at " << my_stash.get_elv() << " m" << endl;
     
     //int n = 172;
     //int y = 2001; 
