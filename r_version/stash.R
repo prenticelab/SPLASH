@@ -5,7 +5,7 @@
 # written by Tyler W. Davis
 # Imperial College London
 #
-# last updated: 2015-01-30
+# last updated: 2015-02-23
 #
 # ~~~~~~~~~~~~
 # description:
@@ -30,6 +30,7 @@
 # 13. added write out for daily/monthly results [15.01.27]
 # 14. added example of yearly looping [15.01.27]
 # 15. updated year extraction from filename in yearly loop example [15.01.30]
+# 16. created read_csv and read_txt functions [15.02.23]
 #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 #### Define functions #########################################################
@@ -168,7 +169,9 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 03. Calculate distance factor (dr), unitless
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  my_rho <- (1 - ke^2)/(1 + ke*dcos(my_nu))
+  # Berger et al. (1993)
+  kee <- ke^2
+  my_rho <- (1 - kee)/(1 + ke*dcos(my_nu))
   dr <- (1/my_rho)^2
   #
   et.srad$dr <- dr
@@ -176,8 +179,10 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 04. Calculate the declination angle (delta), degrees
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # Woolf (1968)
+  pir <- (pi/180)
   delta <- asin(dsin(my_lambda)*dsin(keps))
-  delta <- delta*(180/pi)
+  delta <- delta/pir
   #
   et.srad$delta_deg <- delta
   #
@@ -197,7 +202,7 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
     hs <- 0 # Polar night (no sunrise)
   } else {
     hs <- acos(-1.0*ru/rv)
-    hs <- hs*(180.0/pi)
+    hs <- hs/pir
   }
   et.srad$hs_deg <- hs
   #
@@ -205,14 +210,13 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
   # 07. Calculate daily extraterrestrial radiation (ra_d), J/m^2
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # ref: Eq. 1.10.3, Duffy & Beckman (1993)
-  ra_d <- (86400.0/pi)*kGsc*dr*(ru*(pi/180)*hs + rv*dsin(hs))
+  ra_d <- (86400/pi)*kGsc*dr*(ru*pir*hs + rv*dsin(hs))
   et.srad$ra_j.m2 <- ra_d
   #
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 08. Calculate transmittivity (tau), unitless
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # ref:  Eq. 11, Linacre (1968): tau_o
-  #       Eq. 2, Allen (1996): tau
+  # ref:  Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
   tau_o <- (kc + kd*sf)
   tau <- tau_o*(1 + (2.67e-5)*elv)
   #
@@ -221,13 +225,13 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 09. Calculate daily PPFD (ppfd_d), mol/m^2
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ppfd_d <- (1.0e-6)*kfFEC*(1 - kalb_vis)*tau*ra_d
+  ppfd_d <- (1e-6)*kfFEC*(1 - kalb_vis)*tau*ra_d
   et.srad$ppfd_mol.m2 <- ppfd_d
   #
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 10. Estimate net longwave radiation (rnl), W/m^2
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  rnl <- (kb + (1.0 - kb)*sf)*(kA - tc)
+  rnl <- (kb + (1 - kb)*sf)*(kA - tc)
   #
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 11. Calculate variable substitue (rw), W/m^2
@@ -243,22 +247,22 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
     hn <- 180 # Net radiation is positive all day
   } else {
     hn <- acos((rnl - rw*ru)/(rw*rv))
-    hn <- hn*(180/pi)
+    hn <- hn/pir
   }
   et.srad$hn_deg <- hn
   #
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 13. Calculate daytime net radiation (rn_d), J/m^2
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  rn_d <- (86400.0/pi)*(hn*(pi/180)*(rw*ru - rnl) + rw*rv*dsin(hn))
+  rn_d <- (86400/pi)*(hn*pir*(rw*ru - rnl) + rw*rv*dsin(hn))
   et.srad$rn_j.m2 <- rn_d
   #
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 14. Calculate nighttime net radiation (rnn_d), J/m^2
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  rnn_d <- (86400.0/pi)*(
-    rw*ru*(hs - hn)*(pi/180) + rw*rv*(dsin(hs) - dsin(hn)) + 
-      rnl*(pi - 2*hs*(pi/180) + hn*(pi/180))
+  rnn_d <- (86400/pi)*(
+    rw*ru*(hs - hn)*pir + rw*rv*(dsin(hs) - dsin(hn)) + 
+      rnl*(pi - 2*hs*pir + hn*pir)
   )
   et.srad$rnn_j.m2 <- rnn_d
   #
@@ -278,10 +282,10 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
   et.srad$econ_m3.j <- econ
   #
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # 16. Calculate daily condensation (wc), mm
+  # 16. Calculate daily condensation (cn), mm
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  wc <- (1e3)*econ*abs(rnn_d)
-  et.srad$cond_mm <- wc
+  cn <- (1e3)*econ*abs(rnn_d)
+  et.srad$cond_mm <- cn
   #
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 17. Estimate daily equilibrium evapotranspiration (eet_d), mm
@@ -292,13 +296,13 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 18. Estimate daily potential evapotranspiration (pet_d), mm
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  pet_d <- (1.0 + kw)*eet_d
+  pet_d <- (1 + kw)*eet_d
   et.srad$pet_mm <- pet_d
   #
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 19. Calculate variable substitute (rx), (mm/hr)/(W/m^2)
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  rx <- (3.6e6)*(1.0 + kw)*econ
+  rx <- (3.6e6)*(1 + kw)*econ
   #
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 20. Calculate the intersection hour angle (hi), degrees
@@ -310,7 +314,7 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
     hi <- 180.0     # supply limits demand everywhere
   } else {
     hi <- acos(cos_hi)
-    hi <- hi*(180/pi)
+    hi <- hi/pir
   }
   et.srad$hi_deg <- hi
   #
@@ -318,9 +322,9 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
   # 21. Estimate daily actual evapotranspiration (aet_d), mm
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   aet_d <- (24/pi)*(
-    sw*hi*(pi/180) + 
+    sw*hi*pir + 
       rx*rw*rv*(dsin(hn) - dsin(hi)) + 
-      (rx*rw*ru - rx*rnl)*(hn - hi)*(pi/180)
+      (rx*rw*ru - rx*rnl)*(hn - hi)*pir
   )
   #
   et.srad$aet_mm <- aet_d
@@ -458,8 +462,7 @@ dsin <- function(d) {
 # *
 # * Return: double, Pa
 # *
-# * Features: This function calculates the elevation dependent 
-# *           atmospheric pressure, Pa
+# * Features: Calculates atmospheric pressure for a given elevation
 # *
 # *           Depends on:
 # *           - kPo ............ base pressure, Pa
@@ -469,8 +472,7 @@ dsin <- function(d) {
 # *           - kMa ............ molecular weight of dry air, kg/mol
 # *           - kG ............. gravity, m/s^2
 # *
-# * Ref: Cavcar (2000), The International Standard Atmosphere (ISA), 
-# *        Anadolu University, Turkey.
+# * Ref: Allen et al. (1998)
 # ************************************************************************
 elv2pres <- function(z){
   kPo*(1 - kL*z/kTo)^(kG*kMa/(kR*kL))
@@ -555,12 +557,12 @@ density_h2o <- function(tc, pa){
     (1.324e-4)*tc*tc + 
     -(7.655e-7)*tc*tc*tc + 
     (8.584e-10)*tc*tc*tc*tc
+  #
   cb <- (7.2061e-5) +
     -(5.8948e-6)*tc + 
     (8.69900e-8)*tc*tc + 
     -(1.0100e-9)*tc*tc*tc + 
     (4.3220e-12)*tc*tc*tc*tc
-  #
   #
   # Convert pressure to bar (1 bar = 100000 Pa)
   pbar <- (1e-5)*pa
@@ -611,6 +613,87 @@ psychro <- function(tc, pa){
   # 
   # # Calculate psychrometric constant, Pa/K
   return(cp*kMa*pa/(kMv*lv))
+}
+
+# ************************************************************************
+# * Name: read_csv
+# *
+# * Input: character, file name (fname)
+# *        double, year (y)
+# *
+# * Return: list object (data)
+# *         $file_name ............ file name
+# *         $sf ................... sunshine fraction
+# *         $tair ................. air temperature
+# *         $pn ................... precipitation
+# *         $num_lines ............ number of data points
+# *         $year ................. year of data
+# *
+# * Features: Reads all three daily input variables (sf, tair, and pn)
+# *           for a single year from a CSV file that includes a header
+# *
+# ************************************************************************
+read_csv <- function(fname, y=-1){
+  my_data <- list()
+  my_data$file_name <- fname
+  #
+  # Read data from CSV file and save to return list:
+  DATA <- read.csv(fname)
+  my_data$sf <- DATA$sf
+  my_data$tair <- DATA$tair
+  my_data$pn <- DATA$pn
+  my_data$num_lines <- dim(DATA)[1]
+  #
+  my_year = y
+  if (y == -1){
+    if (dim(DATA)[1] == 366){
+      my_year = 2000
+    } else if (dim(DATA)[1] == 365){
+      my_year = 2001
+    }
+  }
+  my_data$year <- my_year
+  #
+  return (my_data)
+}
+
+# ************************************************************************
+# * Name: read_txt
+# *
+# * Input: list object (my_data)
+# *        character, file name (fname)
+# *        character, variable name (var)
+# *        double, year (y)
+# *
+# * Return: list object (my_data)
+# *
+# * Features: Reads plain text file (no header) of one of the input 
+# *           arrays
+# *
+# ************************************************************************
+read_txt <- function(my_data, fname, var, y=-1){
+  my_data$file_name <- c(my_data$file_name, fname)
+  DATA <- scan(fname)
+  if (var == 'sf'){
+    my_data$sf <- DATA
+  } else if (var == 'tair'){
+    my_data$tair <- DATA
+  } else if (var == 'pn'){
+    my_data$pn <- DATA
+  }
+  my_data$num_lines <- length(DATA)
+  #
+  my_year = y
+  if (y == -1){
+    if (length(DATA) == 366){
+      my_year = 2000
+    } else if (length(DATA) == 365){
+      my_year = 2001
+    }
+  }
+  my_data$year <- my_year
+  #
+  return (my_data)
 }
 
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -688,7 +771,7 @@ ny <- julian_day(y+1, 1, 1) - julian_day(y, 1, 1)
 #   $tair, air temperature, deg C
 #   $pn, daily precipitation, mm
 my_file <- 'example_data.csv'
-DATA <- read.csv(my_file)
+my_data <- read_csv(my_file, 2000)
 
 # monthly:
 all_months <- seq(from=1, to=12, by=1)
@@ -712,10 +795,10 @@ for (m in all_months){
     sw <- kCw*daily_totals$wn[idx]/kWm
     #
     # Compute daily radiation and evaporations values:
-    ET <- evap(my_lat, n, my_elv, y, DATA$sf[n], DATA$tair[n], sw)
+    ET <- evap(my_lat, n, my_elv, y, my_data$sf[n], my_data$tair[n], sw)
     #
     # Update daily soil moisture:
-    daily_totals$wn[n] <- daily_totals$wn[idx] + DATA$pn[n] + ET$cond_mm - ET$aet_mm
+    daily_totals$wn[n] <- daily_totals$wn[idx] + my_data$pn[n] + ET$cond_mm - ET$aet_mm
     #
     if (daily_totals$wn[n] > kWm){
       # Bucket is full:

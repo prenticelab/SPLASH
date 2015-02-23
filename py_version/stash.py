@@ -7,7 +7,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2015-02-09 -- last updated
+# 2015-02-23 -- last updated
 #
 # ------------
 # description:
@@ -321,7 +321,7 @@ class EVAP:
         self.econ = econ
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 16. Calculate daily condensation (cond), mm
+        # 16. Calculate daily condensation (cn), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         cn = (1e3)*econ*numpy.abs(rnn_d)
         self.cond = cn
@@ -493,7 +493,7 @@ class EVAP:
         Name:     EVAP.elv2pres
         Input:    float, elevation above sea level (z), m
         Output:   float, atmospheric pressure, Pa
-        Features: Calculates atm. pressure for a givene elevation
+        Features: Calculates atm. pressure for a given elevation
         Depends:  Global constants
                   - kPo
                   - kTo
