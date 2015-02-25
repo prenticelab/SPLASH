@@ -8,7 +8,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2015-01-13 -- last updated
+# 2015-02-25 -- last updated
 #
 # ------------
 # description:
@@ -85,10 +85,21 @@
 # 34. removed options for approximation methods not considering variable 
 #     orbital velocity (e.g. Spencer, Woolf, Klein, Cooper, and Circle 
 #     methods) [15.01.13]
+# 35. updated get_monthly_cru to set nodata values equal to kerror [15.02.25]
+# 36. updated get_elevation to set nodata values equal to kerror [15.02.25]
+# 37. updated EVAP_G according to stash.py [15.02.25]
+#     --> removed loops for hs, hn, and hi
+# 38. updated econ variable functions with NODATA preservation [15.02.25]
+# 39. created DATA_G & STASH_G classes [15.02.25]
 #
 # -----
 # todo:
 # -----
+# 1. complete DATA_G class
+#    --> read temperature, precip and cloudiness data for given month
+#    --> don't forget to scale precip!
+# 2. complete STASH_G class
+#    --> update the outline from STASH class
 #
 ###############################################################################
 ## IMPORT MODULES:
@@ -110,7 +121,7 @@ kCw = 1.05     # supply constant, mm/hr (Federer, 1982)
 kd = 0.50      # angular coefficient of transmittivity (Linacre, 1968)
 ke = 0.0167    # eccentricity for 2000 CE (Berger, 1978)
 keps = 23.44   # obliquity for 2000 CE, degrees (Berger, 1978)
-kerror = -9999 # error value
+kerror = -9999.# error value
 kfFEC = 2.04   # from flux to energy conversion, umol/J (Meek et al., 1984)
 kG = 9.80665   # gravitational acceleration, m/s^2 (Allen, 1973)
 kGsc = 1360.8  # solar constant, W/m^2 (Kopp & Lean, 2011)
@@ -185,23 +196,22 @@ class EVAP_G:
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization 
     # ////////////////////////////////////////////////////////////////////////
-    def __init__(
-        self, n, elv, sf, tc, sw, y=0):
+    def __init__(self, n, elv, sf, tc, sw, y=0):
         """
         Name:     EVAP_G.__init__
         Input:    - int, day of the year (n)
                   - numpy nd.array, elevation, m (elv)
                   - numpy nd.array, fraction of sunshine hours (sf)
-                  - numpy nd.array, mean daily air temperature, C (tc)
+                  - numpy nd.array, mean daily air temperature, deg C (tc)
                   - numpy nd.array, evaporative supply rate, mm/hr (sw)
                   - int, year (y)
         """
         # Assign default public variables:
-        self.user_elv = elv
         self.user_year = y
-        self.user_sf = sf
-        self.user_tc = tc
-        self.user_sw = sw
+        #self.user_elv = elv
+        #self.user_sf = sf
+        #self.user_tc = tc
+        #self.user_sw = sw
         #
         # Error handle the day of the year:
         if n < 1 or n > 366:
@@ -216,21 +226,24 @@ class EVAP_G:
         my_y = numpy.array([j for j in xrange(360)])
         (lon_array, lat_array) = self.get_lon_lat(my_x, my_y, 0.5)
         #
-        # Convert lon and lat arrays to grids (degrees)
-        #lon_grid = numpy.reshape(numpy.repeat(lon_array, 360), (360,720), 'F')
+        # Convert lat array to grids (degrees)
         lat_grid = numpy.reshape(numpy.repeat(lat_array, 720), (360,720), 'C')
+        #
+        # Define missing data indexes:
+        #   sw doesn't have error values
+        nodata_idx = numpy.where(
+            (elv == kerror) | (tc == kerror) | (sf == kerror)
+        )
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Calculate number of days in year, days
         #    kN, SCALAR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if self.user_year == 0:
-            self.kN = 365
+        if y == 0:
+            kN = 365
         else:
-            self.kN = (
-                self.julian_day((self.user_year + 1), 1, 1) - 
-                self.julian_day(self.user_year, 1, 1)
-            )
+            kN = self.julian_day((y+1), 1, 1) - self.julian_day(y, 1, 1)
+        self.kN = kN
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Calculate heliocentric longitudes, degrees
@@ -238,31 +251,33 @@ class EVAP_G:
         #    my_lambda, SCALAR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Berger (1978)
-        self.my_nu, self.my_lambda = self.berger_tls(n)
+        my_nu, my_lambda = self.berger_tls(n)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate distance factor, unitless
         #    dr, SCALAR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Berger et al. (1993)
-        my_rho = (1.0 - ke**2)/(1.0 + ke*self.dcos(self.my_nu))
-        self.dr = (1.0/my_rho)**2
+        kee = ke**2
+        my_rho = (1.0 - kee)/(1.0 + ke*self.dcos(my_nu))
+        dr = (1.0/my_rho)**2
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate declination angle, degrees
         #    delta, SCALAR
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Woolf (1968)
-        self.delta = numpy.arcsin(self.dsin(self.my_lambda)*self.dsin(keps))
-        self.delta *= (180.0/numpy.pi)
+        pir = (numpy.pi/180.0)
+        delta = numpy.arcsin(self.dsin(my_lambda)*self.dsin(keps))
+        delta /= pir
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Calculate variable substitutes, unitless
         #    ru, MATRIX (360x720)
         #    rv, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ru = self.dsin(self.delta)*self.dsin(lat_grid)
-        rv = self.dcos(self.delta)*self.dcos(lat_grid)
+        ru = self.dsin(delta)*self.dsin(lat_grid)
+        rv = self.dcos(delta)*self.dcos(lat_grid)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 6. Calculate the sunset hour angle, degrees
@@ -278,17 +293,16 @@ class EVAP_G:
         # Indexes of pixels under polar day conditions:
         # Note: hs == 180 degrees
         hs_pos = numpy.where(ru/rv >= 1.0)
-        for j in xrange(len(hs_pos[0])):
-            (a,b) = (hs_pos[0][j], hs_pos[1][j])
-            hs[a,b] = 180.0
+        hs[hs_pos] += 180.0
         #
         # Indexes of pixels for regular conditions:
         # Note: hs = acos(-u/v)
         hs_reg = numpy.where((ru/rv < 1.0) & (ru/rv > -1.0))
-        for j in xrange(len(hs_reg[0])):
-            (a,b) = (hs_reg[0][j], hs_reg[1][j])
-            # Eq. 37, STASH 2.0 Documentation
-            hs[a,b] = (180.0/numpy.pi)*numpy.arccos(-1.0*ru[a,b]/rv[a,b])
+        hs[hs_reg] -= 1.0
+        hs[hs_reg] *= ru[hs_reg]
+        hs[hs_reg] /= rv[hs_reg]
+        hs[hs_reg] = numpy.arccos(hs[hs_reg])
+        hs[hs_reg] /= pir 
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 7. Calculate daily extraterrestrial solar radiation, J/m^2
@@ -296,41 +310,51 @@ class EVAP_G:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 40, STASH 2.0 Documentation
         # Note: ru = sin(delta)*sin(phi); rv = cos(delta)*cos(phi)
-        self.ra_d = (86400.0/numpy.pi)*kGsc*self.dr*(
-            (ru*hs)*(numpy.pi/180.0) + (rv*self.dsin(hs))
-        )
+        ra_d = (86400.0/numpy.pi)*kGsc*dr*((ru*hs)*pir + (rv*self.dsin(hs)))
+        self.ra_d = ra_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 8. Calculate transmittivity, unitless
         #    tau, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 48, STASH 2.0 Documentation
-        tau_o = kc + (kd*self.user_sf)
+        # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
+        tau_o = kc + (kd*sf)
+        tau = tau_o*(1.0 + (2.67e-5)*elv)
         #
-        # Eq. 49, STASH 2.0 Documentation
-        # Note: elv missing == -999
-        tau = tau_o*(1.0 + (2.67e-5)*self.user_elv)
+        # Note: missing == kerror
+        tau[nodata_idx] *= 0.0
+        tau[nodata_idx] += kerror
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 9. Calculate daily PPFD (ppfd_d), mol/m^2
         #    ppfd_d, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 57, STASH 2.0 Documentation
-        self.ppfd_d = (kfFEC*1.0e-6)*(1.0 - kalb_vis)*(tau*self.ra_d)
+        ppfd_d = ra_d
+        ppfd_d *= tau
+        ppfd_d *= (1e-6)*(kfFEC)*(1.0 - kalb_vis)
+        #
+        # Maintain error values:
+        ppfd_d[nodata_idx] *= 0.0
+        ppfd_d[nodata_idx] += kerror
+        self.ppfd_d = ppfd_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 10. Estimate net longwave radiation, W/m^2
         #     rnl, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 46, STASH 2.0 Documentation
-        # Note: missing user_tc == -9999
-        rnl = (kb + (1.0 - kb)*self.user_sf)*(kA - self.user_tc)
+        # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
+        rnl = (kb + (1.0 - kb)*sf)*(kA - tc)
+        #
+        # Maintain error values:
+        rnl[nodata_idx] *= 0.0
+        rnl[nodata_idx] += kerror
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 11. Calculate variable substitute, W/m^2
         #     rw, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rw = (1.0 - kalb_sw)*tau*kGsc*self.dr
+        rw = tau
+        rw *= (1.0 - kalb_sw)*kGsc*dr
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 12. Calculate net radiation cross-over hour angle, degrees
@@ -339,85 +363,93 @@ class EVAP_G:
         # Create zeroed cross-over angle: 
         hn = numpy.zeros(shape=(360,720))
         #
-        # Indexes of pixels where Rnl is all-day negative:
-        # hn == 0 (no further processing)
-        #hn_neg = numpy.where((rnl - rw*ru)/(rw*rv) >= 1.0)
+        # Define cosine of hn:
+        cos_hn = numpy.copy(rnl)
+        cos_hn -= (rw*ru)
+        cos_hn /= rw
+        cos_hn /= rv
         #
         # Indexes of pixels where Rnl is all-day positive:
-        hn_pos = numpy.where((rnl - rw*ru)/(rw*rv) <= -1.0)
-        for j in xrange(len(hn_pos[0])):
-            (a,b) = (hn_pos[0][j], hn_pos[1][j])
-            hn[a,b] = 180.0
+        hn_pos = numpy.where(cos_hn <= -1.0)
+        hn[hn_pos] += 180.0
         #
         # Indexes of pixels for regular Rnl:
-        hn_reg = numpy.where(
-            ((rnl - rw*ru)/(rw*rv) < 1.0) & 
-            ((rnl - rw*ru)/(rw*rv) > -1.0)
-        )
-        for j in xrange(len(hn_reg[0])):
-            (a,b) = (hn_reg[0][j], hn_reg[1][j])
-            # Eq. 51, STASH 2.0 Documentation
-            hn[a,b] = (180.0/numpy.pi)*numpy.arccos(
-                (rnl[a,b] - rw[a,b]*ru[a,b])/(rw[a,b]*rv[a,b])
-            )
+        hn_reg = numpy.where((cos_hn < 1.0) & (cos_hn > -1.0))
+        hn[hn_reg] = numpy.arccos(cos_hn[hn_reg])
+        hn[hn_reg] /= pir
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 13. Calculate daytime net radiation, J/m^2
         #     rn_d, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 53, STASH 2.0 Documentation
-        rn_d = (86400.0/numpy.pi)*(
-            (rw*ru - rnl)*hn*(numpy.pi/180.0) + rw*rv*self.dsin(hn)
-        )
+        rn_d = (86400.0/numpy.pi)*((rw*ru - rnl)*hn*pir + rw*rv*self.dsin(hn))
+        #
+        # Maintain error values:
+        rn_d[nodata_idx] *= 0.0
+        rn_d[nodata_idx] += kerror
+        self.rn_d = rn_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 14. Calculate nighttime net radiation, J/m^2
         #     rnn_d, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 56, STASH 2.0 Documentation
-        rnn_d = (86400.0/numpy.pi)*(
-            rw*ru*(hs - hn)*(numpy.pi/180.0) + 
-            rw*rv*(self.dsin(hs) - self.dsin(hn)) + rnl*(
-                numpy.pi - 2.0*hs*(numpy.pi/180.0) + hn*(numpy.pi/180.0)
-            )
-        )
+        rnn_d = rw*ru*(hs - hn)*pir
+        rnn_d += rw*rv*(self.dsin(hs) - self.dsin(hn))
+        rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
+        rnn_d *= (86400.0/numpy.pi)
+        #
+        # Maintain error values:
+        rnn_d[nodata_idx] *= 0.0
+        rnn_d[nodata_idx] += kerror
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 15. Calculate water-to-energy conversion, m^3/J
         #     econ, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Slope of saturation vap press temp curve, Pa/K
-        s = self.sat_slope(self.user_tc)
-        # Enthalpy of vaporization, J/kg
-        lv = self.enthalpy_vap(self.user_tc)
-        # Density of water, kg/m^3
-        pw = self.density_h2o(self.user_tc, self.elv2pres(self.user_elv))
-        # Psychrometric constant, Pa/K
-        g = self.psychro(self.user_tc, self.elv2pres(self.user_elv))
-        #
-        # Eq. 58, STASH 2.0 Documentation
+        s = self.sat_slope(tc)                         # Pa/K
+        lv = self.enthalpy_vap(tc)                     # J/kg
+        pw = self.density_h2o(tc, self.elv2pres(elv))  # kg/m^3
+        g = self.psychro(tc, self.elv2pres(elv))       # Pa/K
         econ = s/(lv*pw*(s + g))
+        #
+        # Maintain error values:
+        econ[nodata_idx] *= 0.0
+        econ[nodata_idx] += kerror
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 16. Calculate daily condensation, mm
-        #     wc, MATRIX (360x720)
+        #     cn, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 69, STASH 2.0 Documentation
-        self.wc = (1e3)*econ*numpy.abs(rnn_d)
+        cn = (1e3)*econ
+        cn *= numpy.abs(rnn_d)
+        #
+        # Maintain error values:
+        cn[nodata_idx] *= 0.0
+        cn[nodata_idx] += kerror
+        self.cond = cn
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 17. Estimate daily EET, mm
         #     eet_d, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 71, STASH 2.0 Documentation
-        self.eet_d = (1e3)*econ*rn_d
+        eet_d = (1e3)*econ
+        eet_d *= rn_d
+        #
+        # Maintain error values:
+        eet_d[nodata_idx] *= 0.0
+        eet_d[nodata_idx] += kerror
+        self.eet_d = eet_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 18. Estimate daily PET, mm
         #     pet_d, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 73, STASH 2.0 Documentation
-        self.pet_d = (1.0 + kw)*self.eet_d
+        pet_d = (1.0 + kw)*eet_d
+        #
+        # Maintain error values:
+        pet_d[nodata_idx] *= 0.0
+        pet_d[nodata_idx] += kerror
+        self.pet_d = pet_d
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 19. Calculate variable substitute, (mm/hr)/(W/m^2)
@@ -433,37 +465,32 @@ class EVAP_G:
         hi = numpy.zeros(shape=(360,720))
         #
         # Compute cos(hi)
-        # Eq. 79, STASH 2.0 Documentation
-        cos_hi = (
-            self.user_sw/(rw*(rv*rx)) + rnl/(rw*rv) - ru/rv
-        )
-        #
-        # Indexes where supply exceeds demand:
-        # Note: hi == 0 (no further comp's)
-        #hi_neg = numpy.where(cos_hi >= 1.0)
+        cos_hi = sw
+        cos_hi /= (rw*(rv*rx))
+        cos_hi += rnl/(rw*rv)
+        cos_hi -= ru/rv
         #
         # Indexes where supply limits demand everywhere
-        # Note: hi == 180
         hi_pos = numpy.where(cos_hi <= -1.0)
-        for j in xrange(len(hi_pos[0])):
-            (a,b) = (hi_pos[0][j], hi_pos[1][j])
-            hi[a,b] = 180.0
+        hi[hi_pos] += 180.0
         #
         # Indexes for regular supply
         hi_reg = numpy.where((cos_hi < 1.0) & (cos_hi > -1.0))
-        for j in xrange(len(hi_reg[0])):
-            (a,b) = (hi_reg[0][j], hi_reg[1][j])
-            hi[a,b] = numpy.arccos(cos_hi[a,b])*(180.0/numpy.pi)
+        hi[hi_reg] = numpy.arccos(cos_hi[hi_reg])
+        hi[hi_reg] /= pir
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 21. Estimate daily AET (aet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 82, STASH 2.0 Documentation
-        self.aet_d = (24.0/numpy.pi)*(
-            self.user_sw*hi*(numpy.pi/180.0) + 
-            rx*(rw*rv)*(self.dsin(hn) - self.dsin(hi)) + 
-            (rx*(rw*ru) - rx*rnl)*(hn - hi)*(numpy.pi/180.0)
-        )
+        aet_d = sw*hi*pir
+        aet_d += rx*rw*rv*(self.dsin(hn) - self.dsin(hi))
+        aet_d += (rx*rw*ru - rx*rnl)*(hn - hi)*pir
+        aet_d *= (24.0/numpy.pi)
+        #
+        # Maintain error values:
+        aet_d[nodata_idx] *= 0.0
+        aet_d[nodata_idx] += kerror
+        self.aet_d = aet_d
     #
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -496,6 +523,7 @@ class EVAP_G:
         Features: Returns true anomaly and true longitude for a given day
         Depends:  - ke
                   - komega
+                  - dsin
         Ref:      Berger, A. L. (1978), Long term variations of daily insolation
                   and quaternary climatic changes, J. Atmos. Sci., 35, 2362-
                   2367.
@@ -504,27 +532,28 @@ class EVAP_G:
         xee = ke**2 
         xec = ke**3
         xse = numpy.sqrt(1.0 - xee)
+        pir = (numpy.pi/180.0)
         #
         # Mean longitude for vernal equinox:
-        xlam = (
-            (ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega) - 
-            xee/4.0*(0.5 + xse)*self.dsin(2.0*komega) + 
-            xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
-            )
-        xlam = numpy.degrees(2.0*xlam)
+        xlam =(ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega)
+        xlam -= xee/4.0*(0.5 + xse)*self.dsin(2.0*komega)
+        xlam += xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
+        xlam *= 2.0
+        xlam /= pir
         #
         # Mean longitude for day of year:
         dlamm = xlam + (n - 80.0)*(360.0/self.kN)
         #
         # Mean anomaly:
-        anm = dlamm - komega
-        ranm = numpy.radians(anm)
+        anm = (dlamm - komega)
+        ranm = (anm*pir)
         #
         # True anomaly:
-        ranv = (ranm + (2.0*ke - xec/4.0)*numpy.sin(ranm) + 
-            5.0/4.0*xee*numpy.sin(2.0*ranm) + 
-            13.0/12.0*xec*numpy.sin(3.0*ranm))
-        anv = numpy.degrees(ranv)
+        ranv = ranm
+        ranv += (2.0*ke - xec/4.0)*numpy.sin(ranm)
+        ranv += 5.0/4.0*xee*numpy.sin(2.0*ranm)
+        ranv += 13.0/12.0*xec*numpy.sin(3.0*ranm)
+        anv = ranv/pir
         #
         # True longitude:
         my_tls = anv + komega
@@ -588,11 +617,22 @@ class EVAP_G:
         Input:    numpy nd.array, air temperatures (tc), degrees C
         Output:   numpy nd.array, slopes of sat vap press temp curve (s)
         Features: Calculates the slopes of the sat pressure temp curve, Pa/K
+                  NODATA = kerror
         Ref:      Eq. 13, Allen et al. (1998)
         """
-        s = (17.269)*(237.3)*(610.78)*(
-            numpy.exp(tc*17.269/(tc + 237.3))/((tc + 237.3)**2.0)
-        )
+        # Get no data indexes:
+        nodata_idx = numpy.where(tc == kerror)
+        #
+        s = 17.269*tc
+        s /= (tc + 237.3)
+        s = numpy.exp(s)
+        s /= numpy.power((tc + 237.3), 2.0)
+        s *= (17.269)*(237.3)*(610.78)
+        #
+        # Maintain error values:
+        s[nodata_idx] *= 0.0
+        s[nodata_idx] += kerror
+        #
         return s
     #
     def enthalpy_vap(self, tc):
@@ -601,9 +641,22 @@ class EVAP_G:
         Input:    numpy nd.array, air temperatures (tc), degrees C
         Output:   numpy nd.array, latent heats of vaporization
         Features: Calculates the enthalpy of vaporization, J/kg
+                  NODATA = kerror
         Ref:      Eq. 8, Henderson-Sellers (1984)
         """
-        return (1.91846e6*((tc + 273.15)/(tc + 273.15 - 33.91))**2.0)
+        # Get no data indexes:
+        nodata_idx = numpy.where(tc == kerror)
+        #
+        lv = (tc + 273.15)
+        lv /= (tc + 273.15 - 33.91)
+        lv = numpy.power(lv, 2.0)
+        lv *= (1.91846e6)
+        #
+        # Maintain error values:
+        lv[nodata_idx] *= 0.0
+        lv[nodata_idx] += kerror
+        #
+        return lv
     #
     def elv2pres(self, z):
         """
@@ -611,109 +664,488 @@ class EVAP_G:
         Input:    numpy nd.array, elevations above sea level (z), m
         Output:   numpy nd.array, atmospheric pressures, Pa
         Features: Calculates atm. pressure for a given elevation
-        Depends:  Global constants
-                  - kPo
-                  - kTo
-                  - kL
-                  - kMa
-                  - kG
-                  - kR
+                  NODATA = kerror
+        Depends:  Global constants:
+                  - kPo     - kTo       - kL
+                  - kMa     - kG        - kR
         Ref:      Allen et al. (1998)
         """
-        p = kPo*(1.0 - (kL*z)/kTo)**(kG*kMa/(kR*kL))
+        # Find nodata points:
+        nodata_idx = numpy.where(z == kerror)
+        #
+        p_exp = (kG*kMa/(kR*kL))
+        p = -1.0*kL*z
+        p /= kTo
+        p += 1.0
+        p = numpy.power(p, p_exp)
+        p *= kPo
+        #
+        # Maintain error values:
+        p[nodata_idx] *= 0.0
+        p[nodata_idx] += kerror
+        #
         return p
     #
-    def density_h2o(self, tc, p):
+    def density_h2o(self, tair, p):
         """
         Name:     EVAP_G.density_h2o
-        Input:    - numpy nd.array, air temperatures (tc), degrees C
+        Input:    - numpy nd.array, air temperatures (tair), degrees C
                   - numpy nd.array, atmospheric pressures (p), Pa
         Output:   numpy nd.array, densities of water, kg/m^3
-        Features: Calculates density of water at a given temperature and 
-                  pressure
-        Ref:      Chen et al. (1977)
+        Features: Calculates water density at a given temperature and pressure
+                  NODATA = kerror
+        Ref:      F.H. Fisher and O.E Dial, Jr. (1975) Equation of state of 
+                  pure water and sea water, Tech. Rept., Marine Physical 
+                  Laboratory, San Diego, CA.
         """
-        # Calculate density at 1 atm:
-        po = (
-            0.99983952 + 
-            (6.788260e-5)*tc + 
-            -(9.08659e-6)*tc*tc +
-            (1.022130e-7)*tc*tc*tc + 
-            -(1.35439e-9)*tc*tc*tc*tc +
-            (1.471150e-11)*tc*tc*tc*tc*tc +
-            -(1.11663e-13)*tc*tc*tc*tc*tc*tc + 
-            (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc + 
-            -(1.00659e-18)*tc*tc*tc*tc*tc*tc*tc*tc
-        )
+        # Find nodata indexes:
+        nodata_idx = numpy.where((tair == kerror) | (p == kerror))
         #
-        # Calculate bulk modulus at 1 atm:
-        ko = (
-            19652.17 +
-            148.1830*tc + 
-            -2.29995*tc*tc + 
-            0.01281*tc*tc*tc + 
-            -(4.91564e-5)*tc*tc*tc*tc + 
-            (1.035530e-7)*tc*tc*tc*tc*tc
-        )
+        # For computational efficiency, set error values equal to one:
+        tc = numpy.copy(tair)
+        tc[nodata_idx] *= 0.0
         #
-        # Calculate temperature dependent coefficients:
-        ca = (
-            3.26138 + 
-            (5.223e-4)*tc + 
-            (1.324e-4)*tc*tc + 
-            -(7.655e-7)*tc*tc*tc + 
-            (8.584e-10)*tc*tc*tc*tc
-        )
-        cb = (
-            (7.2061e-5) +
-            -(5.8948e-6)*tc + 
-            (8.69900e-8)*tc*tc + 
-            -(1.0100e-9)*tc*tc*tc + 
-            (4.3220e-12)*tc*tc*tc*tc
-        )
+        # Calculate lambda, (bar cm^3)/g:
+        my_lambda = 21.55053*tc
+        my_lambda += -0.4695911*tc*tc
+        my_lambda += (3.096363e-3)*tc*tc*tc
+        my_lambda += -(7.341182e-6)*tc*tc*tc*tc
+        my_lambda += 1788.316
+        my_lambda[nodata_idx] *= 0.0
+        my_lambda[nodata_idx] += 1.0
         #
-        # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
-        pbar = (1.0e-5)*p
+        # Calculate po, bar
+        po = 58.05267*tc
+        po += -1.1253317*tc*tc
+        po += (6.6123869e-3)*tc*tc*tc
+        po += -(1.4661625e-5)*tc*tc*tc*tc
+        po += 5918.499
+        po[nodata_idx] *= 0.0
+        po[nodata_idx] += 0.5
         #
-        pw = (
-            (1.0e3)*po*(ko + ca*pbar + cb*(pbar**2.0))/(
-                ko + ca*pbar + cb*(pbar**2.0) - pbar
-            )
-        )
-        return pw
+        # Calculate vinf, cm^3/g
+        vinf =  -(7.435626e-4)*tc
+        vinf += (3.704258e-5)*tc*tc
+        vinf += -(6.315724e-7)*tc*tc*tc
+        vinf += (9.829576e-9)*tc*tc*tc*tc
+        vinf += -(1.197269e-10)*tc*tc*tc*tc*tc
+        vinf += (1.005461e-12)*tc*tc*tc*tc*tc*tc
+        vinf += -(5.437898e-15)*tc*tc*tc*tc*tc*tc*tc
+        vinf += (1.69946e-17)*tc*tc*tc*tc*tc*tc*tc*tc
+        vinf += -(2.295063e-20)*tc*tc*tc*tc*tc*tc*tc*tc*tc
+        vinf += 0.6980547
+        vinf[nodata_idx] *= 0.0
+        #
+        # Convert pressure to bars (1 bar = 100000 Pa)
+        pbar = (1e-5)*p
+        pbar[nodata_idx] *= 0.0
+        pbar[nodata_idx] += 0.5
+        #
+        # Calculate the specific volume (cm^3 g^-1):
+        v = my_lambda
+        v /= (po + pbar)
+        v += vinf
+        v[nodata_idx] *= 0.0
+        v[nodata_idx] += 1.0
+        #
+        # Convert to density (g cm^-3) -> 1000 g/kg; 1000000 cm^3/m^3 -> kg/m^3:
+        rho = numpy.power(v, -1.)
+        rho *= (1e3)
+        #
+        # Maintain error values:
+        rho[nodata_idx] *= 0.0
+        rho[nodata_idx] += kerror
+        #
+        return rho
     #
-    def psychro(self, tc, p):
+    def psychro(self, tair, p):
         """
         Name:     EVAP_G.psychro
-        Input:    - numpy nd.array, air temperatures (tc), degrees C
+        Input:    - numpy nd.array, air temperatures (tair), degrees C
                   - numpy nd.array, atm. pressures (p), Pa
         Output:   numpy nd.array, psychrometric constant, Pa/K
         Features: Calculates the psychrometric constant for a given temperature
                   and pressure
-        Depends:  Global constants:
-                  - kMa
+                  NODATA = kerror
+        Depends:  - kMa     
                   - kMv
-        Refs:     Allen et al. (1998)
-                  Tsilingiris (2008) 
+                  - enthalpy_vap
+        Refs:     Allen et al. (1998); Tsilingiris (2008) 
         """
+        # Define nodata indexes:
+        nodata_idx = numpy.where((tair == kerror) | (p == kerror))
+        #
+        # For compuational efficiency, set no data values to zero:
+        tc = numpy.copy(tair)
+        tc[nodata_idx] *= 0.0
+        #
         # Calculate the specific heat capacity of water, J/kg/K
         # Eq. 47, Tsilingiris (2008)
-        cp = (1.0e3)*(
-            1.0045714270 +
-            (2.050632750e-3)*tc -
-            (1.631537093e-4)*tc*tc +
-            (6.212300300e-6)*tc*tc*tc -
-            (8.830478888e-8)*tc*tc*tc*tc +
-            (5.071307038e-10)*tc*tc*tc*tc*tc
-        )
+        cp =  (2.050632750e-3)*tc
+        cp += -(1.631537093e-4)*tc*tc
+        cp += (6.212300300e-6)*tc*tc*tc
+        cp += -(8.830478888e-8)*tc*tc*tc*tc
+        cp += (5.071307038e-10)*tc*tc*tc*tc*tc
+        cp += 1.0045714270
+        cp *= (1e3)
+        cp[nodata_idx] *= 0.0
         #
         # Calculate latent heat of vaporization, J/kg
         lv = self.enthalpy_vap(tc)
         #
+        # Multiply by the molecular weight of water vapor:
+        lv *= kMv
+        lv[nodata_idx] *= 0.0
+        lv[nodata_idx] += 1.0
+        #
         # Calculate psychrometric constant, Pa/K
         # Eq. 8, Allen et al. (1998)
-        return (cp*kMa*p/(kMv*lv))
+        pc = kMa*p*cp
+        pc /= lv
+        #
+        # Maintain error values:
+        pc[nodata_idx] *= 0.0
+        pc[nodata_idx] += kerror
+        #
+        return pc
     #
+
+class DATA_G:
+    """
+    Name:     DATA_G
+    Features: This class handles the file IO for reading and writing gridded 
+              data.
+    
+    @TODO: finish class
+    """
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Initialization 
+    # ////////////////////////////////////////////////////////////////////////
+    def __init__(self, cdir, edir, pdir, tdir):
+        """
+        Name:     DATA_G.__init__
+        Inputs:   - str, CRU cloudiness file directory (cdir)
+                  - str, CRU elevation file directory (edir)
+                  - str, CRU precipitation file directory (pdir)
+                  - str, CRU air temperature file directory (tdir)
+        Features: Initialize class variables & reads elevation data.
+        """
+        self.cld_dir = cdir
+        self.elv_dir = edir
+        self.pre_dir = pdir
+        self.tmp_dir = tdir
+        #
+        # Read in elevation data:
+        self.elv_file = self.get_cru_file(edir, 'elv')
+        self.read_elv(self.elv_file)
+    #
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Function Definitions
+    # ////////////////////////////////////////////////////////////////////////
+    def get_cru_file(self, d, voi):
+        """
+        Name:     DATA_G.get_cru_file
+        Input:    - str, directory path for CRU data files (d)
+                  - str, variable of interest (voi)
+        Output:   str OR list of file names
+        Features: Returns the CRU TS file for given variable of interest
+        """
+        # Read through all files within the paths for voi:
+        my_files = glob.glob(d + "*" + voi + "*.*")
+        #
+        if my_files:
+            if len(my_files) > 1:
+                print "Found duplicate files!"
+            else:
+                my_files = my_files[0]
+        else:
+            print "No files found!"
+        #
+        return my_files
+    #
+    def read_elv(self, my_file):
+        """
+        Name:     DATA_G.read.elv
+        Features: Reads elevation data from file
+        Depends:  kerror
+        """
+        # Save elevation file:
+        self.elv_file = my_file
+        #
+        # Open file to read contents:
+        try:
+            f = numpy.loadtxt(my_file)
+        except:
+            print "Unexpected error reading file", my_file
+            f = numpy.array([])
+        else:
+            noval_idx = numpy.where(f == -999.0)
+            f[noval_idx] *= 0.0
+            f[noval_idx] += kerror
+        finally:
+            self.elv = f
+    #
+
+class STASH_G:
+    """
+    Name:     STASH_G
+    Features: This class updates daily gridded quantities of radiation, 
+              evapotranspiration, soil moisture and runoff based on the
+              STASH methodology.
+    
+    @TODO: finish class
+    """
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Initialization 
+    # ////////////////////////////////////////////////////////////////////////
+    def __init__(self, elv):
+        """
+        Name:     STASH.__init__
+        Input:    numpy.ndarray, elevation, meters (elv)
+        """
+        # Error handle and assign required public variables:
+        self.elv = elv
+        #
+        # Initialize daily status variables:
+        self.ho = numpy.zeros(shape=(360,720))     # solar irradiation, J/m2
+        self.hn = numpy.zeros(shape=(360,720))     # net radiation, J/m2
+        self.ppfd = numpy.zeros(shape=(360,720))   # PPFD, mol/m2
+        self.cond = numpy.zeros(shape=(360,720))   # condensation water, mm
+        self.wn = numpy.zeros(shape=(360,720))     # soil moisture, mm
+        self.precip = numpy.zeros(shape=(360,720)) # precipitation, mm
+        self.ro = numpy.zeros(shape=(360,720))     # runoff, mm
+        self.eet = numpy.zeros(shape=(360,720))    # equilibrium ET, mm
+        self.pet = numpy.zeros(shape=(360,720))    # potential ET, mm
+        self.aet = numpy.zeros(shape=(360,720))    # actual ET, mm
+    #
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Function Definitions
+    # ////////////////////////////////////////////////////////////////////////
+    def spin_up(self, d):
+        """
+        Name:     STASH_G.spin
+        Input:    - DATA class, (d)
+                  - bool, (to_write)
+        Output:   None.
+        Features: Spins up the daily soil moisture.
+        Depends:  quick_run
+        
+        @TODO: finish function
+        """
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 1. Create a soil moisture array:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if isinstance(d.num_lines, list):
+            n = d.num_lines[0]
+            if (numpy.array(d.num_lines) == n).all():
+                wn_vec = numpy.zeros((n,))
+            else:
+                print "Invalid number of lines read from DATA class!"
+        else:
+            n = d.num_lines
+            wn_vec = numpy.zeros((n,))
+        print "Created soil moisture array of length", len(wn_vec)
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 2. Run one year:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        for i in xrange(n):
+            # Get preceding soil moisture status:
+            if i == 0:
+                wn = wn_vec[-1]
+            else:
+                wn = wn_vec[i-1]
+            #
+            # Calculate soil moisture and runoff:
+            sm, ro = self.quick_run(n=i+1, 
+                                    y=d.year,
+                                    wn=wn,
+                                    sf=d.sf_vec[i], 
+                                    tc=d.tair_vec[i], 
+                                    pn=d.pn_vec[i])
+            wn_vec[i] = sm
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 3. Calculate change in starting soil moisture:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        start_sm = wn_vec[0]
+        end_sm, ro = self.quick_run(n=1,
+                                    y=d.year,
+                                    wn=wn_vec[-1],
+                                    sf=d.sf_vec[0],
+                                    tc=d.tair_vec[0],
+                                    pn=d.pn_vec[0])
+        diff_sm = numpy.abs(end_sm - start_sm)
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 4. Equilibrate:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        spin_count = 1
+        while diff_sm > 1.0:
+            for i in xrange(n):
+                # Get preceding soil moisture status:
+                if i == 0:
+                    wn = wn_vec[-1]
+                else:
+                    wn = wn_vec[i-1]
+                #
+                # Calculate soil moisture and runoff:
+                sm, ro = self.quick_run(n=i+1, 
+                                        y=d.year,
+                                        wn=wn,
+                                        sf=d.sf_vec[i], 
+                                        tc=d.tair_vec[i], 
+                                        pn=d.pn_vec[i])
+                wn_vec[i] = sm
+            #
+            start_sm = wn_vec[0]
+            end_sm, ro = self.quick_run(n=1,
+                                        y=d.year,
+                                        wn=wn_vec[-1],
+                                        sf=d.sf_vec[0],
+                                        tc=d.tair_vec[0],
+                                        pn=d.pn_vec[0])
+            diff_sm = numpy.abs(end_sm - start_sm)
+            spin_count += 1
+        #
+        print "Spun", spin_count, "years"
+        self.wn_vec = wn_vec
+        self.wn = wn_vec[-1]
+        #
+    #
+    def quick_run(self, n, y, wn, sf, tc, pn):
+        """
+        Name:     STASH_G.quick_run
+        Inputs:   - int, day of year (n)
+                  - int, year (y)
+                  - numpy.ndarray, daily soil water content, mm (wn)
+                  - numpy.ndarray, daily fraction of bright sunshine (sf)
+                  - numpy.ndarray, daily air temperature, deg C (tc)
+                  - numpy.ndarray, daily precipitation, mm (pn)
+        Output:   - numpy.ndarray, soil moisture, mm (sm)
+                  - numpy.ndarray, runoff, mm (ro)
+        Features: Returns gridded daily soil moisture and runoff.
+        Depends:  - kCw
+                  - kWm
+                  - EVAP_G
+        """
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 1. Calculate evaporative supply rate, mm/h
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        sw = (kCw/kWm)*wn
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 2. Calculate radiation and evaporation quantities
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        my_evap = EVAP_G(n, self.elv, sf, tc, sw, y)
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 3. Calculate today's soil moisture, mm
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        sm = wn + pn + my_evap.cond - my_evap.aet_d
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 4. Calculate runoff, mm
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ro = numpy.zeros(shape=(360,720))
+        #
+        # Where bucket is too full, allocate to runoff and reset to max:
+        full_idx = numpy.where(sm > kWm)
+        ro[full_idx] = sm[full_idx] - kWm
+        sm[full_idx] *= 0.0
+        sm[full_idx] += kWm
+        #
+        # Where bucket is too empty, set soil moisture to min:
+        empty_idx = numpy.where(sm < 0)
+        sm[empty_idx] *= 0.0
+        #
+        return(sm, ro)
+    #
+    def run_one_day(self, n, y, wn, sf, tc, pn):
+        """
+        Name:     STASH_G.run_one_day
+        Inputs:   - int, day of year (n)
+                  - int, year (y)
+                  - numpy.ndarray, soil water content, mm (wn)
+                  - numpy.ndarray, fraction of bright sunshine (sf)
+                  - numpy.ndarray, air temperature, deg C (tc)
+                  - numpy.ndarray, precipitation, mm (pn)
+        Outputs:  None
+        Features: Runs STASH model for one day.
+                  model.
+        Depends:  - kCw
+                  - kWm
+                  - EVAP_G
+        
+        @TODO: finish function
+        """
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 0. Set meteorological variables:
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        self.precip = pn    # daily precipitation, mm
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 1. Calculate evaporative supply rate (sw), mm/h
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        sw = (kCw/kWm)*wn
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 2. Calculate radiation and evaporation quantities
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        my_evap = EVAP_G(n, self.elv, sf, tc, sw, y)
+        self.ho = my_evap.ra_d     # daily solar irradiation, J/m2
+        self.hn = my_evap.rn_d     # daily net radiation, J/m2
+        self.ppfd = my_evap.ppfd_d # daily PPFD, mol/m2
+        self.cond = my_evap.cond   # daily condensation water, mm
+        self.eet = my_evap.eet_d   # daily equilibrium ET, mm
+        self.pet = my_evap.pet_d   # daily potential ET, mm
+        self.aet = my_evap.aet_d   # daily actual ET, mm
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 3. Calculate today's soil moisture (sm), mm
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        sm = wn + pn + my_evap.cond - my_evap.aet_d
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 4. Calculate runoff (ro), mm
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ro = numpy.zeros(shape=(360,720))
+        #
+        # Where bucket is too full, allocate to runoff and reset to max:
+        full_idx = numpy.where(sm > kWm)
+        ro[full_idx] = sm[full_idx] - kWm
+        sm[full_idx] *= 0.0
+        sm[full_idx] += kWm
+        #
+        # Where bucket is too empty, set soil moisture to min:
+        empty_idx = numpy.where(sm < 0)
+        sm[empty_idx] *= 0.0
+        #
+        #####
+        ##### ENDED UPDATES HERE!
+        #####
+        #
+        if sm > kWm:
+            # Bucket is too full 
+            #   allocate excess water to runoff
+            #   set soil moisture to capacity (i.e., kWm)
+            ro = sm - kWm
+            sm = kWm
+        elif sm < 0:
+            # Bucket is too empty
+            #   reduce actual ET by discrepancy amount
+            #   set soil moisture and runoff to zero
+            self.aet += sm
+            sm = 0
+            ro = 0
+        else:
+            ro = 0
+        #
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 5. Update soil moisture & runoff
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        self.wn = sm  # daily soil moisture, mm
+        self.ro = ro  # daily runoff, mm
 
 ###############################################################################
 ## FUNCTIONS 
@@ -787,34 +1219,16 @@ def get_year_days(ts):
     ts2 = add_one_year(ts1)
     return (ts2 - ts1).days
 
-def get_elevation(d):
-    """
-    Name:     get_elevation
-    Input:    char, directory to CRU netcdf file (d)
-    Output:   numpy nd.array
-    Features: Reads CRU TS 3.00 0.5 deg. elevation data from netcdf file
-    """
-    # Read directory for elevation file:
-    my_file = glob.glob(d + "*dat")[0]
-    #
-    # Open file and read data:
-    # NOTE: array is shape: 360 x 720
-    #      'lat' goes from -89.75 -- 89.75 (south to north)
-    #      'lon' goes from -179.75 -- 179.75 (east to west)
-    #      missing data = -999.0
-    f = numpy.loadtxt(my_file)
-    return f
-
 def get_time_index(bt, ct, aot):
     """
     Name:     get_time_index
-    Input:    - datetime date, base timestamp
-              - datetime date, current timestamp
-              - numpy nd.array, days since base timestamp
-    Output:   int
+    Input:    - datetime.date, base timestamp (bt)
+              - datetime.date, current timestamp (ct)
+              - numpy.ndarray, array of days since base timestamp (aot)
+    Output:   int, time index for given month
     Features: Finds the index in an array of CRU TS days for a given timestamp 
     """
-    # For CRU TS 3.21, the aot is indexed for mid-month days, e.g. 15--16th
+    # For CRU TS 3.2, the aot is indexed for mid-month days, e.g. 15--16th
     # therefore, to make certain that ct index preceeds the index for the
     # correct month in aot, make the day of the current month less than
     # the 15th or 16th (i.e., replace day with '1'):
@@ -823,12 +1237,18 @@ def get_time_index(bt, ct, aot):
     # Calculate the time difference between ct and bt:
     dt = (ct - bt).days
     #
-    # Append dt to the aot array:
-    aot = numpy.append(aot, [dt,])
-    #
-    # Find the first index of dt in the sorted array:
-    idx = numpy.where(numpy.sort(aot)==dt)[0][0]
-    return idx
+    # Find the first index of where dt would be in the sorted array:
+    try:
+        idx = numpy.where(aot > dt)[0][0]
+    except IndexError:
+        print "Month searched in CRU file is out of bounds!"
+        idx = None
+    else:
+        if dt < 0:
+            print "Month searched in CRU file is out of bounds!"
+            idx = None
+    finally:
+        return idx
 
 def get_monthly_cru(d, ct, v):
     """
@@ -837,9 +1257,10 @@ def get_monthly_cru(d, ct, v):
               - datetime date, current month datetime object (ct)
               - str, variable of interest (v)
     Output:   numpy nd.array
-    Depends:  get_time_index
     Features: Returns 360x720 monthly CRU TS dataset for a given month and 
               variable of interest (e.g., cld, pre, tmp)
+              NODATA = kerror
+    Depends:  get_time_index
     """
     # Search directory for netCDF file:
     my_file = glob.glob(d + "*" + v + ".dat.nc")[0]
@@ -863,6 +1284,7 @@ def get_monthly_cru(d, ct, v):
         #       'pre' units = mm
         #       'tmp' units = deg. C
         #       Missing value = 9.96e+36
+        #
         # Save the base time stamp:
         bt = datetime.date(1900,1,1)
         #
@@ -873,8 +1295,16 @@ def get_monthly_cru(d, ct, v):
         ti = get_time_index(bt, ct, f_time)
         #
         # Get the spatial data for current time:
-        f_data = f.variables[v].data[ti]
+        f_var = f.variables[v]
+        f_noval = f_var.missing_value
+        f_temp = f_var.data[ti]
+        f_data = numpy.copy(f_temp)
         f.close()
+        #
+        noval_idx = numpy.where(f_data == f_noval)
+        f_data[noval_idx] *= 0.0
+        f_data[noval_idx] += kerror
+        #
         return f_data
 
 def save_to_file(d, f):
@@ -1060,9 +1490,9 @@ def mean_monthly_w(w, m, y):
 mac = 0   # 1: TRUE, 0: FALSE
 if mac:
     # Mac:
-    cld_dir = "/Users/twdavis/Projects/data/cru/cru_ts_3_21/"
-    pre_dir = "/Users/twdavis/Projects/data/cru/cru_ts_3_21/"
-    tmp_dir = "/Users/twdavis/Projects/data/cru/cru_ts_3_21/"
+    cld_dir = "/Users/twdavis/Projects/data/cru/cru_ts_3_22/"
+    pre_dir = "/Users/twdavis/Projects/data/cru/cru_ts_3_22/"
+    tmp_dir = "/Users/twdavis/Projects/data/cru/cru_ts_3_22/"
     elv_dir = "/Users/twdavis/Projects/data/cru/cru_ts_3_00/"
     output_dir = "/Users/twdavis/Projects/data/alpha/analysis/"
 else:
@@ -1077,18 +1507,11 @@ else:
 ###############################################################################
 ## INITIALIZATIONS
 ###############################################################################
-# Initialize elevation 360x720 data (meters):
-# Note: missing data = -999
-elv = get_elevation(elv_dir)
+# Initialize data class:
+my_data = DATA_G(cld_dir, elv_dir, pre_dir, tmp_dir)
 
-# Get an array to clip land values (all others set to zero):
-land_clip = (elv - elv.min()).clip(max=1)
+# Initialize STASH class:
 
-# Get error values (-9999 where clip is zero)
-error_field = kerror*(1 - land_clip)
-
-# Set 'ocean' elevations equal to zero:
-elv *= land_clip
 
 # Initialize monthly key outputs:
 ppfd_mo = numpy.zeros(shape=(360,720))  # PPFD, mol/m^2
@@ -1139,14 +1562,20 @@ while cur_date < end_date:
     pre = get_monthly_cru(pre_dir, cur_date, 'pre')
     cld = get_monthly_cru(cld_dir, cur_date, 'cld')
     #
-    # Convert cloudiness to fractional sunshine, sf
-    sf = (1.0 - cld/100.0)*land_clip
+    # Get index for missing values:
+    missing_cld = numpy.where(cld == kerror)
     #
-    # Reduce error field on the temperature grid (i.e., 9.9e36 -> -9999)
-    tair = (tmp*land_clip) + error_field
+    # Convert cloudiness to fractional sunshine, sf
+    sf = numpy.copy(cld)
+    sf *= 1e-2
+    sf *= -1.0
+    sf += 1.0
+    sf[missing_cld] *= 0.0
+    sf[missing_cld] += kerror
     #
     # Clip precipitation field:
-    ppt = (pre*land_clip)
+    missing_pre = numpy.where(pre == kerror)
+    pre[missing_pre] *= 0.0
     #
     # Reset monthly fields for next monthly total:
     ppfd_mo *= 0.0
@@ -1172,13 +1601,13 @@ while cur_date < end_date:
         sw = (kCw/kWm)*w[idx,:, :]
         #
         # Calculate the (360x720) daily evaporation and radiation values
-        my_evap = EVAP_G(n, elv, sf, tair, sw, y=cur_date.year)
+        my_evap = EVAP_G(n, my_data.elv, sf, tmp, sw, y=cur_date.year)
         #
         # Update daily soil moisture:
         # Eq. 83, STASH 2.0 Documentation
         # NOTE: assume precip is monthly total (i.e., mm/mo);
         #       divide by the number of days to get daily precip
-        ro = w[idx,:, :] + ppt/(1.0*nm) + my_evap.wc - my_evap.aet_d
+        ro = w[idx,:, :] + pre/(1.0*nm) + my_evap.wc - my_evap.aet_d
         #
         # Indexes where ro exceeds bucket capacity (full)
         ro_full = numpy.where(ro >= kWm)
