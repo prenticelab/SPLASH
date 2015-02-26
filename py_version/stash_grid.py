@@ -2,17 +2,19 @@
 # -*- coding: utf-8 -*-
 #
 # stash_grid.py
-# * based on cramer_prentice.py
 #
 # written by Tyler W. Davis
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2015-02-25 -- last updated
+# 2015-02-26 -- last updated
 #
 # ------------
 # description:
 # ------------
+#
+# NOT WORKING
+#
 # This script calculates the monthly outputs at 0.5 deg resolution based on 
 # the STASH 2.0 model
 #
@@ -46,7 +48,7 @@
 # ----------
 # changelog:
 # ----------
-# 00. created [14.01.30]
+# 00. created based on cramer_prentice.py [14.01.30]
 # 01. file handling for cru ts 3.00 ('elv') [14.01.30]
 # 02. file handling for cru ts 3.21 ('pre', 'cld', and 'tmp') [14.01.31]
 # 03. file handling for wfdei ('SWdown') [14.01.31]
@@ -91,10 +93,16 @@
 #     --> removed loops for hs, hn, and hi
 # 38. updated econ variable functions with NODATA preservation [15.02.25]
 # 39. created DATA_G & STASH_G classes [15.02.25]
+# 40. continued work on DATA_G, STASH_G & main program [15.02.26]
+#     --> added nc_lat, nc_lon, nc_history, nc_write, get_date functions
 #
 # -----
 # todo:
 # -----
+# ! Monthly AET divided by monthly EET goes greater than 1.26
+# ! Daily AET/EET as high as 1.67 (Namibia, Africa)
+#
+# 0. Go through each part of EVAP_G to make sure it is working properly
 # 1. complete DATA_G class
 #    --> read temperature, precip and cloudiness data for given month
 #    --> don't forget to scale precip!
@@ -808,8 +816,7 @@ class EVAP_G:
         pc[nodata_idx] += kerror
         #
         return pc
-    #
-
+#
 class DATA_G:
     """
     Name:     DATA_G
@@ -829,19 +836,60 @@ class DATA_G:
                   - str, CRU precipitation file directory (pdir)
                   - str, CRU air temperature file directory (tdir)
         Features: Initialize class variables & reads elevation data.
+        Depends:  kerror
         """
-        self.cld_dir = cdir
-        self.elv_dir = edir
-        self.pre_dir = pdir
-        self.tmp_dir = tdir
+        # Find data files:
+        self.elv_file = self.get_cru_file(edir, 'elv')
+        self.tmp_file = self.get_cru_file(tdir, 'tmp')
+        self.pre_file = self.get_cru_file(pdir, 'pre')
+        self.cld_file = self.get_cru_file(cdir, 'cld')
         #
         # Read in elevation data:
-        self.elv_file = self.get_cru_file(edir, 'elv')
         self.read_elv(self.elv_file)
+        #
+        # Define good & no data indexes:
+        self.noval_idx = numpy.where(self.elv == kerror)
+        self.good_idx = numpy.where(self.elv != kerror)
+        #
+        # Initialize date to None:
+        self.date = None
     #
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
+    def add_one_month(self, dt0):
+        """
+        Name:     DATA_G.add_one_month
+        Input:    datetime.date
+        Output:   datetime.date
+        Features: Adds one month to datetime
+        Ref:      A. Balogh (2010), ActiveState Code
+                  http://code.activestate.com/recipes/577274-subtract-or-add-a-
+                  month-to-a-datetimedate-or-datet/
+        """
+        dt1 = dt0.replace(day=1)
+        dt2 = dt1 + datetime.timedelta(days=32) 
+        dt3 = dt2.replace(day=1)
+        return dt3
+    #
+    def add_one_year(self, dt0):
+        """
+        Name:     DATA_G.add_one_year
+        Input:    datetime.date
+        Output:   datetime.date
+        Features: Adds one year to the datetime preserving calendar date, if it 
+                  exists, otherwise uses the following day (i.e., February 29 
+                  becomes March 1)
+        Ref:      G. Rees (2013) Stack Overflow
+                  http://stackoverflow.com/questions/15741618/add-one-year-in-
+                  current-date-python
+        """
+        try:
+            return dt0.replace(year = dt0.year + 1)
+        except ValueError:
+            return dt0 + (datetime.date(dt0.year + 1, 1, 1) - 
+                          datetime.date(dt0.year, 1 ,1))
+    #
     def get_cru_file(self, d, voi):
         """
         Name:     DATA_G.get_cru_file
@@ -862,6 +910,125 @@ class DATA_G:
             print "No files found!"
         #
         return my_files
+    #
+    def get_month_days(self, ts):
+        """
+        Name:     DATA_G.get_month_days
+        Input:    datetime date
+        Output:   int, days in the month
+        Features: Returns the number of days in the month
+        Depends:  add_one_month
+        """
+        ts1 = ts.replace(day=1)
+        ts2 = self.add_one_month(ts1)
+        dts = (ts2 - ts1).days
+        #
+        return dts
+    #
+    def get_monthly_cru(self, ct, v):
+        """
+        Name:     DATA_G.get_monthly_cru
+        Input:    - datetime date, current month datetime object (ct)
+                  - str, variable of interest (v)
+        Output:   numpy nd.array
+        Features: Returns 360x720 monthly CRU TS dataset for a given month and 
+                  variable of interest (e.g., cld, pre, tmp)
+                  NODATA = kerror
+        Depends:  - get_cru_file
+                  - get_time_index
+        """
+        # Search directory for file:
+        if v == 'tmp':
+            my_file = self.tmp_file
+        elif v == 'pre':
+            my_file = self.pre_file
+        elif v == 'cld':
+            my_file = self.cld_file
+        #
+        if my_file:
+            # Open netCDF file for reading:
+            f = netcdf.NetCDFFile(my_file, "r")
+            #
+            # Save data for variables of interest:
+            # NOTE: for CRU TS 3.2: 
+            #       variables: 'lat', 'lon', 'time', v
+            #       where v is 'tmp', 'pre', 'cld'
+            # LAT:  -89.75 -- 89.75
+            # LON:  -179.75 -- 179.75
+            # TIME: units: days since 1900-1-1
+            #       shape: (1344,)
+            #       values: mid-day of each month (e.g., 15th or 16th)
+            # DATA: 'cld' units = %
+            #       'pre' units = mm
+            #       'tmp' units = deg. C
+            #       Missing value = 9.96e+36
+            #
+            # Save the base time stamp:
+            bt = datetime.date(1900,1,1)
+            #
+            # Read the time data as array:
+            f_time = f.variables['time'].data.copy()
+            #
+            # Find the time index for the current date:
+            ti = self.get_time_index(bt, ct, f_time)
+            #
+            # Get the spatial data for current time:
+            f_var = f.variables[v]
+            f_noval = f_var.missing_value
+            f_temp = f_var.data[ti]
+            f_data = numpy.copy(f_temp)
+            f_var = None
+            f.close()
+            #
+            noval_idx = numpy.where(f_data == f_noval)
+            f_data[noval_idx] *= 0.0
+            f_data[noval_idx] += kerror
+            #
+            return f_data
+    #
+    def get_time_index(self, bt, ct, aot):
+        """
+        Name:     get_time_index
+        Input:    - datetime.date, base timestamp (bt)
+                  - datetime.date, current timestamp (ct)
+                  - numpy.ndarray, array of days since base timestamp (aot)
+        Output:   int, time index for given month
+        Features: Finds the index in an array of days for a given timestamp 
+        """
+        # For CRU TS 3.2, the aot is indexed for mid-month days, e.g. 15--16th
+        # therefore, to make certain that ct index preceeds the index for the
+        # correct month in aot, make the day of the current month less than
+        # the 15th or 16th (i.e., replace day with '1'):
+        ct = ct.replace(day=1)
+        #
+        # Calculate the time difference between ct and bt:
+        dt = (ct - bt).days
+        #
+        # Find the first index of where dt would be in the sorted array:
+        try:
+            idx = numpy.where(aot > dt)[0][0]
+        except IndexError:
+            print "Month searched in CRU file is out of bounds!"
+            idx = None
+        else:
+            if dt < 0:
+                print "Month searched in CRU file is out of bounds!"
+                idx = None
+        finally:
+            return idx
+    #
+    def get_year_days(self, ts):
+        """
+        Name:     DATA_G.get_year_days
+        Input:    datetime date
+        Output:   int
+        Features: Returns the total number of days in the year
+        Depends:  add_one_year
+        """
+        ts1 = datetime.date(ts.year, 1 , 1)
+        ts2 = self.add_one_year(ts1)
+        #
+        return (ts2 - ts1).days
     #
     def read_elv(self, my_file):
         """
@@ -885,7 +1052,81 @@ class DATA_G:
         finally:
             self.elv = f
     #
-
+    def read_monthly_clim(self, m):
+        """
+        Name:     DATA_G.read_monthly_clim
+        Inputs:   datetime.date, month of interest (m)
+        Features: Reads monthly climatology (i.e., temperature, precipitation,
+                  and cloudiness), converts cloudiness to sunshine fraction and
+                  monthly precipitation to daily fraction
+        Depends:  - get_monthly_cru
+                  - kerror
+                  - set_date
+        """
+        # Check to see if new monthly data needs to be processed:
+        to_process = False
+        if self.date:
+            # Check to see if this is a new month:
+            if not self.year == m.year or not self.month == m.month:
+                to_process = True
+        else:
+            to_process = True
+        #
+        if to_process:
+            # Set the date:
+            self.set_date(m)
+            #
+            # Reset the data arrays:
+            self.tair = numpy.zeros(shape=(360,720))
+            self.pre = numpy.zeros(shape=(360,720))
+            self.sf = numpy.zeros(shape=(360,720))
+            #
+            # Read monthly data:
+            tmp = self.get_monthly_cru(m, 'tmp')
+            pre = self.get_monthly_cru(m, 'pre')
+            cld = self.get_monthly_cru(m, 'cld')
+            #
+            # Update good and noval indexes:
+            self.noval_idx = numpy.where(
+                (self.elv == kerror) | (tmp == kerror) | (pre == kerror) | 
+                (cld == kerror))
+            self.good_idx = numpy.where(
+                (self.elv != kerror) & (tmp != kerror) & (pre != kerror) & 
+                (cld != kerror))
+            #
+            # Convert cloudiness to fractional sunshine, sf
+            sf = numpy.copy(cld)
+            sf *= 1e-2
+            sf *= -1.0
+            sf += 1.0
+            sf[self.noval_idx] *= 0.0
+            sf[self.noval_idx] += kerror
+            #
+            # Convert monthly precip to daily fraction & clip missing to zero:
+            pre[self.noval_idx] *= 0.0
+            pre /= float(self.nm)
+            #
+            # Save data:
+            self.tair = tmp
+            self.pre = pre
+            self.sf = sf
+    #
+    def set_date(self, date):
+        """
+        Name:     DATA_G.set_date
+        Input:    datetime.date, date of interest (date)
+        Output:   None
+        Features: Sets the days and years for a given date
+        Depends:  - get_month_days
+                  - get_year_days
+        """
+        self.date = date
+        self.year = date.year
+        self.month = date.month
+        self.n = date.timetuple().tm_yday
+        self.nm = self.get_month_days(date)
+        self.ny = self.get_year_days(date)
+#
 class STASH_G:
     """
     Name:     STASH_G
@@ -903,7 +1144,7 @@ class STASH_G:
         Name:     STASH.__init__
         Input:    numpy.ndarray, elevation, meters (elv)
         """
-        # Error handle and assign required public variables:
+        # Assign public variables:
         self.elv = elv
         #
         # Initialize daily status variables:
@@ -921,96 +1162,138 @@ class STASH_G:
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
-    def spin_up(self, d):
+    def add_one_day(self, dt0):
+        """
+        Name:     STASH_G.add_one_day
+        Input:    datetime.date (dt0)
+        Output:   datetime.date (dt1)
+        Features: Adds one day to datetime
+        """
+        dt1 = dt0 + datetime.timedelta(days=1) 
+        #
+        return dt1
+    #
+    def spin_up(self, d, y):
         """
         Name:     STASH_G.spin
         Input:    - DATA class, (d)
-                  - bool, (to_write)
+                  - int, year (y)
         Output:   None.
         Features: Spins up the daily soil moisture.
-        Depends:  quick_run
-        
-        @TODO: finish function
+        Depends:  - add_one_day
+                  - quick_run
         """
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 0. Initialize dates & load data
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        sd = datetime.date(y, 1, 1)
+        ed = datetime.date(y+1, 1, 1)
+        d.read_monthly_clim(sd)
+        #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Create a soil moisture array:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if isinstance(d.num_lines, list):
-            n = d.num_lines[0]
-            if (numpy.array(d.num_lines) == n).all():
-                wn_vec = numpy.zeros((n,))
-            else:
-                print "Invalid number of lines read from DATA class!"
-        else:
-            n = d.num_lines
-            wn_vec = numpy.zeros((n,))
-        print "Created soil moisture array of length", len(wn_vec)
+        wn_vec = numpy.zeros(shape=(d.ny,360,720))
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Run one year:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        for i in xrange(n):
+        cur_date = sd
+        while cur_date < ed:
             # Get preceding soil moisture status:
+            i = (cur_date - sd).days
             if i == 0:
                 wn = wn_vec[-1]
             else:
                 wn = wn_vec[i-1]
             #
+            # Update monthly climatology (if necessary):
+            d.read_monthly_clim(cur_date)
+            #
             # Calculate soil moisture and runoff:
             sm, ro = self.quick_run(n=i+1, 
-                                    y=d.year,
+                                    y=y,
                                     wn=wn,
-                                    sf=d.sf_vec[i], 
-                                    tc=d.tair_vec[i], 
-                                    pn=d.pn_vec[i])
+                                    sf=d.sf, 
+                                    tc=d.tair, 
+                                    pn=d.pre)
+            #
+            # Set no data values equal to zero & save to array:
+            sm[d.noval_idx] *= 0.0
             wn_vec[i] = sm
+            #
+            # Increment date by one day:
+            cur_date = self.add_one_day(cur_date)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate change in starting soil moisture:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         start_sm = wn_vec[0]
+        d.read_monthly_clim(sd)
         end_sm, ro = self.quick_run(n=1,
-                                    y=d.year,
+                                    y=y,
                                     wn=wn_vec[-1],
-                                    sf=d.sf_vec[0],
-                                    tc=d.tair_vec[0],
-                                    pn=d.pn_vec[0])
+                                    sf=d.sf,
+                                    tc=d.tair,
+                                    pn=d.pre)
+        #
+        # Set no data values equal to zero & calc difference:
+        end_sm[d.noval_idx] *= 0.0
         diff_sm = numpy.abs(end_sm - start_sm)
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Equilibrate:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         spin_count = 1
-        while diff_sm > 1.0:
-            for i in xrange(n):
+        while diff_sm.mean() > 1.0:
+            cur_date = sd
+            while cur_date < ed:
                 # Get preceding soil moisture status:
+                i = (cur_date - sd).days
                 if i == 0:
                     wn = wn_vec[-1]
                 else:
                     wn = wn_vec[i-1]
                 #
+                # Update monthly climatology (if necessary):
+                d.read_monthly_clim(cur_date)
+                #
                 # Calculate soil moisture and runoff:
                 sm, ro = self.quick_run(n=i+1, 
-                                        y=d.year,
+                                        y=y,
                                         wn=wn,
-                                        sf=d.sf_vec[i], 
-                                        tc=d.tair_vec[i], 
-                                        pn=d.pn_vec[i])
+                                        sf=d.sf, 
+                                        tc=d.tair, 
+                                        pn=d.pre)
+                #
+                # Set no data values equal to zero & save to array:
+                sm[d.noval_idx] *= 0.0
                 wn_vec[i] = sm
+                #
+                # Increment date by one day:
+                cur_date = self.add_one_day(cur_date)
             #
             start_sm = wn_vec[0]
+            d.read_monthly_clim(sd)
             end_sm, ro = self.quick_run(n=1,
-                                        y=d.year,
+                                        y=y,
                                         wn=wn_vec[-1],
-                                        sf=d.sf_vec[0],
-                                        tc=d.tair_vec[0],
-                                        pn=d.pn_vec[0])
+                                        sf=d.sf,
+                                        tc=d.tair,
+                                        pn=d.pre)
+            #
+            # Set no data values equal to zero & calc difference:
+            end_sm[d.noval_idx] *= 0.0
             diff_sm = numpy.abs(end_sm - start_sm)
             spin_count += 1
         #
         print "Spun", spin_count, "years"
         self.wn_vec = wn_vec
         self.wn = wn_vec[-1]
+        #
+        # Preserve error values:
+        self.wn[d.noval_idx] *= 0.0
+        self.wn[d.noval_idx] += kerror
         #
     #
     def quick_run(self, n, y, wn, sf, tc, pn):
@@ -1076,8 +1359,6 @@ class STASH_G:
         Depends:  - kCw
                   - kWm
                   - EVAP_G
-        
-        @TODO: finish function
         """
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 0. Set meteorological variables:
@@ -1117,29 +1398,11 @@ class STASH_G:
         sm[full_idx] *= 0.0
         sm[full_idx] += kWm
         #
-        # Where bucket is too empty, set soil moisture to min:
+        # Where bucket is too empty, reduce AET by discrepancy amount 
+        # & set soil moisture to min:
         empty_idx = numpy.where(sm < 0)
+        self.aet[empty_idx] += sm[empty_idx]
         sm[empty_idx] *= 0.0
-        #
-        #####
-        ##### ENDED UPDATES HERE!
-        #####
-        #
-        if sm > kWm:
-            # Bucket is too full 
-            #   allocate excess water to runoff
-            #   set soil moisture to capacity (i.e., kWm)
-            ro = sm - kWm
-            sm = kWm
-        elif sm < 0:
-            # Bucket is too empty
-            #   reduce actual ET by discrepancy amount
-            #   set soil moisture and runoff to zero
-            self.aet += sm
-            sm = 0
-            ro = 0
-        else:
-            ro = 0
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Update soil moisture & runoff
@@ -1150,208 +1413,130 @@ class STASH_G:
 ###############################################################################
 ## FUNCTIONS 
 ###############################################################################
-def add_one_day(dt0):
+def get_days(ts):
     """
-    Name:     add_one_day
-    Input:    datetime.date (dt0)
-    Output:   datetime.date (dt1)
-    Features: Adds one day to datetime
+    Name:     get_days
+    Input:    datetime date (ts)
+    Output:   int (delta.days)
+    Features: Returns the number of days since 1 Jan 1860 for a given timestamp
     """
-    dt1 = dt0 + datetime.timedelta(days=1) 
-    return dt1
-    
-def add_one_month(dt0):
-    """
-    Name:     add_one_month
-    Input:    datetime date
-    Output:   datetime date
-    Features: Adds one month to datetime
-    Ref:      A. Balogh (2010), ActiveState Code
-              http://code.activestate.com/recipes/577274-subtract-or-add-a-
-              month-to-a-datetimedate-or-datet/
-    """
-    dt1 = dt0.replace(day=1)
-    dt2 = dt1 + datetime.timedelta(days=32) 
-    dt3 = dt2.replace(day=1)
-    return dt3
-
-def add_one_year(dt0):
-    """
-    Name:     add_one_year
-    Input:    datetime date
-    Output:   datetime date
-    Features: Adds one year to the datetime preserving calendar date, if it 
-              exists, otherwise uses the following day (i.e., February 29 
-              becomes March 1)
-    Ref:      G. Rees (2013) Stack Overflow
-              http://stackoverflow.com/questions/15741618/add-one-year-in-
-              current-date-python
-    """
-    try:
-        return dt0.replace(year = dt0.year + 1)
-    except ValueError:
-        return dt0 + (
-            datetime.date(dt0.year + 1, 1, 1) - datetime.date(dt0.year, 1 ,1)
-        )
-
-def get_month_days(ts):
-    """
-    Name:     get_month_days
-    Input:    datetime date
-    Output:   int
-    Depends:  add_one_month
-    Features: Returns the number of days in the month
-    """
-    ts1 = ts.replace(day=1)
-    ts2 = add_one_month(ts1)
-    dts = (ts2 - ts1).days
-    return dts
-
-def get_year_days(ts):
-    """
-    Name:     get_year_days
-    Input:    datetime date
-    Output:   int
-    Features: Returns the total number of days in the year
-    Depends:  add_one_year
-    """
-    ts1 = datetime.date(ts.year, 1 , 1)
-    ts2 = add_one_year(ts1)
-    return (ts2 - ts1).days
-
-def get_time_index(bt, ct, aot):
-    """
-    Name:     get_time_index
-    Input:    - datetime.date, base timestamp (bt)
-              - datetime.date, current timestamp (ct)
-              - numpy.ndarray, array of days since base timestamp (aot)
-    Output:   int, time index for given month
-    Features: Finds the index in an array of CRU TS days for a given timestamp 
-    """
-    # For CRU TS 3.2, the aot is indexed for mid-month days, e.g. 15--16th
-    # therefore, to make certain that ct index preceeds the index for the
-    # correct month in aot, make the day of the current month less than
-    # the 15th or 16th (i.e., replace day with '1'):
-    ct = ct.replace(day=1)
+    # Set base time:
+    base_time = datetime.date(1860, 1, 1)
     #
-    # Calculate the time difference between ct and bt:
-    dt = (ct - bt).days
+    # Calculate days since base time:
+    delta = (ts - base_time)
     #
-    # Find the first index of where dt would be in the sorted array:
-    try:
-        idx = numpy.where(aot > dt)[0][0]
-    except IndexError:
-        print "Month searched in CRU file is out of bounds!"
-        idx = None
-    else:
-        if dt < 0:
-            print "Month searched in CRU file is out of bounds!"
-            idx = None
-    finally:
-        return idx
+    # Return the number of days:
+    return delta.days
 
-def get_monthly_cru(d, ct, v):
+def nc_history():
     """
-    Name:     get_monthly_cru
-    Input:    - str, directory to CRU netcdf file (d)
-              - datetime date, current month datetime object (ct)
-              - str, variable of interest (v)
-    Output:   numpy nd.array
-    Features: Returns 360x720 monthly CRU TS dataset for a given month and 
-              variable of interest (e.g., cld, pre, tmp)
-              NODATA = kerror
-    Depends:  get_time_index
+    Name:     nc_history
+    Input:    None.
+    Output:   string (my_str)
+    Features: Returns a string for netCDF file history field based on the file's
+              creation date
     """
-    # Search directory for netCDF file:
-    my_file = glob.glob(d + "*" + v + ".dat.nc")[0]
+    my_str = "created %s" % datetime.date.today()
+    return my_str
+
+def nc_lat():
+    """
+    Name:     nc_lat
+    Input:    None.
+    Output:   numpy.ndarray, latitudes, degrees (my_lats)
+    Features: Returns an array of latitudes from -90 to 90 at 0.5 deg resolution
+    """
+    my_lats = [(-90 + 0.5*0.5) + 0.5*i for i in xrange(360)]
     #
-    if my_file:
-        # Open netCDF file for reading:
-        f = netcdf.NetCDFFile(my_file, "r")
-        #
-        # Save data for variables of interest:
-        # NOTE: for CRU TS 3.21: 
-        #       variables: 'lat', 'lon', 'time', v
-        #       where v is 'tmp', 'pre', 'cld'
-        # LAT:  -89.75 -- 89.75
-        # LON:  -179.75 -- 179.75
-        # TIME:
-        #       units: days since 1900-1-1
-        #       shape: (1344,)
-        #       values: mid-day of each month (e.g., 15th or 16th)
-        # DATA:
-        #       'cld' units = %
-        #       'pre' units = mm
-        #       'tmp' units = deg. C
-        #       Missing value = 9.96e+36
-        #
-        # Save the base time stamp:
-        bt = datetime.date(1900,1,1)
-        #
-        # Read the time data as array:
-        f_time = f.variables['time'].data
-        #
-        # Find the time index for the current date:
-        ti = get_time_index(bt, ct, f_time)
-        #
-        # Get the spatial data for current time:
-        f_var = f.variables[v]
-        f_noval = f_var.missing_value
-        f_temp = f_var.data[ti]
-        f_data = numpy.copy(f_temp)
-        f.close()
-        #
-        noval_idx = numpy.where(f_data == f_noval)
-        f_data[noval_idx] *= 0.0
-        f_data[noval_idx] += kerror
-        #
-        return f_data
+    return numpy.array(my_lats)
 
-def save_to_file(d, f):
+def nc_lon():
     """
-    Name:     save_to_file
-    Input:    - numpy nd.array (d)
-              - string, file name with path (f)
+    Name:     nc_lon
+    Input:    None.
+    Output:   numpy.ndarray, longitudes, degrees (my_lons)
+    Features: Returns an array of longitudes from -180 to 180 at 0.5 deg 
+              resolution
+    """
+    my_lons = [(-180 + 0.5*0.5) + 0.5*i for i in xrange(720)]
+    #
+    return numpy.array(my_lons)
+
+def nc_write(my_array, nc_file, nc_title, var_sname, var_lname, var_units, d):
+    """
+    Name:     nc_write
+    Inputs:   - numpy.ndarray, 360x720 data (my_array)
+              - str, netCDF output file with path (nc_file)
+              - str, netCDF file title (nc_title)
+              - str, variable short name (var_sname)
+              - str, variable long name (var_lname)
+              - str, variable units (var_units)
+              - datetime.date, output date (d)
     Output:   None
-    Features: Writes data to file in ASCII raster format (1000 x value) with 
-              missing values set to kerror
-    Depends:  - writeout
+    Features: Writes 360x720 data to netCDF file
+    Depends:  - nc_history
+              - nc_lat
+              - nc_lon
+              - get_days
               - kerror
     """
-    # Define header line for ASCII raster:
-    header = (
-        "NCOLS 720\n"
-        "NROWS 360\n"
-        "XLLCORNER -180.0\n"
-        "YLLCORNER -90.0\n"
-        "CELLSIZE 0.5\n"
-        "NODATA_VALUE %s\n"
-        ) % (kerror)
+    # Create a new netCDF file for saving the output:
+    f = netcdf.netcdf_file(nc_file, 'w')
     #
-    # Save header line to file:
-    writeout(f, header)
+    # Add meta data variables to file:
+    f.contact1 = 'tyler.davis@imperial.ac.uk'
+    f.contact2 = 'c.prentice@imperial.ac.uk'
+    f.history = nc_history()
+    f.institution = 'Imperial College London'
+    f.note1 = (
+        'Monthly data is processed based on the daily iterations of the '
+        'STASH model, (Davis et al., in prep)'
+        )
+    f.note2 = (
+        'STASH model results are based on soil moisture fields initialized '
+        'over the year 2001 using CRU TS 3.22 climatology'
+        )
+    f.note3 = (
+        'Pixels without data are set equal to ' + str(kerror)
+        )
+    f.title = nc_title
     #
-    # Iterate through data:
-    for i in xrange(360):
-        # Reverse column ordering:
-        y = 359 - i
-        #
-        # Reset outline for next row:
-        outline = ""
-        #
-        for x in xrange(720):
-            val = d[y,x]
-            #
-            if val != kerror:
-                val = (1e3)*val
-                #
-            # Add value to outline:
-            outline = "%s%d " % (outline, int(val))
-        # End line and print to file:
-        outline = "%s\n" % outline.rstrip(' ')
-        OUT = open(f, 'a')
-        OUT.write(outline)
-        OUT.close()
+    # Create latitude dimension & variable:
+    f.createDimension('lat', 360)
+    lat = f.createVariable('lat', 'd', ('lat',) )
+    lat[:] = nc_lat()
+    lat.standard_name = 'latitude'
+    lat.long_name = 'latitude'
+    lat.units = 'degrees_north'
+    lat.axis = 'Y'
+    #
+    # Create longitude dimension & variable:
+    f.createDimension('lon', 720)
+    lon = f.createVariable('lon', 'd', ('lon',))
+    lon[:] = nc_lon()
+    lon.standard_name = 'longitude'
+    lon.long_name = 'longitude'
+    lon.units = 'degrees_east'
+    lon.axis = 'X'
+    #
+    # Create time dimension & variable
+    f.createDimension('time', 1)
+    t = f.createVariable('time', 'd', ('time',))
+    t.standard_name = 'time'
+    t.units = 'days since 1860-01-01 00:00:00'
+    t[0] = get_days(d)
+    #
+    # Create data variable:
+    data = f.createVariable(var_sname, 'd', ('time','lat','lon'))
+    data._FillValue = kerror
+    data.missing_value = kerror
+    data.long_name = var_lname
+    data.units = var_units
+    data[0] = my_array
+    #
+    # Close and save netCDF file:
+    f.close()
 
 def writeout(f, d):
     """
@@ -1369,125 +1554,10 @@ def writeout(f, d):
     else:
         OUT.close()
 
-def spin_up(y, w_init, thresh, elv, lc, ef, tmp_d, cld_d, pre_d):
-    """
-    Name:     spin_up
-    Input:    - int, year (y)
-              - float, soil moisture initial value (w_init)
-              - float, error value (thresh)
-              - numpy nd.array, elevation array (elv)
-              - numpy nd.array, land clip (lc)
-              - numpy nd.array, error field (ef)
-              - string, CRU TS tmp netcdf directory (tmp_d)
-              - string, CRU TS cld netcdf directory (cld_d)
-              - string, CRU TS pre netcdf directory (pre_d)
-    Output:   numpy nd.array
-    Features: Returns soil moisture array following a spin-up on CRU TS 
-              meteorological data of a given year
-    """
-    # Initialize daily soil moisture for one year:
-    w = w_init*(numpy.ones(shape=(366,360,720)))
-    #
-    # Spin up iteration counter and max iterations:
-    spin_count = 0
-    spin_max = 10
-    #
-    # Define start and end dates based on given year:
-    start_date = datetime.date(y, 1, 1)
-    end_date = datetime.date(y+1, 1, 1)
-    #
-    # Initialize error field mean:
-    w_err = (1.0 + thresh)
-    #
-    # Run yearly spin if errors are still large and max iterations not reached:
-    while w_err > thresh and spin_count < spin_max:
-        # Increment spin counter:
-        spin_count += 1
-        #
-        # Initialize iteration:
-        cur_date = start_date
-        ny = get_year_days(start_date)
-        while cur_date < end_date:
-            nm = get_month_days(cur_date)
-            #
-            tmp = get_monthly_cru(tmp_d, cur_date, 'tmp')
-            pre = get_monthly_cru(pre_d, cur_date, 'pre')
-            cld = get_monthly_cru(cld_d, cur_date, 'cld')
-            #
-            tair = (tmp*lc) + ef
-            ppt = (pre*lc)
-            sf = (1.0 - cld/100.0)*lc
-            #
-            cur_day = 0
-            while cur_day < nm:
-                n = (cur_date.timetuple().tm_yday + cur_day)
-                idx = int(n-1)-1
-                if idx < 0:
-                    idx = int(ny-1)
-                sw = (kCw/kWm)*w[idx,:, :]
-                my_evap = EVAP_G(n, elv, sf, tair, sw, y=cur_date.year)
-                ro = w[idx,:, :] + ppt/(1.0*nm) + my_evap.wc - my_evap.aet_d
-                #
-                ro_full = numpy.where(ro >= kWm)
-                ro_empty = numpy.where(ro <= 0)
-                ro_reg = numpy.where((ro < kWm) & (ro > 0))
-                #
-                for j in xrange(len(ro_full[0])):
-                    (a,b) = (ro_full[0][j], ro_full[1][j])
-                    w[(n-1),a,b] = kWm
-                for j in xrange(len(ro_empty[0])):
-                    (a,b) = (ro_empty[0][j], ro_empty[1][j])
-                    w[(n-1),a,b] = 0.0
-                for j in xrange(len(ro_reg[0])):
-                    (a,b) = (ro_reg[0][j], ro_reg[1][j])
-                    w[(n-1),a,b] = ro[a,b]
-                #
-                cur_day += 1
-            #
-            cur_date = add_one_month(cur_date)
-        #
-        # Calc mean error between 31 December and 1 January
-        w_err = numpy.abs((w[-1,:,:] - w[0,:,:]).mean())
-    #
-    #print 'spun', spin_count, 'years'
-    return w
-
-def mean_monthly_w(w, m, y):
-    """
-    Name:     mean_monthly_w
-    Inputs:   - numpy.ndarray, daily soil moisture: 366x360x720 (w)
-              - int, month, 1..12 (m)
-              - int, year (y)
-    Outputs:  numpy.ndarray
-    Features: Returns mean monthly soil moisture for a given month and year
-    Depends:  get_month_days
-    """
-    # Initialize return value:
-    mean_w = numpy.zeros(shape=(360,720))
-    #
-    # Create list of days of the year to process:
-    try:
-        my_date = datetime.date(y, m, 1)
-    except ValueError:
-        print "Month must be 1 to 12"
-    else:
-        nm = get_month_days(my_date)
-        n = [my_date.timetuple().tm_yday + i for i in xrange(nm)]
-        #
-        # Begin summation over days:
-        for i in n:
-            mean_w += w[(i-1), :, :]
-        #
-        # Calculate mean:
-        mean_w /= float(nm)
-        #
-        return mean_w
-    #
-
 ###############################################################################
 ## DEFINITIONS 
 ###############################################################################
-mac = 0   # 1: TRUE, 0: FALSE
+mac = False
 if mac:
     # Mac:
     cld_dir = "/Users/twdavis/Projects/data/cru/cru_ts_3_22/"
@@ -1498,7 +1568,7 @@ if mac:
 else:
     # Linux:
     cld_dir = "/usr/local/share/database/cru/"
-    elv_dir = "/usr/local/share/database/cru/elv/"
+    elv_dir = "/usr/local/share/database/cru/"
     pre_dir = "/usr/local/share/database/cru/"
     swd_dir = "/usr/local/share/database/watch/netcdf/"
     tmp_dir = "/usr/local/share/database/cru/"
@@ -1511,184 +1581,92 @@ else:
 my_data = DATA_G(cld_dir, elv_dir, pre_dir, tmp_dir)
 
 # Initialize STASH class:
+my_stash = STASH_G(my_data.elv)
+my_stash.spin_up(my_data, 2001)  # <10 mins to spin up
 
-
-# Initialize monthly key outputs:
-ppfd_mo = numpy.zeros(shape=(360,720))  # PPFD, mol/m^2
-aet_mo = numpy.zeros(shape=(360,720))   # AET, mm
-eet_mo = numpy.zeros(shape=(360,720))   # EET, mm
-pet_mo = numpy.zeros(shape=(360,720))   # PET, mm
-
-# Annual total top-of-atmosphere PPFD, Qo_ann
-qo_ann = numpy.zeros(shape=(360,720))
-
-# Initialize soil moisture:
-# * w.shape: days, lat, lon
-w = spin_up(2000, kWm, 0.05, elv, land_clip, 
-            error_field, tmp_dir, cld_dir, pre_dir)
-#w = kWm*(numpy.ones(shape=(366,360,720)))
-
-# Save initialization (optional for mult. processing)
-w_bak = numpy.copy(w)
-
-# Starting/ending dates:
-start_date = datetime.date(2001, 1, 1)
-end_date = datetime.date(2002,1,1)
-
-# Output date:
-print_date = datetime.date(2000,1,1)
+# Define start and ending dates:
+start_date = datetime.date(2002, 1, 1)
+end_date = datetime.date(2003, 1, 1)
 
 ###############################################################################
 ## MAIN PROGRAM 
 ###############################################################################
-# Initialize current monthly timestamp
-cur_date = start_date
-w = numpy.copy(w_bak)
-out_no = "AN1"
+# Initialize monthly variables & daily soil moisture:
+wn = numpy.copy(my_stash.wn)
+eet_mo = numpy.zeros(shape=(360,720))
+aet_mo = numpy.zeros(shape=(360,720))
 
-# ~~~~~~~~~~~~~~~~~~~
-# MONTHLY timestamps:
-# ~~~~~~~~~~~~~~~~~~~
-while cur_date < end_date:
-    # Get number of days in the current month and year:
-    nm = get_month_days(cur_date)
-    ny = get_year_days(cur_date)
-    #
-    # Open and read tmp, pre, & cld data for this month:
-    # NOTE: all the gridded data (CRU TS) have the same
-    #       shape (360x720) and are indexed identically, 
-    #       row-major from (-179.75, -89.57) to (179.75, 89.75)
-    tmp = get_monthly_cru(tmp_dir, cur_date, 'tmp')
-    pre = get_monthly_cru(pre_dir, cur_date, 'pre')
-    cld = get_monthly_cru(cld_dir, cur_date, 'cld')
-    #
-    # Get index for missing values:
-    missing_cld = numpy.where(cld == kerror)
-    #
-    # Convert cloudiness to fractional sunshine, sf
-    sf = numpy.copy(cld)
-    sf *= 1e-2
-    sf *= -1.0
-    sf += 1.0
-    sf[missing_cld] *= 0.0
-    sf[missing_cld] += kerror
-    #
-    # Clip precipitation field:
-    missing_pre = numpy.where(pre == kerror)
-    pre[missing_pre] *= 0.0
-    #
-    # Reset monthly fields for next monthly total:
-    ppfd_mo *= 0.0
-    aet_mo *= 0.0
-    eet_mo *= 0.0
-    pet_mo *= 0.0
-    #
-    # ~~~~~~~~~~~~~~~~
-    # DAILY timesteps:
-    # ~~~~~~~~~~~~~~~~
-    cur_day = 0
-    while cur_day < nm:
-        # Get the Julian day of the year:
-        n = (cur_date.timetuple().tm_yday + cur_day)
+# Initialize the current day & input data:
+cur_date = start_date
+out_date = cur_date
+my_data.read_monthly_clim(cur_date)
+
+# Iterate through each month:
+while cur_date < my_stash.add_one_day(end_date):
+    # Month check.
+    if cur_date.year == my_data.year and cur_date.month == my_data.month:
+        # Still in the same month! Continue to process!
+        my_stash.run_one_day(n=cur_date.timetuple().tm_yday,
+                             y=cur_date.year,
+                             wn=wn,
+                             sf=my_data.sf,
+                             tc=my_data.tair,
+                             pn=my_data.pre)
+        wn = numpy.copy(my_stash.wn)
+        eet_mo[my_data.good_idx] += my_stash.eet[my_data.good_idx]
+        aet_mo[my_data.good_idx] += my_stash.aet[my_data.good_idx]
         #
-        # Get the index for yesterday:
-        idx = int(n-1)-1
-        if idx < 0:
-            idx = int(ny-1)
+    else:
+        # New month! Calculate Cramer-Prentice alpha:
+        missing_eet = numpy.where(eet_mo == 0)
+        good_eet = numpy.where(eet_mo > 0)
+        cpa_mo = numpy.copy(aet_mo)
+        cpa_mo[good_eet] /= eet_mo[good_eet]
+        cpa_mo[missing_eet] *= 0.0
+        cpa_mo[missing_eet] += kerror
         #
-        # Calculate the (360x720) evaportive supply rate (mm/hr)
-        # Eq. 4, STASH 2.0 Documentation
-        sw = (kCw/kWm)*w[idx,:, :]
+        # Maintain error values:
+        cpa_mo[my_data.noval_idx] *= 0.0
+        cpa_mo[my_data.noval_idx] += kerror
         #
-        # Calculate the (360x720) daily evaporation and radiation values
-        my_evap = EVAP_G(n, my_data.elv, sf, tmp, sw, y=cur_date.year)
+        # Save data to file:
+        nc_output_file = "%sSTASH_%d-%02d_alpha.nc" % (output_dir, 
+                                                       out_date.year, 
+                                                       out_date.month)
+        nc_write(cpa_mo, nc_output_file, 'Monthly Cramer-Prentice alpha',
+                 'CPA', 'Cramer-Prentice bioclimatic moisture index', 'none',
+                 out_date)
+        # 
+        # Update output date:
+        out_date = cur_date
         #
-        # Update daily soil moisture:
-        # Eq. 83, STASH 2.0 Documentation
-        # NOTE: assume precip is monthly total (i.e., mm/mo);
-        #       divide by the number of days to get daily precip
-        ro = w[idx,:, :] + pre/(1.0*nm) + my_evap.wc - my_evap.aet_d
+        # Reset monthly totals
+        eet_mo *= 0.0
+        aet_mo *= 0.0
         #
-        # Indexes where ro exceeds bucket capacity (full)
-        ro_full = numpy.where(ro >= kWm)
-        for j in xrange(len(ro_full[0])):
-            (a,b) = (ro_full[0][j], ro_full[1][j])
-            w[(n-1),a,b] = kWm
+        # Load new month's data:
+        my_data.read_monthly_clim(cur_date)
         #
-        # Indexes where ro exceeds bucket capacity (empty)
-        ro_empty = numpy.where(ro <= 0)
-        for j in xrange(len(ro_empty[0])):
-            (a,b) = (ro_empty[0][j], ro_empty[1][j])
-            w[(n-1),a,b] = 0.0
-        #
-        # Indexes for regular ro
-        ro_reg = numpy.where((ro < kWm) & (ro > 0))
-        for j in xrange(len(ro_reg[0])):
-            (a,b) = (ro_reg[0][j], ro_reg[1][j])
-            w[(n-1),a,b] = ro[a,b]
-        #
-        # Increment daily aet & eet to monthly values:
-        ppfd_mo += my_evap.ppfd_d
-        aet_mo += my_evap.aet_d
-        eet_mo += my_evap.eet_d
-        pet_mo += my_evap.pet_d
-        #
-        # Output daily solar radiation (top of atmos. PPFD)
-        if 0:
-            qo_ann += (1e-6)*(kfFEC*my_evap.ra_d) # mol/m^2
-        #
-        # Update the day of the month:
-        cur_day += 1
-        #
-    # Calculate Cramer-Prentice alpha:
-    cpa_mo = numpy.zeros(shape=(360,720))
-    #
-    # Find where denominator is zero (can't divide):
-    cp_iz = numpy.where(eet_mo == 0)
-    for j in xrange(len(cp_iz[0])):
-        (a,b) = (cp_iz[0][j], cp_iz[1][j])
-        cpa_mo[a,b] = kerror
-    #
-    # Find where denominator is not zero (can divide)
-    cp_nz = numpy.where(eet_mo != 0)
-    for j in xrange(len(cp_nz[0])):
-        (a,b) = (cp_nz[0][j], cp_nz[1][j])
-        cpa_mo[a,b] = (aet_mo[a,b]/eet_mo[a,b])
-    cpa_mo = (cpa_mo*land_clip) + error_field
-    #
-    # Prepare monthly outputs:
-    ppfd_mo = (ppfd_mo*land_clip) + error_field
-    pet_mo = (pet_mo*land_clip) + error_field
-    eet_mo = (eet_mo*land_clip) + error_field
-    cwd_mo = (pet_mo - aet_mo)*land_clip + error_field
-    #
-    # Save monthly values to file:
-    if cur_date >= print_date:
-        # Output file names:
-        ppfd_out_file = "%s%s_%s_%s.txt" % (output_dir, out_no, 
-                                            "PPFD_mo", cur_date)
-        eet_out_file = "%s%s_%s_%s.txt" % (output_dir, out_no, 
-                                           "EET_mo", cur_date)
-        pet_out_file = "%s%s_%s_%s.txt" % (output_dir, out_no, 
-                                           "PET_mo", cur_date)
-        cpa_out_file = "%s%s_%s_%s.txt" % (output_dir, out_no, 
-                                           "CPA_mo", cur_date)
-        cwd_out_file = "%s%s_%s_%s.txt" % (output_dir, out_no, 
-                                           "CWD_mo", cur_date)
-        #
-        save_to_file(ppfd_mo, ppfd_out_file)
-        save_to_file(eet_mo, eet_out_file)
-        save_to_file(pet_mo, pet_out_file)
-        save_to_file(cpa_mo, cpa_out_file)
-        save_to_file(cwd_mo, cwd_out_file)
-    #
-    # Update date field to next month:
-    cur_date = add_one_month(cur_date)
-#
-if 0:
-    qo_present = numpy.copy(qo_ann)
-    qo_holocene = numpy.copy(qo_ann)
-    #
-    qo_out_file = "%s%s.txt" % (output_dir, "Qo_Annual_11000YA")
-    qo_ann = (1e-3)*(qo_holocene*land_clip) + error_field
-    save_to_file(qo_ann, qo_out_file)
+        # Calc new month's starting values:
+        my_stash.run_one_day(n=cur_date.timetuple().tm_yday,
+                             y=cur_date.year,
+                             wn=wn,
+                             sf=my_data.sf,
+                             tc=my_data.tair,
+                             pn=my_data.pre)
+        wn = numpy.copy(my_stash.wn)
+        eet_mo[my_data.good_idx] += my_stash.eet[my_data.good_idx]
+        aet_mo[my_data.good_idx] += my_stash.aet[my_data.good_idx]
+    # 
+    # Increment day:
+    cur_date = my_stash.add_one_day(cur_date)
+
+# TEST EVAP_G
+my_date = datetime.date(2001, 6, 1)
+my_data.read_monthly_clim(my_date)
+my_evap = EVAP_G(n=174,
+                 elv=my_data.elv,
+                 sf=my_data.sf,
+                 tc=my_data.tair,
+                 sw=0.5*numpy.ones(shape=(360,720)),
+                 y=2001)
