@@ -5,7 +5,7 @@
 # written by Tyler W. Davis
 # Imperial College London
 #
-# last updated: 2015-02-23
+# last updated: 2015-03-24
 #
 # ~~~~~~~~~~~~
 # description:
@@ -31,6 +31,7 @@
 # 14. added example of yearly looping [15.01.27]
 # 15. updated year extraction from filename in yearly loop example [15.01.30]
 # 16. created read_csv and read_txt functions [15.02.23]
+# 17. updated kR and kTo values and references [15.03.24]
 #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 #### Define functions #########################################################
@@ -723,8 +724,8 @@ kMv <- 0.01802        # mol. weight of water vapor, kg/mol (Tsilingiris, 2008)
 komega <- 283         # lon. of perihelion, degrees, 2000CE (Berger, 1978)
 kSecInDay <- 86400    # number of seconds in a day
 kPo <- 101325         # standard atmosphere, Pa (Allen, 1973)
-kR <- 8.3143          # universal gas constant, J/mol/K (Allen, 1973)
-kTo <- 298.15         # base temperature (25 deg C), K (I.C. Prentice)
+kR <- 8.31447         # universal gas constant, J/mol/K (Moldover et al., 1988)
+kTo <- 288.15         # base temperature (15 deg C), K (Berberan-Santos et al., 1997)
 kWm <- 150            # soil moisture capacity, mm (Cramer-Prentice, 1988)
 kw <- 0.26            # PET entrainment, (1+kw)*EET (Priestley-Taylor, 1972)
 

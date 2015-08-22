@@ -11,7 +11,7 @@ using namespace std;
  * Imperial College London
  * 
  * 2015-02-06 -- created
- * 2015-02-19 -- last updated
+ * 2015-08-22 -- last updated
  * 
  * ------------
  * description:
@@ -27,6 +27,7 @@ using namespace std;
  * 02. removed kCw and kWm from constants (moved to STASH class) [15.02.17]
  * 03. changed get_cn to get_cond [15.02.17]
  * 04. added EVAP header file to include list [15.02.19]
+ * 05. updated R and To [15.08.22]
  * 
  * //////////////////////////////////////////////////////////////////////// */
 
@@ -53,8 +54,8 @@ EVAP::EVAP(double lat, int n, double elv, int y, double sf, double tc,
     kMa = 0.028963;   // (Tsilingiris, 2008)
     kMv = 0.01802;    // (Tsilingiris, 2008)
     kPo = 101325;     // (Allen, 1973)
-    kR = 8.3143;      // (Allen, 1973)
-    kTo = 298.15;     // (Prentice, unpublished)
+    kR = 8.31447;     // (Moldover et al., 1988)
+    kTo = 288.15;     // (Berberan-Santos et al., 1997)
     kw = 0.26;        // (Lhomme, 1997; Priestley & Taylor, 1972)
     komega = 283.0;   // (Berger, 1978)
     kPI = 3.14159265; // pi

@@ -7,7 +7,7 @@
 # Imperial College London
 #
 # 2014-01-30 -- created
-# 2015-02-23 -- last updated
+# 2015-08-22 -- last updated
 #
 # ------------
 # description:
@@ -55,6 +55,7 @@
 #     --> OR read each variable from individual text files
 # 27. updated STASH class to run for one day [15.02.09]
 #     --> spin-up function still creates a soil moisture array
+# 28. updated R and To values and references [15.08.22]
 #
 # -----
 # todo:
@@ -88,8 +89,8 @@ kL = 0.0065    # temperature lapse rate, K/m (Allen, 1973)
 kMa = 0.028963 # molecular weight of dry air, kg/mol (Tsilingiris, 2008)
 kMv = 0.01802  # molecular weight of water vapor, kg/mol (Tsilingiris, 2008)
 kPo = 101325   # standard atmosphere, Pa (Allen, 1973)
-kR = 8.3143    # universal gas constant, J/mol/K (Allen, 1973)
-kTo = 298.15   # base temperature, K (Prentice, unpublished)
+kR = 8.31447   # universal gas constant, J/mol/K (Moldover et al., 1988)
+kTo = 288.15   # base temperature, K (Berberan-Santos et al., 1997)
 kWm = 150      # soil moisture capacity, mm (Cramer & Prentice, 1988)
 kw = 0.26      # entrainment factor (Lhomme, 1997; Priestley & Taylor, 1972)
 komega = 283.0 # longitude of perihelion for 2000 CE, degrees (Berger, 1978)
