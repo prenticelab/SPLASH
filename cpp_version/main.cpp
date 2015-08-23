@@ -4,35 +4,36 @@
 
 #include "DATA.h"
 #include "EVAP.h"
-#include "STASH.h"
+#include "SPLASH.h"
 
 using namespace std;
 
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * main.cpp
  * 
- * written by Tyler W. Davis
- * Imperial College London
- * 
  * 2015-02-07 -- created
- * 2015-02-17 -- last updated
+ * 2015-08-22 -- last updated
  * 
- * ------------
+ * ~~~~~~~~~
+ * citation:
+ * ~~~~~~~~~
+ * T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+ * Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
+ * algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
+ * transpiration and plant-available moisture, Geoscientific Model Development, 
+ * 2015 (in progress)
+ * 
+ * ~~~~~~~~~~~~
  * description:
- * ------------
- * This script serves as the main function to run the STASH model.
+ * ~~~~~~~~~~~~
+ * This script serves as the main function to run the SPLASH model.
  * 
- * ----------
+ * ~~~~~~~~~~
  * changelog:
- * ----------
+ * ~~~~~~~~~~
  * 01. added DATA class [15.02.08]
  * 02. updated DATA class for csv and txt data input [15.02.17]
- * 03. added STASH class [15.02.17]
- * 
- * -----
- * todo:
- * -----
- * 01. create STASH class
+ * 03. added SPLASH class [15.02.17]
  * 
  * //////////////////////////////////////////////////////////////////////// */
 
@@ -63,11 +64,11 @@ int main() {
     // Calculate radiation & evaporation terms:
     double lat = 37.7;
     double elv = 142.0;
-    STASH my_stash(lat, elv);
-    //my_stash.run_one_day(172, 2001, 145.0, 0.5, 17.3, 10.0);
-    my_stash.spin_up(my_data);
-    my_stash.print_vals();
-    //cout << "Created STASH class at " << my_stash.get_elv() << " m" << endl;
+    SPLASH my_class(lat, elv);
+    my_class.spin_up(my_data);
+    my_class.run_one_day(172, 2000, 145.0, 0.5, 17.3, 10.0);
+    my_class.print_vals();
+    //cout << "Created SPLASH class at " << my_class.get_elv() << " m" << endl;
     
     //int n = 172;
     //int y = 2001; 

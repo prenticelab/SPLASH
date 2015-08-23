@@ -7,24 +7,30 @@ using namespace std;
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * EVAP.cpp
  * 
- * written by Tyler W. Davis
- * Imperial College London
- * 
  * 2015-02-06 -- created
  * 2015-08-22 -- last updated
  * 
- * ------------
+ * ~~~~~~~~~
+ * citation:
+ * ~~~~~~~~~
+ * T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+ * Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
+ * algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
+ * transpiration and plant-available moisture, Geoscientific Model Development, 
+ * 2015 (in progress)
+ * 
+ * ~~~~~~~~~~~~
  * description:
- * ------------
+ * ~~~~~~~~~~~~
  * This script includes the definitions for the EVAP class, which calculates 
  * the daily quantities of radiation, evaporation, and condensation for the 
- * STASH model.
+ * SPLASH model.
  * 
- * ----------
+ * ~~~~~~~~~~
  * changelog:
- * ----------
+ * ~~~~~~~~~~
  * 01. finished class function definitions and debugged [15.02.07]
- * 02. removed kCw and kWm from constants (moved to STASH class) [15.02.17]
+ * 02. removed kCw and kWm from constants (moved to SPLASH class) [15.02.17]
  * 03. changed get_cn to get_cond [15.02.17]
  * 04. added EVAP header file to include list [15.02.19]
  * 05. updated R and To [15.08.22]

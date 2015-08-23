@@ -98,12 +98,12 @@
       end module outputvars
 
 
-      program stash
+      program splash
       !////////////////////////////////////////////////////////////////
-      ! STASH MAIN PROGRAM 
+      ! SPLASH MAIN PROGRAM 
       ! This subroutine maintains daily, monthly and annual quantities of 
       ! radiation, evapotranspiration, and soil moisture based on the 
-      ! STASH methods.
+      ! SPLASH methods.
       !----------------------------------------------------------------
       use modelparams
       use outputvars
@@ -119,7 +119,7 @@
       real, dimension(nmonth) :: intc
       real, dimension(nmonth) :: inppt
 
-      ! state variables of STASH (daily updated, used by different SRs)
+      ! state variables of SPLASH (daily updated, used by different SRs)
       real :: ra_d                         ! daily extraterrestrial solar radiation (J/m^2)
       real :: rn_d                         ! daytime net radiation, J/m^2
 
@@ -133,7 +133,7 @@
       intc  = (/4.80, 4.85, 7.10, 9.10, 12.4, 15.3, 17.6, 17.3, 14.6, 11.2, 7.55, 5.05/)
       inppt = (/61.0, 41.2, 44.5, 48.0, 46.4, 44.6, 46.0, 52.3, 50.3, 71.8, 66.3, 62.9/)
 
-      print*,'Running STASH ...'
+      print*,'Running SPLASH ...'
 
       ! sanity check
       if (my_lon>180.0 .or. my_lon<(-180.0)) then
@@ -163,7 +163,7 @@
       call spin_up( my_lon, my_lat, my_elv, inppt, intc, insf )
       print*,'... done'
 
-      print*,'STASH sucessfully completed.'
+      print*,'SPLASH sucessfully completed.'
 
       contains
 
@@ -530,7 +530,7 @@
         real :: pw                           ! density of water, kg/m^3
         real :: lv                           ! enthalpy of vaporization, J/kg
         real :: g                            ! psychrometric constant, Pa/K
-        real :: econ                         ! Eq. 58, STASH 2.0 Documentation
+        real :: econ                         ! Eq. 58, Documentation
         real :: rx                           ! variable substitute (mm/hr)/(W/m^2)
         real :: hi, cos_hi                   ! intersection hour angle, degrees
 
@@ -682,7 +682,7 @@
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ! 9. Calculate daily PPFD (ppfd_d), mol/m^2
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ! Eq. 57, STASH 2.0 Documentation
+        ! Eq. 57, Documentation
         ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*ra_d
 
         ! xxx debug
@@ -721,7 +721,7 @@
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ! 13. Calculate daytime net radiation (rn_d), J/m^2
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ! Eq. 53, STASH 2.0 Documentation
+        ! Eq. 53, Documentation
         rn_d = (86400.0/pi) * (hn*(pi/180.0)*(rw*ru - rnl) + rw*rv*dgsin(hn))
 
         ! xxx debug: slight deviation from python code (-6.156683e-05 %)
@@ -730,7 +730,7 @@
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ! 14. Calculate nighttime net radiation (rnn_d), J/m^2
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ! Eq. 56, STASH 2.0 Documentation
+        ! Eq. 56, Documentation
         rnn_d = (86400.0/pi)*(radians(rw*ru*(hs-hn)) + rw*rv*(dgsin(hs)-dgsin(hn)) + rnl*(pi - 2.0*radians(hs) + radians(hn)))
 
         ! xxx debug
@@ -748,7 +748,7 @@
         ! Psychrometric constant, Pa/K
         g = psychro(my_tc, elv2pres(my_elv))
 
-        ! Eq. 58, STASH 2.0 Documentation
+        ! Eq. 58, Documentation
         econ = s/(lv*pw*(s + g))
 
         ! xxx debug
@@ -757,13 +757,13 @@
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ! 16. Calculate daily condensation (wc), mm
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ! Eq. 68, STASH 2.0 Documentation
+        ! Eq. 68, Documentation
         wc = 1000.0 * econ * abs(rnn_d)
 
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ! 17. Estimate daily EET (eet_d), mm
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ! Eq. 70, STASH 2.0 Documentation
+        ! Eq. 70, Documentation
         eet_d = 1000.0*econ*(rn_d)
 
         ! xxx debug
@@ -772,7 +772,7 @@
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ! 18. Estimate daily PET (pet_d), mm
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ! Eq. 72, STASH 2.0 Documentation
+        ! Eq. 72, Documentation
         pet_d = (1.0+kw)*eet_d
 
         ! xxx debug
@@ -800,7 +800,7 @@
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ! 21. Estimate daily AET (aet_d), mm
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ! Eq. 81, STASH 2.0 Documentation
+        ! Eq. 81, Documentation
         aet_d = (24.0/pi)*(radians(my_sw*hi) + rx*rw*rv*(dgsin(hn) - dgsin(hi)) + radians((rx*rw*ru - rx*rnl)*(hn - hi)))
 
         ! xxx debug

@@ -4,9 +4,9 @@ CXXFLAGS = -g
 
 MAKEFILE = Makefile
 
-OBJS = DATA.o EVAP.o STASH.o main.o
+OBJS = DATA.o EVAP.o SPLASH.o main.o
 
-OFILES = DATA.o EVAP.o STASH.o main.o
+OFILES = DATA.o EVAP.o SPLASH.o main.o
 PFILES = main
 
 %.o: %.cpp
@@ -27,5 +27,5 @@ nice:
 #---------- Dependencies ----------#
 DATA.o:		DATA.h
 EVAP.o:		EVAP.h
-STASH.o:	STASH.h
-main.o:		DATA.h EVAP.h STASH.h
+SPLASH.o:	SPLASH.h
+main.o:		DATA.h EVAP.h SPLASH.h

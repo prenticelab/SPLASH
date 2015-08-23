@@ -1,4 +1,4 @@
-#include "STASH.h"
+#include "SPLASH.h"
 #include <cstdlib>
 #include <iostream>
 #include <vector>
@@ -6,24 +6,30 @@
 using namespace std;
 
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
- * STASH.cpp
- * 
- * written by Tyler W. Davis
- * Imperial College London
+ * SPLASH.cpp
  * 
  * 2015-02-17 -- created
- * 2015-02-19 -- last updated
+ * 2015-08-22 -- last updated
  * 
- * ------------
+ * ~~~~~~~~~
+ * citation:
+ * ~~~~~~~~~
+ * T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+ * Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
+ * algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
+ * transpiration and plant-available moisture, Geoscientific Model Development, 
+ * 2015 (in progress)
+ * 
+ * ~~~~~~~~~~~~
  * description:
- * ------------
+ * ~~~~~~~~~~~~
  * This class updates daily quantities of radiation, evapotranspiration, soil 
- * moisture and runoff based on the STASH methodology.
+ * moisture and runoff based on the SPLASH methodology.
  * 
- * ----------
+ * ~~~~~~~~~~
  * changelog:
- * ----------
- * 01. added STASH header to include list [15.02.19]
+ * ~~~~~~~~~~
+ * 01. added header to include list [15.02.19]
  * 02. added iostream to include list [15.02.19]
  * 03. created print_vals function [15.02.19]
  * 04. added smr struct (dsoil) [15.02.19]
@@ -35,7 +41,7 @@ using namespace std;
 // \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // Class Constructors: 
 // ////////////////////////////////////////////////////////////////////////
-STASH::STASH(double latitude, double elevation)
+SPLASH::SPLASH(double latitude, double elevation)
     : lat(latitude), elv(elevation), precip(0.0)
 {
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,10 +68,10 @@ STASH::STASH(double latitude, double elevation)
 // \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 // Class Function Definitions
 // ////////////////////////////////////////////////////////////////////////
-void STASH::quick_run(int n, int y, double wn, double sf, double tc, 
+void SPLASH::quick_run(int n, int y, double wn, double sf, double tc, 
                        double pn, smr &dsm) {
     /* ***********************************************************************
-    Name:     STASH.quick_run
+    Name:     SPLASH.quick_run
     Input:    - int, day of year (n)
               - int, year (y)
               - double, previous day's soil moisture, mm (wn)
@@ -117,10 +123,10 @@ void STASH::quick_run(int n, int y, double wn, double sf, double tc,
     dsm.ro = ro;
 }
 
-void STASH::run_one_day(int n, int y, double wn, double sf, double tc, 
-                        double pn) {
+void SPLASH::run_one_day(int n, int y, double wn, double sf, double tc, 
+                         double pn) {
     /* ***********************************************************************
-    Name:     STASH.run_one_day
+    Name:     SPLASH.run_one_day
     Input:    - int, day of year (n)
               - int, year (y)
               - double, previous day's soil moisture, mm (wn)
@@ -178,9 +184,9 @@ void STASH::run_one_day(int n, int y, double wn, double sf, double tc,
     dsoil.ro = ro;
 }
 
-void STASH::spin_up(DATA &d){
+void SPLASH::spin_up(DATA &d){
     /* ***********************************************************************
-    Name:     STASH.spin_up
+    Name:     SPLASH.spin_up
     Input:    DATA class (d)
     Output:   None
     Features: Spins up the daily soil moisture
@@ -255,9 +261,9 @@ void STASH::spin_up(DATA &d){
     dsoil.sm = wn_vec[n-1];
 }
 
-double STASH::get_elv(){
+double SPLASH::get_elv(){
     /* ***********************************************************************
-    Name:     STASH.get_elv
+    Name:     SPLASH.get_elv
     Input:    None
     Output:   double
     Features: Returns the elevation, meters.
@@ -265,9 +271,9 @@ double STASH::get_elv(){
     return elv;
 }
 
-double STASH::get_lat(){
+double SPLASH::get_lat(){
     /* ***********************************************************************
-    Name:     STASH.get_lat
+    Name:     SPLASH.get_lat
     Input:    None
     Output:   double
     Features: Returns the latitude, degrees.
@@ -275,9 +281,9 @@ double STASH::get_lat(){
     return lat;
 }
 
-void STASH::print_vals(){
+void SPLASH::print_vals(){
     /* ***********************************************************************
-    Name:     STASH.print_vals
+    Name:     SPLASH.print_vals
     Input:    None
     Output:   None
     Features: Prints the current dvap values.

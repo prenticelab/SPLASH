@@ -10,10 +10,10 @@ FCOM=pgf95 -r8 -Mextend -g -O0 -Mbounds -Minfo -Minform=inform -Kieee -Ktrap=fp 
 export FCOM
 
 # name of executable
-EXE = runstash
+EXE = runsplash
 
 standard:
-	$(FCOM) stash.F -o $(EXE)
+	$(FCOM) splash.F -o $(EXE)
 
 .PHONY: clean
 	clean:

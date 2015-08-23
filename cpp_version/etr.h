@@ -1,15 +1,21 @@
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * etr.h
  * 
- * written by Tyler W. Davis
- * Imperial College London
- * 
  * 2015-02-19 -- created
- * 2015-02-19 -- last updated
+ * 2015-08-22 -- last updated
  * 
- * ------------
+ * ~~~~~~~~~
+ * citation:
+ * ~~~~~~~~~
+ * T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+ * Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
+ * algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
+ * transpiration and plant-available moisture, Geoscientific Model Development, 
+ * 2015 (in progress)
+ * 
+ * ~~~~~~~~~~~~
  * description:
- * ------------
+ * ~~~~~~~~~~~~
  * Header file for the etr ('e'vapo't'ranspiration and 'r'adiation) struct.
  * 
  * //////////////////////////////////////////////////////////////////////// */

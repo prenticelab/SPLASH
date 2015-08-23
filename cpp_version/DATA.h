@@ -4,20 +4,26 @@
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * DATA.h
  * 
- * written by Tyler W. Davis
- * Imperial College London
- * 
  * 2015-02-08 -- created
- * 2015-02-19 -- last updated
+ * 2015-08-22 -- last updated
  * 
- * ------------
+ * ~~~~~~~~~
+ * citation:
+ * ~~~~~~~~~
+ * T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+ * Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
+ * algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
+ * transpiration and plant-available moisture, Geoscientific Model Development, 
+ * 2015 (in progress)
+ * 
+ * ~~~~~~~~~~~~
  * description:
- * ------------
+ * ~~~~~~~~~~~~
  * This is the header file for the DATA C++ class.
  * 
- * ----------
+ * ~~~~~~~~~~
  * changelog:
- * ----------
+ * ~~~~~~~~~~
  * 01. Added iostream to module list [15.02.17]
  * 02. Created read_csv and read_txt class member functions [15.02.17]
  * 03. Added year to class member variables [15.02.17]

@@ -4,21 +4,27 @@
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * EVAP.h
  * 
- * written by Tyler W. Davis
- * Imperial College London
- * 
  * 2015-02-07 -- created
- * 2015-02-19 -- last updated
+ * 2015-08-22 -- last updated
  * 
- * ------------
+ * ~~~~~~~~~
+ * citation:
+ * ~~~~~~~~~
+ * T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+ * Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
+ * algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
+ * transpiration and plant-available moisture, Geoscientific Model Development, 
+ * 2015 (in progress)
+ * 
+ * ~~~~~~~~~~~~
  * description:
- * ------------
+ * ~~~~~~~~~~~~
  * This is the C++ header file for the EVAP class.
  * 
- * ----------
+ * ~~~~~~~~~~
  * changelog:
- * ----------
- * 01. removed kCw and kWm from constants (moved to STASH class) [15.02.17]
+ * ~~~~~~~~~~
+ * 01. removed kCw and kWm from constants (moved to SPLASH class) [15.02.17]
  * 02. changed get_cn to get_cond [15.02.17]
  * 03. added all necessary inputs from cpp file [15.02.19]
  * 04. created header guard [15.02.19]

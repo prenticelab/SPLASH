@@ -6,18 +6,24 @@
 #include "smr.h"
 
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
- * STASH.h
- * 
- * written by Tyler W. Davis
- * Imperial College London
+ * SPLASH.h
  * 
  * 2015-02-17 -- created
- * 2015-02-19 -- last updated
+ * 2015-08-22 -- last updated
  * 
- * ------------
+ * ~~~~~~~~~
+ * citation:
+ * ~~~~~~~~~
+ * T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+ * Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
+ * algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
+ * transpiration and plant-available moisture, Geoscientific Model Development, 
+ * 2015 (in progress)
+ * 
+ * ~~~~~~~~~~~~
  * description:
- * ------------
- * This is the header file for the C++ STASH class.
+ * ~~~~~~~~~~~~
+ * This is the header file for the C++ SPLASH class.
  * 
  * ----------
  * changelog:
@@ -30,9 +36,9 @@
  * 06. added quick_run & spin_up functions [15.02.19]
  * 
  * //////////////////////////////////////////////////////////////////////// */
-#ifndef STASH_H
-#define STASH_H
-class STASH {
+#ifndef SPLASH_H
+#define SPLASH_H
+class SPLASH {
     private:
         // Constants:
         double kCw;      // supply constant, mm/hr 
@@ -49,7 +55,7 @@ class STASH {
         
     public:
         // Constructors:
-        STASH(double latitude, double elevation);
+        SPLASH(double latitude, double elevation);
         
         // Functions:
         void quick_run(int n, int y, double wn, double sf, double tc, 
