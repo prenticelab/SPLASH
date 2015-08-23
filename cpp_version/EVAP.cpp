@@ -45,26 +45,26 @@ EVAP::EVAP(double lat, int n, double elv, int y, double sf, double tc,
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 0. Initialize constants:
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    kA = 107.0;       // (Monteith & Unsworth, 1990)
-    kalb_sw = 0.17;   // (Federer, 1968)
-    kalb_vis = 0.03;  // (Sellers, 1985)
-    kb = 0.20;        // (Linacre, 1968)
-    kc = 0.25;        // (Linacre, 1968)
-    kd = 0.50;        // (Linacre, 1968)
-    ke = 0.0167;      // (Berger, 1978)
-    keps = 23.44;     // (Berger, 1978)
-    kfFEC = 2.04;     // (Meek et al., 1984)
-    kG = 9.80665;     // (Allen, 1973)
-    kGsc = 1360.8;    // (Kopp & Lean, 2011)
-    kL = 0.0065;      // (Allen, 1973)
-    kMa = 0.028963;   // (Tsilingiris, 2008)
-    kMv = 0.01802;    // (Tsilingiris, 2008)
-    kPo = 101325;     // (Allen, 1973)
-    kR = 8.31447;     // (Moldover et al., 1988)
-    kTo = 288.15;     // (Berberan-Santos et al., 1997)
-    kw = 0.26;        // (Lhomme, 1997; Priestley & Taylor, 1972)
-    komega = 283.0;   // (Berger, 1978)
-    kPI = 3.14159265; // pi
+    kA = 107.0;              // (Monteith & Unsworth, 1990)
+    kalb_sw = 0.17;          // (Federer, 1968)
+    kalb_vis = 0.03;         // (Sellers, 1985)
+    kb = 0.20;               // (Linacre, 1968)
+    kc = 0.25;               // (Linacre, 1968)
+    kd = 0.50;               // (Linacre, 1968)
+    ke = 0.0167;             // (Berger, 1978)
+    keps = 23.44;            // (Berger, 1978)
+    kfFEC = 2.04;            // (Meek et al., 1984)
+    kG = 9.80665;            // (Allen, 1973)
+    kGsc = 1360.8;           // (Kopp & Lean, 2011)
+    kL = 0.0065;             // (Allen, 1973)
+    kMa = 0.028963;          // (Tsilingiris, 2008)
+    kMv = 0.01802;           // (Tsilingiris, 2008)
+    kPo = 101325;            // (Allen, 1973)
+    kR = 8.31447;            // (Moldover et al., 1988)
+    kTo = 288.15;            // (Berberan-Santos et al., 1997)
+    kw = 0.26;               // (Lhomme, 1997; Priestley & Taylor, 1972)
+    komega = 283.0;          // (Berger, 1978)
+    kPI = 3.141592653589793; // pi
     
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 1. Calculate number of days in year (kN), days
