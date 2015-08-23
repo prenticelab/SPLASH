@@ -8,10 +8,8 @@
 ## Contents
 --------------------
 ### data/
-This directory holds example data files (CSV and TXT) as well as a script for producing additional input data for SPLASH.
+This directory holds example data files (CSV and TXT). Note that the __py_verion__ directory contains a script for producing additional input data for SPLASH.
 
-* __stash_getdata.py__
-    * Script that produces a CSV with daily input data (i.e., sunshine fraction, air temperature, and precipitation)
 * __example_data.csv__
     * Example comma separated daily data for San Francisco, United States (37.7 N, 122.4 W, 142 m, 2000 CE)
 * __daily_pn_2000_wfdei.txt__
@@ -100,7 +98,10 @@ This directory holds the Python version of the SPLASH code.
 * __splash.py__ 
     * SPLASH class definition for updating daily quantities of radiation, evapotranspiration, soil moisture and runoff.
 
-* __stash_grid.py__ 
+* __splash_data.py__
+    * SPLASH_DATA class and script to produce a CSV file with daily input data (i.e., sunshine fraction, air temperature, and precipitation)
+
+* __splash_grid.py__ 
     * __NOT FULLY TESTED!__
     * Implements the EVAP_G class for grid-based processing 
     * Inputs include:
