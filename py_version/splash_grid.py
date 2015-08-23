@@ -1,22 +1,28 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# stash_grid.py
-#
-# written by Tyler W. Davis
-# Imperial College London
+# splash_grid.py
 #
 # 2014-01-30 -- created
-# 2015-02-26 -- last updated
+# 2015-08-23 -- last updated
 #
-# ------------
+# ~~~~~~~~~
+# citation:
+# ~~~~~~~~~
+# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J. 
+# Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led 
+# algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
+# transpiration and plant-available moisture, Geoscientific Model Development, 
+# 2015 (in progress)
+#
+# ~~~~~~~~~~~~
 # description:
-# ------------
+# ~~~~~~~~~~~~
 #
 # NOT WORKING
 #
 # This script calculates the monthly outputs at 0.5 deg resolution based on 
-# the STASH 2.0 model
+# the SPLASH model
 #
 # IMPORTANT NOTE: 
 #   Global variables are defined inside a function at definition; therefore, 
@@ -45,9 +51,9 @@
 # 4. z, CRU TS 3.00 Elevation Data, m
 #    "halfdeg.elv.grid.dat"
 #
-# ----------
+# ~~~~~~~~~~
 # changelog:
-# ----------
+# ~~~~~~~~~~
 # 00. created based on cramer_prentice.py [14.01.30]
 # 01. file handling for cru ts 3.00 ('elv') [14.01.30]
 # 02. file handling for cru ts 3.21 ('pre', 'cld', and 'tmp') [14.01.31]
@@ -95,10 +101,12 @@
 # 39. created DATA_G & STASH_G classes [15.02.25]
 # 40. continued work on DATA_G, STASH_G & main program [15.02.26]
 #     --> added nc_lat, nc_lon, nc_history, nc_write, get_date functions
+# 41. renaming (addresses issue #3) [15.08.23]
+# 42. import global constants from const.py [15.08.23]
 #
-# -----
+# ~~~~~
 # todo:
-# -----
+# ~~~~~
 # ! Monthly AET divided by monthly EET goes greater than 1.26
 # ! Daily AET/EET as high as 1.67 (Namibia, Africa)
 #
@@ -117,31 +125,13 @@ import glob
 import numpy
 from scipy.io import netcdf
 
+from const import (kA, kalb_sw, kalb_vis, kb, kc, kCw, kd, ke, keps, kfFEC, 
+                   kG, kGsc, kL, kMa, kMv, kPo, kR, kTo, kWm, kw, komega)
+
 ###############################################################################
 ## GLOBAL CONSTANTS:
 ###############################################################################
-kA = 107       # constant for Rnl (Monteith & Unsworth, 1990)
-kalb_sw = 0.17 # shortwave albedo (Federer, 1968)
-kalb_vis = 0.03 # visible light albedo (Sellers, 1985)
-kb = 0.20      # constant for Rnl (Linacre, 1968)
-kc = 0.25      # cloudy transmittivity (Linacre, 1968)
-kCw = 1.05     # supply constant, mm/hr (Federer, 1982)
-kd = 0.50      # angular coefficient of transmittivity (Linacre, 1968)
-ke = 0.0167    # eccentricity for 2000 CE (Berger, 1978)
-keps = 23.44   # obliquity for 2000 CE, degrees (Berger, 1978)
 kerror = -9999.# error value
-kfFEC = 2.04   # from flux to energy conversion, umol/J (Meek et al., 1984)
-kG = 9.80665   # gravitational acceleration, m/s^2 (Allen, 1973)
-kGsc = 1360.8  # solar constant, W/m^2 (Kopp & Lean, 2011)
-kL = 0.0065    # temperature lapse rate, K/m (Cavcar, 2000)
-kMa = 0.028963 # molecular weight of dry air, kg/mol (Tsilingiris, 2008)
-kMv = 0.01802  # molecular weight of water vapor, kg/mol (Tsilingiris, 2008)
-kPo = 101325   # standard atmosphere, Pa (Allen, 1973)
-kR = 8.3143    # universal gas constant, J/mol/K (Allen, 1973)
-kTo = 298.15   # base temperature, K (Prentice, unpublished)
-kWm = 150      # soil moisture capacity, mm (Cramer & Prentice, 1988)
-kw = 0.26      # entrainment factor (Lhomme, 1997; Priestley & Taylor, 1972)
-komega = 283.0 # longitude of perihelion for 2000 CE, degrees (Berger, 1978)
 
 ###############################################################################
 ## CLASSES:
@@ -316,7 +306,7 @@ class EVAP_G:
         # 7. Calculate daily extraterrestrial solar radiation, J/m^2
         #    ra_d, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 40, STASH 2.0 Documentation
+        # Eq. 40, Documentation
         # Note: ru = sin(delta)*sin(phi); rv = cos(delta)*cos(phi)
         ra_d = (86400.0/numpy.pi)*kGsc*dr*((ru*hs)*pir + (rv*self.dsin(hs)))
         self.ra_d = ra_d
@@ -1127,12 +1117,12 @@ class DATA_G:
         self.nm = self.get_month_days(date)
         self.ny = self.get_year_days(date)
 #
-class STASH_G:
+class SPLASH_G:
     """
-    Name:     STASH_G
+    Name:     SPLASH_G
     Features: This class updates daily gridded quantities of radiation, 
               evapotranspiration, soil moisture and runoff based on the
-              STASH methodology.
+              SPLASH methodology.
     
     @TODO: finish class
     """
@@ -1141,7 +1131,7 @@ class STASH_G:
     # ////////////////////////////////////////////////////////////////////////
     def __init__(self, elv):
         """
-        Name:     STASH.__init__
+        Name:     SPLASH.__init__
         Input:    numpy.ndarray, elevation, meters (elv)
         """
         # Assign public variables:
@@ -1164,7 +1154,7 @@ class STASH_G:
     # ////////////////////////////////////////////////////////////////////////
     def add_one_day(self, dt0):
         """
-        Name:     STASH_G.add_one_day
+        Name:     SPLASH_G.add_one_day
         Input:    datetime.date (dt0)
         Output:   datetime.date (dt1)
         Features: Adds one day to datetime
@@ -1175,7 +1165,7 @@ class STASH_G:
     #
     def spin_up(self, d, y):
         """
-        Name:     STASH_G.spin
+        Name:     SPLASH_G.spin
         Input:    - DATA class, (d)
                   - int, year (y)
         Output:   None.
@@ -1298,7 +1288,7 @@ class STASH_G:
     #
     def quick_run(self, n, y, wn, sf, tc, pn):
         """
-        Name:     STASH_G.quick_run
+        Name:     SPLASH_G.quick_run
         Inputs:   - int, day of year (n)
                   - int, year (y)
                   - numpy.ndarray, daily soil water content, mm (wn)
@@ -1346,7 +1336,7 @@ class STASH_G:
     #
     def run_one_day(self, n, y, wn, sf, tc, pn):
         """
-        Name:     STASH_G.run_one_day
+        Name:     SPLASH_G.run_one_day
         Inputs:   - int, day of year (n)
                   - int, year (y)
                   - numpy.ndarray, soil water content, mm (wn)
@@ -1354,7 +1344,7 @@ class STASH_G:
                   - numpy.ndarray, air temperature, deg C (tc)
                   - numpy.ndarray, precipitation, mm (pn)
         Outputs:  None
-        Features: Runs STASH model for one day.
+        Features: Runs SPLASH model for one day.
                   model.
         Depends:  - kCw
                   - kWm
@@ -1491,10 +1481,10 @@ def nc_write(my_array, nc_file, nc_title, var_sname, var_lname, var_units, d):
     f.institution = 'Imperial College London'
     f.note1 = (
         'Monthly data is processed based on the daily iterations of the '
-        'STASH model, (Davis et al., in prep)'
+        'SPLASH model, (Davis et al., in prep)'
         )
     f.note2 = (
-        'STASH model results are based on soil moisture fields initialized '
+        'SPLASH model results are based on soil moisture fields initialized '
         'over the year 2001 using CRU TS 3.22 climatology'
         )
     f.note3 = (
@@ -1572,7 +1562,7 @@ else:
     pre_dir = "/usr/local/share/database/cru/"
     swd_dir = "/usr/local/share/database/watch/netcdf/"
     tmp_dir = "/usr/local/share/database/cru/"
-    output_dir = "/home/user/Projects/gepisat/data/stash/out/"
+    output_dir = "/home/user/Projects/gepisat/data/splash/out/"
 
 ###############################################################################
 ## INITIALIZATIONS
@@ -1580,9 +1570,9 @@ else:
 # Initialize data class:
 my_data = DATA_G(cld_dir, elv_dir, pre_dir, tmp_dir)
 
-# Initialize STASH class:
-my_stash = STASH_G(my_data.elv)
-my_stash.spin_up(my_data, 2001)  # <10 mins to spin up
+# Initialize SPLASH class:
+my_class = SPLASH_G(my_data.elv)
+my_class.spin_up(my_data, 2001)  # <10 mins to spin up
 
 # Define start and ending dates:
 start_date = datetime.date(2002, 1, 1)
@@ -1592,7 +1582,7 @@ end_date = datetime.date(2003, 1, 1)
 ## MAIN PROGRAM 
 ###############################################################################
 # Initialize monthly variables & daily soil moisture:
-wn = numpy.copy(my_stash.wn)
+wn = numpy.copy(my_class.wn)
 eet_mo = numpy.zeros(shape=(360,720))
 aet_mo = numpy.zeros(shape=(360,720))
 
@@ -1602,19 +1592,19 @@ out_date = cur_date
 my_data.read_monthly_clim(cur_date)
 
 # Iterate through each month:
-while cur_date < my_stash.add_one_day(end_date):
+while cur_date < my_class.add_one_day(end_date):
     # Month check.
     if cur_date.year == my_data.year and cur_date.month == my_data.month:
         # Still in the same month! Continue to process!
-        my_stash.run_one_day(n=cur_date.timetuple().tm_yday,
+        my_class.run_one_day(n=cur_date.timetuple().tm_yday,
                              y=cur_date.year,
                              wn=wn,
                              sf=my_data.sf,
                              tc=my_data.tair,
                              pn=my_data.pre)
-        wn = numpy.copy(my_stash.wn)
-        eet_mo[my_data.good_idx] += my_stash.eet[my_data.good_idx]
-        aet_mo[my_data.good_idx] += my_stash.aet[my_data.good_idx]
+        wn = numpy.copy(my_class.wn)
+        eet_mo[my_data.good_idx] += my_class.eet[my_data.good_idx]
+        aet_mo[my_data.good_idx] += my_class.aet[my_data.good_idx]
         #
     else:
         # New month! Calculate Cramer-Prentice alpha:
@@ -1630,7 +1620,7 @@ while cur_date < my_stash.add_one_day(end_date):
         cpa_mo[my_data.noval_idx] += kerror
         #
         # Save data to file:
-        nc_output_file = "%sSTASH_%d-%02d_alpha.nc" % (output_dir, 
+        nc_output_file = "%sSPLASH_%d-%02d_alpha.nc" % (output_dir, 
                                                        out_date.year, 
                                                        out_date.month)
         nc_write(cpa_mo, nc_output_file, 'Monthly Cramer-Prentice alpha',
@@ -1648,18 +1638,18 @@ while cur_date < my_stash.add_one_day(end_date):
         my_data.read_monthly_clim(cur_date)
         #
         # Calc new month's starting values:
-        my_stash.run_one_day(n=cur_date.timetuple().tm_yday,
+        my_class.run_one_day(n=cur_date.timetuple().tm_yday,
                              y=cur_date.year,
                              wn=wn,
                              sf=my_data.sf,
                              tc=my_data.tair,
                              pn=my_data.pre)
-        wn = numpy.copy(my_stash.wn)
-        eet_mo[my_data.good_idx] += my_stash.eet[my_data.good_idx]
-        aet_mo[my_data.good_idx] += my_stash.aet[my_data.good_idx]
+        wn = numpy.copy(my_class.wn)
+        eet_mo[my_data.good_idx] += my_class.eet[my_data.good_idx]
+        aet_mo[my_data.good_idx] += my_class.aet[my_data.good_idx]
     # 
     # Increment day:
-    cur_date = my_stash.add_one_day(cur_date)
+    cur_date = my_class.add_one_day(cur_date)
 
 # TEST EVAP_G
 my_date = datetime.date(2001, 6, 1)
