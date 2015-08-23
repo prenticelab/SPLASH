@@ -1,39 +1,46 @@
-% stash_intro.tex
-%
-% written by Tyler W. Davis
-% Imperial College London
+% splash_intro.tex
 %
 % 2014-10-29 -- created
-% 2015-01-19 -- last updated
+% 2015-08-23 -- last updated
 %
-% ------------
+% ~~~~~~~~~
+% citation:
+% ~~~~~~~~~
+% T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+% Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
+% algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
+% transpiration and plant-available moisture, Geoscientific Model Development, 
+% 2015 (in progress)
+%
+% ~~~~~~~~~~~~
 % description:
-% ------------
-% This TEX file contains the first chapter of the STASH 2.0 code book.
+% ~~~~~~~~~~~~
+% This TEX file contains the first chapter of the SPLASH code book.
 %
-% ----------
+% ~~~~~~~~~~
 % changelog:
-% ----------
+% ~~~~~~~~~~
 % 01. modularized chapter [14.10.29]
 % 02. newline for each sentence [14.10.29]
 % --> simpler for Git version control
 % 03. updated values in Table [14.11.25]
 % 04. updated variable names [14.11.25]
 % 05. updated intro & constant references [15.01.19]
+% 06. renaming (addresses issue #3) [15.08.23]
 %
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 1 -- INTRODUCTION
 %% //////////////////////////////////////////////////////////////////////// %%
 \section{Introduction}
 \label{sec:intro}
-With a growing need of global ecophysiological datasets for the study of vegetation dynamics under changing climate scenarios, the simple process-based bioclimatic model (STASH) presents an analytical solution that provides daily, monthly, and annual estimates of key modeling parameters (e.g., net radiation, actual evapotranspiration, soil moisture index).
+With a growing need of global ecophysiological datasets for the study of vegetation dynamics under changing climate scenarios, the simple process-led algorithms for simulating habitats (SPLASH) present an analytical solution that provides daily, monthly, and annual estimates of key modeling parameters (e.g., net radiation, actual evapotranspiration, soil moisture index).
 
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 1.2 -- THEORY
 %% //////////////////////////////////////////////////////////////////////// %%
 \subsection{Theory}
 \label{sec:theory}
-The methodology is based on the psuedo-code presented by \parencite{cramer88}:
+The methodology is based on the steps outlined in \parencite{cramer88}:
 
 \begin{enumerate}
 	\item Daily
@@ -144,7 +151,7 @@ The percent cloudiness data is derived on fractional sunshine hours \parencite{h
 Table \ref{tab:constants} presents the constant values used in this model with the corresponding symbol used in this document and variable name used in the coded environment. 
 
 %% ------------------------------------------------------------------------ %%
-%% tab:constants | Constants used in STASH model
+%% tab:constants | Constants used in the SPLASH model
 %% ------------------------------------------------------------------------ %%
 \nomenclature{$A$}{Empirical constant for net radiation flux}%
 \nomenclature{$a$}{Length of the semi-major axis, km}%
@@ -169,7 +176,7 @@ Table \ref{tab:constants} presents the constant values used in this model with t
 \nomenclature{$\omega$}{Entrainment factor, unitless}%
 \nomenclature{$\tilde{\omega}$}{Longitude of the perihelion, degrees}
 \begin{longtable}{c c r p{6cm}}
-	\caption{Constants used in the STASH model. \label{tab:constants}} \\
+	\caption{Constants used in the SPLASH model. \label{tab:constants}} \\
 	\hline 
 	\textbf{Symbol} & \textbf{Variable} & \textbf{Value} & 
 	\textbf{Definition} \\
@@ -236,18 +243,18 @@ Table \ref{tab:constants} presents the constant values used in this model with t
     $P_o$ & \texttt{kPo} & 101325 &
         Base pressure, Pa 
         \parencite{allen73} \\
-    $R$ & \texttt{kR} & 8.3143 &
+    $R$ & \texttt{kR} & 8.31447 &
         Universal gas constant, J$\cdot$mol$^{-1}\cdot$K$^{-1}$ 
-        \parencite{allen73} \\
+        \parencite{moldover88} \\
     $\sigma_{sb}$ & \texttt{ksb} & 5.670373 &
         Stefan-Boltzmann constant, $\times 10^{-8}$ 
         W$\cdot$m$^{-2}\cdot$K$^{-4}$ \\
     $S_c$ & \texttt{kCw} & 1.05 & 
         Supply constant, mm$\cdot$hr$^{-1}$  
         \parencite{federer82} \\
-    $T_o$ & \texttt{kTo} & 298.15 &
+    $T_o$ & \texttt{kTo} & 288.15 &
         Base temperature, K 
-        (Prentice, unpublished) \\
+        \parencite{berberansantos97} \\
     $W_m$ & \texttt{kWm} & 150 &
         Soil moisture capacity, mm  
         \parencite{cramer88} \\

@@ -1,19 +1,25 @@
-% stash_methods.tex
-%
-% written by Tyler W. Davis
-% Imperial College London
+% splash_methods.tex
 %
 % 2014-10-29 -- created
-% 2015-01-19 -- last updated
+% 2015-08-23 -- last updated
 %
-% ------------
+% ~~~~~~~~~
+% citation:
+% ~~~~~~~~~
+% T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+% Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
+% algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
+% transpiration and plant-available moisture, Geoscientific Model Development, 
+% 2015 (in progress)
+%
+% ~~~~~~~~~~~~
 % description:
-% ------------
-% This TEX file contains the second chapter of the STASH 2.0 code book.
+% ~~~~~~~~~~~~
+% This TEX file contains the second chapter of the SPLASH code book.
 %
-% ----------
+% ~~~~~~~~~~
 % changelog:
-% ----------
+% ~~~~~~~~~~
 % 01. modularized chapter [14.10.29]
 % 02. newline for each sentence [14.10.29]
 % --> simpler for Git version control
@@ -21,6 +27,8 @@
 % 04. corrected Cooper's and Spencer's methods [14.11.25]
 % 05. removed the simplified Kepler method [15.01.19]
 % 06. removed cdot's from units of measure [15.01.19]
+% 07. renaming (addresses issue #3) [15.08.23]
+% 08. updated barometric formula reference [15.08.23]
 %
 %% \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ %%
 %% PART 2.00 -- THE METHODOLOGY
@@ -181,7 +189,7 @@ The solar constant that is adopted for use in this study is given in Table \ref{
 %% //////////////////////////////////////////////////////////////////////// %%
 \subsubsection{Distance factor}
 \label{sec:dr}
-The distance factor accounts for the variability in $I_o$ that reaches the earth due to the relative change in distance between the earth and the sun caused by the eccentricity of earth’s elliptical orbit, $e$ (unitless), and is defined as the inverse square of the relative distance between the earth and sun, $\rho_{d}$:
+The distance factor accounts for the variability in $I_o$ that reaches the earth due to the relative change in distance between the earth and the sun caused by the eccentricity of Earth's elliptical orbit, $e$ (unitless), and is defined as the inverse square of the relative distance between the earth and sun, $\rho_{d}$:
 
 %% ------------------------------------------------------------------------ %%
 %% eq:dr | Distance factor
@@ -279,12 +287,14 @@ Based on these two assumptions, the distance factor can be approximated by \pare
 The difference between Eq. \ref{eq:klein} and Eq. \ref{eq:dr_exp}, with $\nu$ calculated based on Berger's method, is about 0.16\% with a maximum error of about 0.30\% during the latter half of the year (see Figure \ref{fig:klein}). 
 This larger discrepancy is due to the slowing of earth's orbital velocity as it travels away from the sun, which is not modeled in Eq. \ref{eq:klein} and therefore the use of Eq. \ref{eq:dr_exp} is preferred.\\
 
+% @TODO: Update figure replacing Kepler 2000 with Eq. 10 based on Berger's method
+
 %% ------------------------------------------------------------------------ %%
-%% fig:klein | Kepler vs Klein distance factor
+%% fig:klein | Berger vs Klein distance factor
 %% ------------------------------------------------------------------------ %%
 \begin{figure}[ht!]
     \includegraphics[width=\textwidth]{kepler_v_klein.eps}
-    \caption{Comparison between actual distance factor, $d_r$, using the simplified Kepler method for 2000 CE, and the approximation method by Klein (1977).}
+    \caption{Comparison between actual distance factor, $d_r$, using Eq. \ref{eq:dr_exp} and the approximation method of Eq. \ref{eq:klein}.}
     \label{fig:klein}
 \end{figure}
 
@@ -355,6 +365,8 @@ The following calculation method for $\delta$ is for any given time of year \par
 Obliquity, or the off-vertical axial tilt around which the earth rotates, is the third time-varying orbital parameter (the other two being $e$ and $\tilde{\omega}$).  
 The obliquity angle varies between 22.1$^{\circ}$ and 24.5$^{\circ}$ with a periodicity of about 41000 years \parencite{hays76,berger77}. 
 A value for the 2000 CE epoch is given in Table \ref{tab:constants}.
+
+% @TODO: replace Kepler 2000 with Eq. 15 using Berger's method
 
 %% ------------------------------------------------------------------------ %%
 %% fig:delta | Comparison of declination angles
@@ -1087,7 +1099,7 @@ In conditions where atmospheric pressure data are not readily available, the bar
 %%///////////////////////////////////////////////////////////////////////// %%
 \subsubsection{Barometric Formula}
 \label{sec:atm}
-The barometric formula for elevation-dependent atmospheric pressure can be calculated by \parencite{allen98}:
+The barometric formula for elevation-dependent atmospheric pressure can be calculated by \parencite{berberansantos97}:
 
 %% ------------------------------------------------------------------------ %%
 %% eq:atm | Elevation-induced atmospheric pressure gradient, Pa
