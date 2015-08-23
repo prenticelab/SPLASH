@@ -1,19 +1,25 @@
 #!/usr/bin/python
 #
-# stash_getdata.py
-#
-# written by Tyler W. Davis
-# Imperial College London
+# splash_data.py
 #
 # 2015-01-22 -- created
-# 2015-01-27 -- last updated
+# 2015-08-23 -- last updated
 #
-# ------------
+# ~~~~~~~~~
+# citation:
+# ~~~~~~~~~
+# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J. 
+# Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led 
+# algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
+# transpiration and plant-available moisture, Geoscientific Model Development, 
+# 2015 (in progress)
+#
+# ~~~~~~~~~~~~
 # description:
-# ------------
-# The script creates a CSV of the necessary daily meteorological variables for
-# running the STASH code, including: fraction of bright sunshine, Sf (unitless), 
-# air temperature, Tair (deg. C), and precipitation, Pn (mm).
+# ~~~~~~~~~~~~
+# The script creates a CSV of the necessary daily meteorological variables 
+# for running the SPLASH code, including: fraction of bright sunshine, 
+# Sf (unitless), air temperature, Tair (deg. C), and precipitation, Pn (mm).
 #
 # Supported input sources currently include:
 #   Sf:
@@ -27,11 +33,13 @@
 #    * CRU TS3.2 Pre (monthly total precipitation)
 #    * WATCH daily Rainf (daily mean mass flow rate of rainfall)
 #
-# ----------
+# ~~~~~~~~~~
 # changelog:
-# ----------
-# 01. created STASH_DATA class [15.01.26]
+# ~~~~~~~~~~
+# 01. created SPLASH_DATA class [15.01.26]
 # 02. corrected mean daily CRU air temperature (tmp not tmn) [15.01.27]
+# 03. renaming (addresses issue #3) [15.08.23]
+# 04. references const.py for SPLASH constants [15.08.23]
 #
 ###############################################################################
 ## IMPORT MODULES
@@ -42,20 +50,22 @@ import numpy
 import os.path
 from scipy.io import netcdf
 
+from const import kPo, kTo, kL, kMa, kG, kR
+
 ###############################################################################
 ## CLASSES
 ###############################################################################
-class STASH_DATA:
+class SPLASH_DATA:
     """
-    Name:     STASH_DATA
-    Features: Processes daily data for STASH model
+    Name:     SPLASH_DATA
+    Features: Processes daily data for the SPLASH model
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
     def __init__(self, user_lat, user_lon, user_elv = 0):
         """
-        Name:     STASH_DATA.__init__
+        Name:     SPLASH_DATA.__init__
         Input:    - float, latitude, degrees north (user_lat)
                   - float, longitude, degrees east (user_lon)
                   - float, elevation, meters AMSL (user_elv)
@@ -101,7 +111,7 @@ class STASH_DATA:
     # ////////////////////////////////////////////////////////////////////////
     def set_cru_cld_dir(self, d):
         """
-        Name:     STASH_DATA.set_cru_cld_dir
+        Name:     SPLASH_DATA.set_cru_cld_dir
         Input:    str, directory path (d)
         Features: Define the directory to CRU monthly cloudiness netCDF file
         """
@@ -109,7 +119,7 @@ class STASH_DATA:
     #
     def set_cru_pre_dir(self, d):
         """
-        Name:     STASH_DATA.set_pre_cld_dir
+        Name:     SPLASH_DATA.set_pre_cld_dir
         Input:    str, directory path (d)
         Features: Define the directory to CRU monthly precipitation netCDF file
         """
@@ -117,7 +127,7 @@ class STASH_DATA:
     #
     def set_cru_tmp_dir(self, d):
         """
-        Name:     STASH_DATA.set_tmn_cld_dir
+        Name:     SPLASH_DATA.set_tmn_cld_dir
         Input:    str, directory path (d)
         Features: Define the directory to CRU monthly mean air temperature  
                   netCDF file
@@ -126,7 +136,7 @@ class STASH_DATA:
     #
     def set_watch_rainf_dir(self, d):
         """
-        Name:     STASH_DATA.set_watch_rainf_dir
+        Name:     SPLASH_DATA.set_watch_rainf_dir
         Input:    str, directory path (d)
         Features: Define the directory to WATCH daily rainfall netCDF file
         """
@@ -134,7 +144,7 @@ class STASH_DATA:
     #
     def set_watch_tair_dir(self, d):
         """
-        Name:     STASH_DATA.set_watch_tair_dir
+        Name:     SPLASH_DATA.set_watch_tair_dir
         Input:    str, directory path (d)
         Features: Define the directory to WATCH daily air temperature netCDF 
                   file
@@ -143,13 +153,13 @@ class STASH_DATA:
     #
     def set_output_dir(self, d):
         """
-        Name:     STASH_DATA.set_output_dir
+        Name:     SPLASH_DATA.set_output_dir
         Input:    str, directory path (d)
         Features: Define the directory where the output data will be written
                   and create the output file
         Depends:  writeout
         """
-        self.output_file = d + 'stash_data_out.csv'
+        self.output_file = d + 'splash_data_out.csv'
         header = 'date,sf,tair,pn\n'
         if os.path.isfile(self.output_file):
             user_resp = raw_input("File already exists, overwrite (y/n)? ")
@@ -160,7 +170,7 @@ class STASH_DATA:
     #
     def set_sf_source(self, n):
         """
-        Name:     STASH_DATA.set_sf_source
+        Name:     SPLASH_DATA.set_sf_source
         Input:    str, source preference (n)
         Features: Define the source preference for fractional sunshine hours
                   (e.g., 'cru' or 'watch')
@@ -169,7 +179,7 @@ class STASH_DATA:
     #
     def set_pn_source(self, n):
         """
-        Name:     STASH_DATA.set_pn_source
+        Name:     SPLASH_DATA.set_pn_source
         Input:    str, source preference (n)
         Features: Define the source preference for precipitation (e.g., 'cru' 
                   or 'watch')
@@ -178,7 +188,7 @@ class STASH_DATA:
     #
     def set_tair_source(self, n):
         """
-        Name:     STASH_DATA.set_tair_source
+        Name:     SPLASH_DATA.set_tair_source
         Input:    str, source preference (n)
         Features: Define the source preference for air temperature (e.g., 'cru' 
                   or 'watch')
@@ -187,7 +197,7 @@ class STASH_DATA:
     #
     def add_one_month(self, dt0):
         """
-        Name:     STASH_DATA.add_one_month
+        Name:     SPLASH_DATA.add_one_month
         Input:    datetime date
         Output:   datetime date
         Features: Adds one month to datetime
@@ -202,7 +212,7 @@ class STASH_DATA:
     #
     def density_h2o(self, tc, p):
         """
-        Name:     STASH_DATA.density_h2o
+        Name:     SPLASH_DATA.density_h2o
         Input:    - float, air temperature (tc), degrees C
                   - float, atmospheric pressure (p), Pa
         Output:   float, density of water, kg/m^3
@@ -258,25 +268,17 @@ class STASH_DATA:
     #
     def elv2pres(self):
         """
-        Name:     STASH_DATA.elv2pres
+        Name:     SPLASH_DATA.elv2pres
         Input:    None.
         Features: Sets the atmospheric pressure (pascals) based on class elv
-        Ref:      Allen et al. (1998)
+        Ref:      Berberan-Santos et al. (1997)
         """
-        # Define constants:
-        kPo = 101325   # standard atmosphere, Pa (Allen, 1973)
-        kTo = 298.15   # base temperature, K (Prentice, unpublished)
-        kL = 0.0065    # temperature lapse rate, K/m (Cavcar, 2000)
-        kMa = 0.028963 # molecular weight of dry air, kg/mol (Tsilingiris, 2008)
-        kG = 9.80665   # gravitational acceleration, m/s^2 (Allen, 1973)
-        kR = 8.3143    # universal gas constant, J/mol/K (Allen, 1973)
-        #
         p = kPo*(1.0 - kL*self.elv/kTo)**(kG*kMa/(kR*kL))
         self.patm = p
     #
     def grid_centroid(self):
         """
-        Name:     STASH_DATA.grid_centroid
+        Name:     SPLASH_DATA.grid_centroid
         Input:    None.
         Output:   tuple, longitude latitude pair (my_centroid)
         Features: Returns the nearest 0.5 deg. grid centroid for the class's
@@ -378,7 +380,7 @@ class STASH_DATA:
     #
     def get_daily_status(self, d, write_out=True):
         """
-        Name:     STASH_DATA.get_daily_status
+        Name:     SPLASH_DATA.get_daily_status
         Input:    datetime.date, current date (d)
         Features: Process the status of daily variables
         Depends:  - process_sf
@@ -425,7 +427,7 @@ class STASH_DATA:
     #
     def get_daily_watch(self, v, ct):
         """
-        Name:     STASH_DATA.get_daily_watch
+        Name:     SPLASH_DATA.get_daily_watch
         Input:    - str, variable of interest (v)
                   - datetime.date, current time (ct)
         Output:   numpy nd.array
@@ -469,7 +471,7 @@ class STASH_DATA:
     #
     def get_month_days(self, ts):
         """
-        Name:     STASH_DATA.get_month_days
+        Name:     SPLASH_DATA.get_month_days
         Input:    datetime.date (ts)
         Output:   int
         Depends:  add_one_month
@@ -482,7 +484,7 @@ class STASH_DATA:
     #
     def get_monthly_cru(self, v, ct):
         """
-        Name:     STASH_DATA.get_monthly_cru
+        Name:     SPLASH_DATA.get_monthly_cru
         Input:    - str, variable of interest (v)
                   - datetime.date, current time (ct)
         Output:   numpy nd.array
@@ -533,7 +535,7 @@ class STASH_DATA:
     #
     def get_time_index(self, bt, ct, aot):
         """
-        Name:     STASH_DATA.get_time_index
+        Name:     SPLASH_DATA.get_time_index
         Input:    - datetime date, base timestamp (bt)
                   - datetime date, current timestamp to be found (ct)
                   - numpy nd.array, days since base timestamp (aot)
@@ -559,7 +561,7 @@ class STASH_DATA:
     #
     def get_xy_nc(self):
         """
-        Name:     STASH_DATA.get_xy_nc
+        Name:     SPLASH_DATA.get_xy_nc
         Input:    None.
         Output:   tuple, x-y indices
         Features: Returns array indices for the class's pixel location at 0.5 
@@ -576,7 +578,7 @@ class STASH_DATA:
     #
     def process_pn(self, ct, tc):
         """
-        Name:     STASH_DATA.process_pn
+        Name:     SPLASH_DATA.process_pn
         Input:    - datetime.date, current time (ct)
                   - float, air temperature, deg C (tc)
         Output:   float, precipitation, mm/day
@@ -614,7 +616,7 @@ class STASH_DATA:
     #
     def process_sf(self, ct):
         """
-        Name:     STASH_DATA.process_sf
+        Name:     SPLASH_DATA.process_sf
         Input:    datetime.date, current time (ct)
         Output:   float, sunshine fraction, unitless
         Depends:  get_monthly_cru
@@ -641,7 +643,7 @@ class STASH_DATA:
     #
     def process_tair(self, ct):
         """
-        Name:     STASH_DATA.process_tair
+        Name:     SPLASH_DATA.process_tair
         Input:    datetime.date, current time (ct)
         Output:   float, air temperature, deg C
         Depends:  - get_monthly_cru
@@ -673,7 +675,7 @@ class STASH_DATA:
     #
     def save_to_file(self, ts, sf, tair, pn):
         """
-        Name:     STASH_DATA.save_to_file
+        Name:     SPLASH_DATA.save_to_file
         Input:    - datetime.date, timestamp (ts)
                   - float, sunshine fraction (sf)
                   - float, air temperature (tair)
@@ -694,7 +696,7 @@ class STASH_DATA:
     #
     def writeout(self, f, d):
         """
-        Name:     STASH_DATA.writeout
+        Name:     SPLASH_DATA.writeout
         Input:    - str, file name with path (t)
                   - str, data to be written to file (d)
         Features: Writes new/overwrites existing file with data string
@@ -728,7 +730,7 @@ def add_one_day(dt0):
 user_lat = 37.7    # degrees north 
 user_lon = -122.4  # degrees east  
 user_elv = 142.0   # meters AMSV (use 0 if unknown) 
-my_class = STASH_DATA(user_lat, user_lon, user_elv)
+my_class = SPLASH_DATA(user_lat, user_lon, user_elv)
 
 # Set the data input/output directories for your machine:
 my_class.set_cru_cld_dir('/usr/local/share/database/cru/')
