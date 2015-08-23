@@ -24,16 +24,16 @@ This directory holds example data files (CSV and TXT) as well as a script for pr
 ### doc/
 This directory holds the current documentation for the SPLASH code.
 
-* __stash_doc.pdf__
+* __splash_doc.pdf__
     * The current PDF build of the documentation
-* __stash_doc.tex__
+* __splash_doc.tex__
     * The main LaTeX document file
-* __stash.bib__
+* __splash.bib__
     * The BibLatex file for documentation references
 * __img/__
     * Contains the EPS figures for the documentation
 * __tex/__
-    * Contains the modular LaTeX chapter files (and appendix)
+    * Contains the modular LaTeX chapter files and appendix
 
 ### cpp_version/
 This directory holds the C++ version of the SPLASH code.
