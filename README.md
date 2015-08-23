@@ -3,7 +3,7 @@
 
 * LAST UPDATED: 2015-08-23
 * TEAM: labprentice
-* REPO: stash (private)
+* REPO: splash (private)
 
 ## Contents
 --------------------
