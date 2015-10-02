@@ -1,13 +1,17 @@
-# README
+# Table of Contents
+-------------------
+[TOC]
+
+# Repository Details
 ---------------
 
 * LAST UPDATED: 2015-10-02
 * TEAM: labprentice
 * REPO: splash (private)
 
-## Contents
---------------------
-### data/
+# Repository Structure
+----------------------
+## data/
 This directory holds example data files (CSV and TXT). Note that the __py_verion__ directory contains a script for producing additional input data for SPLASH.
 
 * __example_data.csv__
@@ -19,7 +23,7 @@ This directory holds example data files (CSV and TXT). Note that the __py_verion
 * __daily_tair_2000_wfdei.txt__
     * Example daily air temperature from the WATCH Forcing Data ERA Interim for San Francisco, United States (37.7 N, 122.4 W, 142 m, 2000 CE)
 
-### doc/
+## doc/
 This directory holds the current documentation for the SPLASH code.
 
 * __splash_doc.pdf__
@@ -33,7 +37,7 @@ This directory holds the current documentation for the SPLASH code.
 * __tex/__
     * Contains the modular LaTeX chapter files and appendix
 
-### cpp_version/
+## cpp_version/
 This directory holds the C++ version of the SPLASH code.
 
 * __DATA.cpp__
@@ -66,7 +70,7 @@ This directory holds the C++ version of the SPLASH code.
 * __SPLASH.h__
     * C++ header file for SPLASH class.
 
-### f90_version/
+## f90_version/
 This directory holds the FORTRAN90 version of the SPLASH code. 
 
 * __Makefile__ 
@@ -75,7 +79,7 @@ This directory holds the FORTRAN90 version of the SPLASH code.
 * __splash.F__ 
     * Runs SPLASH for one year, following a spin-up of soil moisture, based on example monthly meteorological data (hard-coded).
 
-### py_version/
+## py_version/
 This directory holds the Python version of the SPLASH code. 
 
 * __const.py__
@@ -113,7 +117,7 @@ This directory holds the Python version of the SPLASH code.
         * year (optional)
     * CRU-based input data is used (user must have a copy of data files and specify their location)
 
-### r_version/
+## r_version/
 This directory holds the R version of the SPLASH code. 
 
 * __splash.R__ 
@@ -124,9 +128,9 @@ This directory holds the R version of the SPLASH code.
     * Includes plotting examples of monthly and daily results
 
 
-## Simple Process-Led Algorithms for Simulating Habitats (SPLASH): Modelling Radiation, Evapotranspiration and Plant-Available Moisture
+# Simple Process-Led Algorithms for Simulating Habitats (SPLASH): Modelling Radiation, Evapotranspiration and Plant-Available Moisture
 ----------------------------------------------------------------------------
-### Theory
+## Theory
 There is a growing need of global ecophysiological datasets for the study of vegetation dynamics under changing climate scenarios; however, simulation of natural processes is often necessary due to the lack of observations.
 Bioclimatic indices, such as the climatic water deficit and the plant available water coefficient, are improvements over indices of mean annual temperature and precipitation. The algorithms to produce these indices are based on the STASH (STAtic SHell) model, developed as a simple process-based predictive model for the simulation of tree species distributions at the regional scale (Sykes and Prentice, 1995, 1996; Sykes et al., 1996). 
 
@@ -140,7 +144,7 @@ The methodology follows the steps outlined in Cramer & Prentice (1988) where dai
 To solve the simple bucket model presented above, the following steps are taken at the daily timescale: calculate the radiation terms, estimate the condensation, estimate the evaporative supply, estimate the evaporative demand, calculate the actual evapotranspiration, and update the daily soil moisture. 
 At the end of each month, daily quantities may be aggregated into monthly totals and additional moisture indexes may be calculated.
 
-### Key Outputs
+## Key Outputs
 * Daily
     * Extraterrestrial solar irradiation
     * Net surface radiation
@@ -152,7 +156,7 @@ At the end of each month, daily quantities may be aggregated into monthly totals
     * Potential evapotranspiration
     * Actual evapotranspiration
 
-### Model Inputs
+## Model Inputs
 For radiation, the basic geographic coordinates and time parameters needed are:
 
 * year (*y*)
@@ -168,7 +172,7 @@ For evapotranspiration, the basic meteorological variables needed are:
 
 For spatial analyses, the 0.5° x 0.5° gridded [CRU TS 3.21](http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__ACTIVITY_0c08abfc-f2d5-11e2-a948-00163e251233) data sets may be used (Harris et al., 2014), for example: TMP (monthly mean daily air temperature); PRE (monthly precipitation totals); CLD (cloudiness fraction); and CRU TS 3.0 ELV (mean pixel elevation). Daily precipitation and air temperature are also available from the [WATCH](http://www.eu-watch.org/data_availability) dataset (Weedon et al., 2014).
 
-## References
+# References
 --------------------
 * Cramer, W. and I. C. Prentice (1988) Simulation of regional soil moisture deficits on a European scale, _Norsk Geografisk Tidsskrift - Norwegian Journal of Geography_, 42:2-3, pp. 149-151.
 * Harris, I., P. D. Jones, T. J. Osborn, and D. H. Lister (2014) Updated high-resolution grids of monthly climatic observations - the CRU TS3.10 Dataset, _Int. J. Climatol._, 34, 623–642, doi:10.1002/joc.3711.
