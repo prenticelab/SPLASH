@@ -1,7 +1,7 @@
 # README
 ---------------
 
-* LAST UPDATED: 2015-08-23
+* LAST UPDATED: 2015-10-02
 * TEAM: labprentice
 * REPO: splash (private)
 
@@ -151,12 +151,6 @@ At the end of each month, daily quantities may be aggregated into monthly totals
     * Equilibrium evapotranspiration
     * Potential evapotranspiration
     * Actual evapotranspiration
-* Monthly
-    * Photosynthetic photon flux density
-    * Equilibrium evapotranspiration
-    * Potential evapotranspiration
-    * Cramer-Prentice bioclimatic moisture index
-    * Climatic water deficit
 
 ### Model Inputs
 For radiation, the basic geographic coordinates and time parameters needed are:
