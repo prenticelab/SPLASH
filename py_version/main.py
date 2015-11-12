@@ -69,7 +69,6 @@
 import matplotlib.pyplot as plt
 
 from data import DATA
-from evap import EVAP
 from splash import SPLASH
 
 ###############################################################################
