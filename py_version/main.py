@@ -4,15 +4,15 @@
 # main.py
 #
 # 2014-01-30 -- created
-# 2015-08-22 -- last updated
+# 2015-11-11 -- last updated
 #
 # ~~~~~~~~~
 # citation:
 # ~~~~~~~~~
-# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J. 
+# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
 # led algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
-# transpiration and plant-available moisture, Geoscientific Model Development, 
+# transpiration and plant-available moisture, Geoscientific Model Development,
 # 2015 (in progress)
 #
 # ~~~~~~~~~~
@@ -31,8 +31,8 @@
 # 10. updated value and reference for semi-major axis, a [14.10.31]
 # 11. fixed Cooper's and Spencer's declination equations [14.11.25]
 # 12. replaced simplified kepler with full kepler [14.11.25]
-# 13. removed options for approximation methods not considering variable 
-#     orbital velocity (e.g. Spencer, Woolf, Klein, Cooper, and Circle 
+# 13. removed options for approximation methods not considering variable
+#     orbital velocity (e.g. Spencer, Woolf, Klein, Cooper, and Circle
 #     methods) [14.12.09]
 # 14. reduced the list of constants and EVAP class functions [14.12.09]
 # 15. added matplotlib to module list [14.12.09]
@@ -64,7 +64,7 @@
 # 2. upate plot commands
 
 ###############################################################################
-## IMPORT MODULES 
+## IMPORT MODULES
 ###############################################################################
 import matplotlib.pyplot as plt
 
@@ -73,7 +73,7 @@ from evap import EVAP
 from splash import SPLASH
 
 ###############################################################################
-## MAIN PROGRAM 
+## MAIN PROGRAM
 ###############################################################################
 if __name__ == '__main__':
     example = 1
@@ -96,11 +96,11 @@ if __name__ == '__main__':
     my_elv = 142.
     my_class = SPLASH(my_lat, my_elv)
     my_class.spin_up(my_data)
-    my_class.run_one_day(n=172, 
-                         y=my_data.year, 
-                         wn=145.0, 
-                         sf=0.5, 
-                         tc=17.3, 
+    my_class.run_one_day(n=172,
+                         y=my_data.year,
+                         wn=145.0,
+                         sf=0.5,
+                         tc=17.3,
                          pn=10.0)
     my_class.print_vals()
 
@@ -115,19 +115,19 @@ if 0:
     ax1 = fig.add_subplot(111)
     plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
     plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
-    ax1.plot(my_months, my_class.monthly_totals['ep_m'], 
-            'k-', linewidth=2, label='PET')
-    ax1.plot(my_months, my_class.monthly_totals['ea_m'], 
-            'c--', linewidth=2, label='AET')
-    ax1.plot(my_months, my_class.monthly_totals['eq_m'], 
-            'g-', linewidth=2, label='EET')
-    ax1.plot(my_months, my_class.monthly_totals['cwd'], 
-            'r:', linewidth=2, label='CWD')
+    ax1.plot(my_months, my_class.monthly_totals['ep_m'],
+             'k-', linewidth=2, label='PET')
+    ax1.plot(my_months, my_class.monthly_totals['ea_m'],
+             'c--', linewidth=2, label='AET')
+    ax1.plot(my_months, my_class.monthly_totals['eq_m'],
+             'g-', linewidth=2, label='EET')
+    ax1.plot(my_months, my_class.monthly_totals['cwd'],
+             'r:', linewidth=2, label='CWD')
     ax1.set_xticks(my_months)
     ax1.set_xlabel('Months', fontsize=18)
     ax1.set_ylabel('ET (mm)', fontsize=18)
     ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-            ncol=4, mode="expand", borderaxespad=0., fontsize=18)
+               ncol=4, mode="expand", borderaxespad=0., fontsize=18)
     plt.xlim([1, 12])
     plt.show()
     #
@@ -142,10 +142,10 @@ if 0:
     ax1 = fig.add_subplot(411)
     plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=12)
     plt.setp(ax1.get_xticklabels(), visible=False)
-    ax1.plot(my_months, my_class.monthly_totals['ep_m'], 'k-', linewidth=2, 
-            label='$E^p$')
+    ax1.plot(my_months, my_class.monthly_totals['ep_m'], 'k-', linewidth=2,
+             label='$E^p$')
     ax1.plot(my_months, my_class.monthly_totals['ea_m'], 'k--', linewidth=2,
-            label='$E^a$')
+             label='$E^a$')
     ax1.set_ylabel('$E_m$ (mm)', fontsize=14)
     ax1.set_xticks(range(1, 13, 1))
     ax1.set_yticks(range(0, 176, 50))
@@ -171,9 +171,9 @@ if 0:
     plt.setp(ax3.get_yticklabels(), rotation=0, fontsize=12)
     plt.setp(ax3.get_xticklabels(), visible=False)
     ax3.plot(my_months, my_class.monthly_totals['eq_m'], 'k-', linewidth=2,
-            label='$E^q$')
+             label='$E^q$')
     ax3.plot(my_months, my_class.monthly_totals['ea_m'], 'k--', linewidth=2,
-            label='$E^a$')
+             label='$E^a$')
     ax3.set_ylabel('$E_m$ (mm)', fontsize=14)
     ax3.set_xticks(range(1, 13, 1))
     ax3.set_yticks(range(0, 176, 50))
@@ -205,15 +205,15 @@ if 0:
     ax1 = fig.add_subplot(111)
     plt.setp(ax1.get_xticklabels(), rotation=0, fontsize=16)
     plt.setp(ax1.get_yticklabels(), rotation=0, fontsize=16)
-    ax1.plot(my_days, my_class.daily_totals['ep_n'], 
-            'b-', linewidth=2, label='Potential')
-    ax1.plot(my_days, my_class.daily_totals['eq_n'], 
-            'g-', linewidth=2, label='Equilibrium')
-    ax1.plot(my_days, my_class.daily_totals['ea_n'], 
-            'r--', linewidth=2, label='Actual')
+    ax1.plot(my_days, my_class.daily_totals['ep_n'],
+             'b-', linewidth=2, label='Potential')
+    ax1.plot(my_days, my_class.daily_totals['eq_n'],
+             'g-', linewidth=2, label='Equilibrium')
+    ax1.plot(my_days, my_class.daily_totals['ea_n'],
+             'r--', linewidth=2, label='Actual')
     ax1.set_ylabel('Evapotranspiration, mm d$^{-1}$', fontsize=18)
     ax1.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-            ncol=3, mode="expand", borderaxespad=0., fontsize=18)
+               ncol=3, mode="expand", borderaxespad=0., fontsize=18)
     plt.show()
     #
     #

@@ -4,23 +4,24 @@
 # evap.py
 #
 # 2014-01-30 -- created
-# 2015-08-22 -- last updated
+# 2015-11-11 -- last updated
 #
 # ~~~~~~~~~
 # citation:
 # ~~~~~~~~~
-# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J. 
+# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
 # led algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
-# transpiration and plant-available moisture, Geoscientific Model Development, 
+# transpiration and plant-available moisture, Geoscientific Model Development,
 # 2015 (in progress)
 
 ###############################################################################
 ## IMPORT MODULES:
 ###############################################################################
 import numpy
-from const import (ke, keps, kGsc, kA, kb, kc, kd, kfFEC, kalb_vis, kalb_sw, kw,
-                   komega, kG, kL, kR, kPo, kTo, kMa, kMv)
+from const import (ke, keps, kGsc, kA, kb, kc, kd, kfFEC, kalb_vis, kalb_sw,
+                   kw, komega, kG, kL, kR, kPo, kTo, kMa, kMv)
+
 
 ###############################################################################
 ## CLASSES
@@ -35,53 +36,53 @@ class EVAP:
               - PET (pet_d), mm/day
               - AET (aet_d), mm/day
               - condensation (cn), mm/day
-    Refs:     Allen, R.G. (1996), Assessing integrity of weather data for 
+    Refs:     Allen, R.G. (1996), Assessing integrity of weather data for
                 reference evapotranspiration estimation, Journal of Irrigation
                 and Drainage Engineering, vol. 122, pp. 97--106.
-              Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998), 
-                'Meteorological data,' Crop evapotranspiration - Guidelines for 
-                computing crop water requirements - FAO Irrigation and drainage 
-                paper 56, Food and Agriculture Organization of the United 
+              Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998),
+                'Meteorological data,' Crop evapotranspiration - Guidelines for
+                computing crop water requirements - FAO Irrigation and drainage
+                paper 56, Food and Agriculture Organization of the United
                 Nations, online: http://www.fao.org/docrep/x0490e/x0490e07.htm
-              Berger, A.L. (1978), Long-term variations of daily insolation and 
-                quarternary climatic changes, Journal of Atmospheric Sciences, 
+              Berger, A.L. (1978), Long-term variations of daily insolation and
+                quarternary climatic changes, Journal of Atmospheric Sciences,
                 vol. 35, pp. 2362--2367.
-              Berger, A.L., M.F. Loutre, and C. Tricot (1993), Insolation and 
+              Berger, A.L., M.F. Loutre, and C. Tricot (1993), Insolation and
                 Earth's orbital periods, J. Geophys. Res., 98, 10341--10362.
-              Duffie, J. A. and W. A. Beckman (1991). Solar engineering of 
+              Duffie, J. A. and W. A. Beckman (1991). Solar engineering of
                 thermal processes. 4th ed. New Jersey: John Wiley and Sons
-              Federer (1982), Transpirational supply and demand: plant, soil, 
-                and atmospheric effects evaluated by simulation, Water 
+              Federer (1982), Transpirational supply and demand: plant, soil,
+                and atmospheric effects evaluated by simulation, Water
                 Resources Research, vol. 18, no. 2, pp. 355--362.
-              Ge, S., R.G. Smith, C.P. Jacovides, M.G. Kramer, R.I. Carruthers 
-                (2011), Dynamics of photosynthetic photon flux density (PPFD) 
-                and estimates in coastal northern California, Theoretical and 
+              Ge, S., R.G. Smith, C.P. Jacovides, M.G. Kramer, R.I. Carruthers
+                (2011), Dynamics of photosynthetic photon flux density (PPFD)
+                and estimates in coastal northern California, Theoretical and
                 Applied Climatology, vol. 105, pp. 107--118.
-              Henderson-Sellers, B. (1984), A new formula for latent heat of 
-                vaporization of water as a function of temperature, Quarterly 
+              Henderson-Sellers, B. (1984), A new formula for latent heat of
+                vaporization of water as a function of temperature, Quarterly
                 Journal of the Royal Meteorological Society 110, pp. 1186–1190
-              Linacre (1968), Estimating the net-radiation flux, Agricultural 
+              Linacre (1968), Estimating the net-radiation flux, Agricultural
                 Meteorology, vol. 5, pp. 49--63.
-              Prentice, I.C., M.T. Sykes, W. Cramer (1993), A simulation model 
-                for the transient effects of climate change on forest 
+              Prentice, I.C., M.T. Sykes, W. Cramer (1993), A simulation model
+                for the transient effects of climate change on forest
                 landscapes, Ecological Modelling, vol. 65, pp. 51--70.
-              Priestley, C.H.B. and R.J. Taylor (1972), On the assessment of 
-                surface heat flux and evaporation using large-scale parameters, 
+              Priestley, C.H.B. and R.J. Taylor (1972), On the assessment of
+                surface heat flux and evaporation using large-scale parameters,
                 Monthly Weather Review, vol. 100 (2), pp. 81--92.
-              Spencer, J. W. (1971), Fourier series representation of the 
+              Spencer, J. W. (1971), Fourier series representation of the
                 position of the sun, Search, vol. 2, p. 172.
-              Stine, W. B. and M. Geyer (2001). “Power from the Sun”. 
+              Stine, W. B. and M. Geyer (2001). “Power from the Sun”.
                 online: http://www.powerfromthesun.net/Book/chapter03/chapter03
               Wetherald, R.T., S. Manabe (1972), Response to joint ocean-
-                atmosphere model to the seasonal variation of the solar 
+                atmosphere model to the seasonal variation of the solar
                 radiation, Monthly Weather Review, vol. 100 (1), pp. 42--59.
-              Woolf, H. M. (1968). On the computation of solar evaluation 
-                angles and the determination of sunrise and sunset times. 
-                Tech. rep. NASA-TM-X-164. National Aeronautics and Space 
+              Woolf, H. M. (1968). On the computation of solar evaluation
+                angles and the determination of sunrise and sunset times.
+                Tech. rep. NASA-TM-X-164. National Aeronautics and Space
                 Administration (NASA).
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    # Class Initialization 
+    # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
     def __init__(self, lat, n, elv=0.0, y=0, sf=1.0, tc=23.0, sw=1.0):
         """
@@ -92,7 +93,7 @@ class EVAP:
                   - int, year (y)
                   - float, fraction of sunshine hours (sf)
                   - float, mean daily air temperature, C (tc)
-                  - float, evaporative supply rate, mm/hr (sw)        
+                  - float, evaporative supply rate, mm/hr (sw)
         """
         # Assign default public variables:
         self.user_elv = elv
@@ -121,7 +122,7 @@ class EVAP:
             kN = 365
             self.user_year = 2001
         else:
-            kN = self.julian_day((y+1),1,1) - self.julian_day(y, 1, 1)
+            kN = self.julian_day((y+1), 1, 1) - self.julian_day(y, 1, 1)
         self.kN = kN
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -131,7 +132,7 @@ class EVAP:
         my_nu, my_lambda = self.berger_tls(n)
         self.my_nu = my_nu
         self.my_lambda = my_lambda
-        # 
+        #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate distance factor (dr), unitless
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -162,7 +163,7 @@ class EVAP:
         # Eq. 3.22, Stine & Geyer (2001)
         if (ru/rv) >= 1.0:
             # Polar day (no sunset)
-            hs = 180.0 
+            hs = 180.0
         elif (ru/rv) <= -1.0:
             # Polar night (no sunrise)
             hs = 0.0
@@ -294,7 +295,7 @@ class EVAP:
         aet_d += (rx*rw*ru - rx*rnl)*(hn - hi)*pir
         aet_d *= (24.0/numpy.pi)
         self.aet_d = aet_d
-    #
+
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
@@ -306,7 +307,7 @@ class EVAP:
         Features: Calculates the cosine of an angle given in degrees
         """
         return numpy.cos(x*numpy.pi/180.0)
-    #
+
     def dsin(self, x):
         """
         Name:     EVAP.dsin
@@ -315,29 +316,29 @@ class EVAP:
         Features: Calculates the sine of an angle given in degrees
         """
         return numpy.sin(x*numpy.pi/180.0)
-    #
+
     def berger_tls(self, n):
         """
         Name:     EVAP.berger_tls
         Input:    int, day of year
-        Output:   tuple, 
+        Output:   tuple,
                   - true anomaly, degrees
                   - true longitude, degrees
         Features: Returns true anomaly and true longitude for a given day
         Depends:  - ke
                   - komega
-        Ref:      Berger, A. L. (1978), Long term variations of daily insolation
-                  and quaternary climatic changes, J. Atmos. Sci., 35, 2362-
-                  2367.
+        Ref:      Berger, A. L. (1978), Long term variations of daily
+                  insolation and quaternary climatic changes, J. Atmos. Sci.,
+                  35, 2362-2367.
         """
         # Variable substitutes:
-        xee = ke**2 
+        xee = ke**2
         xec = ke**3
         xse = numpy.sqrt(1.0 - xee)
         pir = numpy.pi/180.0
         #
         # Mean longitude for vernal equinox:
-        xlam =(ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega)
+        xlam = (ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega)
         xlam -= xee/4.0*(0.5 + xse)*self.dsin(2.0*komega)
         xlam += xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
         xlam *= 2.0
@@ -363,24 +364,24 @@ class EVAP:
             my_tls += 360.0
         elif my_tls > 360:
             my_tls -= 360.0
-        # 
+        #
         # True anomaly:
         my_nu = (my_tls - komega)
         if my_nu < 0:
             my_nu += 360.0
         #
         return(my_nu, my_tls)
-    #
-    def julian_day(self,y,m,i):
+
+    def julian_day(self, y, m, i):
         """
         Name:     EVAP.julian_day
         Input:    - int, year (y)
                   - int, month (m)
                   - int, day of month (i)
         Output:   float, Julian Ephemeris Day
-        Features: Converts Gregorian date (year, month, day) to Julian 
+        Features: Converts Gregorian date (year, month, day) to Julian
                   Ephemeris Day
-        Ref:      Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," Astronomical 
+        Ref:      Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," Astronomical
                   Algorithms
         """
         if m <= 2.0:
@@ -392,7 +393,7 @@ class EVAP:
         #
         jde = int(365.25*(y + 4716)) + int(30.6001*(m + 1)) + i + b - 1524.5
         return jde
-    #
+
     def sat_slope(self, tc):
         """
         Name:     EVAP.sat_slope
@@ -405,7 +406,7 @@ class EVAP:
             numpy.exp(tc*17.269/(tc + 237.3))/((tc + 237.3)**2)
         )
         return s
-    #
+
     def enthalpy_vap(self, tc):
         """
         Name:     EVAP.enthalpy_vap
@@ -415,7 +416,7 @@ class EVAP:
         Ref:      Eq. 8, Henderson-Sellers (1984)
         """
         return (1.91846e6*((tc + 273.15)/(tc + 273.15 - 33.91))**2)
-    #
+
     def elv2pres(self, z):
         """
         Name:     EVAP.elv2pres
@@ -433,14 +434,14 @@ class EVAP:
         """
         p = kPo*(1.0 - kL*z/kTo)**(kG*kMa/(kR*kL))
         return p
-    #
+
     def density_h2o(self, tc, p):
         """
         Name:     EVAP.density_h2o
         Input:    - float, air temperature (tc), degrees C
                   - float, atmospheric pressure (p), Pa
         Output:   float, density of water, kg/m^3
-        Features: Calculates density of water at a given temperature and 
+        Features: Calculates density of water at a given temperature and
                   pressure
         Ref:      Chen et al. (1977)
         """
@@ -484,7 +485,7 @@ class EVAP:
         pw *= (1e3)*po
         #
         return pw
-    #
+
     def psychro(self, tc, p):
         """
         Name:     EVAP.psychro
@@ -496,7 +497,7 @@ class EVAP:
         Depends:  Global constants:
                   - kMa
                   - kMv
-        Refs:     Allen et al. (1998); Tsilingiris (2008) 
+        Refs:     Allen et al. (1998); Tsilingiris (2008)
         """
         # Calculate the specific heat capacity of water, J/kg/K
         # Eq. 47, Tsilingiris (2008)

@@ -4,15 +4,15 @@
 # splash.py
 #
 # 2014-01-30 -- created
-# 2015-08-22 -- last updated
+# 2015-11-11 -- last updated
 #
 # ~~~~~~~~~
 # citation:
 # ~~~~~~~~~
-# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J. 
-# Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led 
+# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+# Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
 # algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
-# transpiration and plant-available moisture, Geoscientific Model Development, 
+# transpiration and plant-available moisture, Geoscientific Model Development,
 # 2015 (in progress)
 
 ###############################################################################
@@ -23,17 +23,18 @@ import numpy
 from const import kCw, kWm
 from evap import EVAP
 
+
 ###############################################################################
 ## CLASSES
 ###############################################################################
 class SPLASH:
     """
     Name:     SPLASH
-    Features: This class updates daily quantities of radiation, 
+    Features: This class updates daily quantities of radiation,
               evapotranspiration, soil moisture and runoff based on SPLASH.
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    # Class Initialization 
+    # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
     def __init__(self, lat, elv):
         """
@@ -51,17 +52,17 @@ class SPLASH:
             self.lat = lat
         #
         # Initialize daily status variables:
-        self.ho = 0.     # daily solar irradiation, J/m2
-        self.hn = 0.     # daily net radiation, J/m2
-        self.ppfd = 0.   # daily PPFD, mol/m2
-        self.cond = 0.   # daily condensation water, mm
-        self.wn = 0.     # daily soil moisture, mm
-        self.precip = 0. # daily precipitation, mm
-        self.ro = 0.     # daily runoff, mm
-        self.eet = 0.    # daily equilibrium ET, mm
-        self.pet = 0.    # daily potential ET, mm
-        self.aet = 0.    # daily actual ET, mm
-    #
+        self.ho = 0.      # daily solar irradiation, J/m2
+        self.hn = 0.      # daily net radiation, J/m2
+        self.ppfd = 0.    # daily PPFD, mol/m2
+        self.cond = 0.    # daily condensation water, mm
+        self.wn = 0.      # daily soil moisture, mm
+        self.precip = 0.  # daily precipitation, mm
+        self.ro = 0.      # daily runoff, mm
+        self.eet = 0.     # daily equilibrium ET, mm
+        self.pet = 0.     # daily potential ET, mm
+        self.aet = 0.     # daily actual ET, mm
+
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
@@ -99,11 +100,11 @@ class SPLASH:
                 wn = wn_vec[i-1]
             #
             # Calculate soil moisture and runoff:
-            sm, ro = self.quick_run(n=i+1, 
+            sm, ro = self.quick_run(n=i+1,
                                     y=d.year,
                                     wn=wn,
-                                    sf=d.sf_vec[i], 
-                                    tc=d.tair_vec[i], 
+                                    sf=d.sf_vec[i],
+                                    tc=d.tair_vec[i],
                                     pn=d.pn_vec[i])
             wn_vec[i] = sm
         #
@@ -132,11 +133,11 @@ class SPLASH:
                     wn = wn_vec[i-1]
                 #
                 # Calculate soil moisture and runoff:
-                sm, ro = self.quick_run(n=i+1, 
+                sm, ro = self.quick_run(n=i+1,
                                         y=d.year,
                                         wn=wn,
-                                        sf=d.sf_vec[i], 
-                                        tc=d.tair_vec[i], 
+                                        sf=d.sf_vec[i],
+                                        tc=d.tair_vec[i],
                                         pn=d.pn_vec[i])
                 wn_vec[i] = sm
             #
@@ -153,8 +154,7 @@ class SPLASH:
         print "Spun", spin_count, "years"
         self.wn_vec = wn_vec
         self.wn = wn_vec[-1]
-        #
-    #
+
     def quick_run(self, n, y, wn, sf, tc, pn):
         """
         Name:     SPLASH.quick_run
@@ -190,7 +190,7 @@ class SPLASH:
         # 4. Calculate runoff, mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if sm > kWm:
-            # Bucket is too full 
+            # Bucket is too full
             #   allocate excess water to runoff
             #   set soil moisture to capacity (i.e., kWm)
             ro = sm - kWm
@@ -204,7 +204,7 @@ class SPLASH:
             ro = 0
         #
         return(sm, ro)
-    #
+
     def run_one_day(self, n, y, wn, sf, tc, pn):
         """
         Name:     SPLASH.run_one_day
@@ -234,13 +234,13 @@ class SPLASH:
         # 2. Calculate radiation and evaporation quantities
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         my_evap = EVAP(self.lat, n, self.elv, y, sf, tc, sw)
-        self.ho = my_evap.ra_d     # daily solar irradiation, J/m2
-        self.hn = my_evap.rn_d     # daily net radiation, J/m2
-        self.ppfd = my_evap.ppfd_d # daily PPFD, mol/m2
-        self.cond = my_evap.cond   # daily condensation water, mm
-        self.eet = my_evap.eet_d   # daily equilibrium ET, mm
-        self.pet = my_evap.pet_d   # daily potential ET, mm
-        self.aet = my_evap.aet_d   # daily actual ET, mm
+        self.ho = my_evap.ra_d      # daily solar irradiation, J/m2
+        self.hn = my_evap.rn_d      # daily net radiation, J/m2
+        self.ppfd = my_evap.ppfd_d  # daily PPFD, mol/m2
+        self.cond = my_evap.cond    # daily condensation water, mm
+        self.eet = my_evap.eet_d    # daily equilibrium ET, mm
+        self.pet = my_evap.pet_d    # daily potential ET, mm
+        self.aet = my_evap.aet_d    # daily actual ET, mm
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate today's soil moisture (sm), mm
@@ -251,7 +251,7 @@ class SPLASH:
         # 4. Calculate runoff (ro), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if sm > kWm:
-            # Bucket is too full 
+            # Bucket is too full
             #   allocate excess water to runoff
             #   set soil moisture to capacity (i.e., kWm)
             ro = sm - kWm
@@ -271,7 +271,7 @@ class SPLASH:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         self.wn = sm  # daily soil moisture, mm
         self.ro = ro  # daily runoff, mm
-    #
+
     def print_vals(self):
         """
         Name:     SPLASH.print_vals

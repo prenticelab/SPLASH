@@ -3,22 +3,22 @@
 # splash_data.py
 #
 # 2015-01-22 -- created
-# 2015-08-23 -- last updated
+# 2015-11-11 -- last updated
 #
 # ~~~~~~~~~
 # citation:
 # ~~~~~~~~~
-# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J. 
-# Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led 
+# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+# Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
 # algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
-# transpiration and plant-available moisture, Geoscientific Model Development, 
+# transpiration and plant-available moisture, Geoscientific Model Development,
 # 2015 (in progress)
 #
 # ~~~~~~~~~~~~
 # description:
 # ~~~~~~~~~~~~
-# The script creates a CSV of the necessary daily meteorological variables 
-# for running the SPLASH code, including: fraction of bright sunshine, 
+# The script creates a CSV of the necessary daily meteorological variables
+# for running the SPLASH code, including: fraction of bright sunshine,
 # Sf (unitless), air temperature, Tair (deg. C), and precipitation, Pn (mm).
 #
 # Supported input sources currently include:
@@ -52,6 +52,7 @@ from scipy.io import netcdf
 
 from const import kPo, kTo, kL, kMa, kG, kR
 
+
 ###############################################################################
 ## CLASSES
 ###############################################################################
@@ -63,7 +64,7 @@ class SPLASH_DATA:
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
-    def __init__(self, user_lat, user_lon, user_elv = 0):
+    def __init__(self, user_lat, user_lon, user_elv=0):
         """
         Name:     SPLASH_DATA.__init__
         Input:    - float, latitude, degrees north (user_lat)
@@ -78,18 +79,18 @@ class SPLASH_DATA:
         self.cru_tair_is_set = False     # for CRU-based Tair
         #
         # Initialize data directory and source preference dictionaries:
-        self.data_dir = {'cld' : '',
-                         'pre' : '',
-                         'tmp' : '',
-                         'Rainf' : '',
-                         'Tair' : ''}
+        self.data_dir = {'cld': '',
+                         'pre': '',
+                         'tmp': '',
+                         'Rainf': '',
+                         'Tair': ''}
         #
-        self.data_src = {'sf' : '',
-                         'tair' : '',
-                         'pn' : ''}
+        self.data_src = {'sf': '',
+                         'tair': '',
+                         'pn': ''}
         #
         # Check user inputs:
-        self.elv = user_elv 
+        self.elv = user_elv
         self.elv2pres()
         if user_lat > 90.0 or user_lat < -90.0:
             print "Latitude outside range of validity (-90 to 90)!"
@@ -102,10 +103,10 @@ class SPLASH_DATA:
         else:
             self.lon = user_lon
         #
-        # Find the 0.5 degree pixel associated with user coordinates: 
+        # Find the 0.5 degree pixel associated with user coordinates:
         (self.px_lon, self.px_lat) = self.grid_centroid()
         (self.px_x, self.px_y) = self.get_xy_nc()
-    #
+
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
@@ -116,7 +117,7 @@ class SPLASH_DATA:
         Features: Define the directory to CRU monthly cloudiness netCDF file
         """
         self.data_dir['cld'] = d
-    #
+
     def set_cru_pre_dir(self, d):
         """
         Name:     SPLASH_DATA.set_pre_cld_dir
@@ -124,16 +125,16 @@ class SPLASH_DATA:
         Features: Define the directory to CRU monthly precipitation netCDF file
         """
         self.data_dir['pre'] = d
-    #
+
     def set_cru_tmp_dir(self, d):
         """
         Name:     SPLASH_DATA.set_tmn_cld_dir
         Input:    str, directory path (d)
-        Features: Define the directory to CRU monthly mean air temperature  
+        Features: Define the directory to CRU monthly mean air temperature
                   netCDF file
         """
         self.data_dir['tmp'] = d
-    #
+
     def set_watch_rainf_dir(self, d):
         """
         Name:     SPLASH_DATA.set_watch_rainf_dir
@@ -141,16 +142,16 @@ class SPLASH_DATA:
         Features: Define the directory to WATCH daily rainfall netCDF file
         """
         self.data_dir['Rainf'] = d
-    #
+
     def set_watch_tair_dir(self, d):
         """
         Name:     SPLASH_DATA.set_watch_tair_dir
         Input:    str, directory path (d)
-        Features: Define the directory to WATCH daily air temperature netCDF 
+        Features: Define the directory to WATCH daily air temperature netCDF
                   file
         """
         self.data_dir['Tair'] = d
-    #
+
     def set_output_dir(self, d):
         """
         Name:     SPLASH_DATA.set_output_dir
@@ -167,7 +168,7 @@ class SPLASH_DATA:
                 self.writeout(self.output_file, header)
         else:
             self.writeout(self.output_file, header)
-    #
+
     def set_sf_source(self, n):
         """
         Name:     SPLASH_DATA.set_sf_source
@@ -176,25 +177,25 @@ class SPLASH_DATA:
                   (e.g., 'cru' or 'watch')
         """
         self.data_src['sf'] = n
-    #
+
     def set_pn_source(self, n):
         """
         Name:     SPLASH_DATA.set_pn_source
         Input:    str, source preference (n)
-        Features: Define the source preference for precipitation (e.g., 'cru' 
+        Features: Define the source preference for precipitation (e.g., 'cru'
                   or 'watch')
         """
         self.data_src['pn'] = n
-    #
+
     def set_tair_source(self, n):
         """
         Name:     SPLASH_DATA.set_tair_source
         Input:    str, source preference (n)
-        Features: Define the source preference for air temperature (e.g., 'cru' 
+        Features: Define the source preference for air temperature (e.g., 'cru'
                   or 'watch')
         """
         self.data_src['tair'] = n
-    #
+
     def add_one_month(self, dt0):
         """
         Name:     SPLASH_DATA.add_one_month
@@ -206,56 +207,56 @@ class SPLASH_DATA:
                   month-to-a-datetimedate-or-datet/
         """
         dt1 = dt0.replace(day=1)
-        dt2 = dt1 + datetime.timedelta(days=32) 
+        dt2 = dt1 + datetime.timedelta(days=32)
         dt3 = dt2.replace(day=1)
         return dt3
-    #
+
     def density_h2o(self, tc, p):
         """
         Name:     SPLASH_DATA.density_h2o
         Input:    - float, air temperature (tc), degrees C
                   - float, atmospheric pressure (p), Pa
         Output:   float, density of water, kg/m^3
-        Features: Calculates density of water at a given temperature and 
+        Features: Calculates density of water at a given temperature and
                   pressure
         Ref:      Chen et al. (1977)
         """
         # Calculate density at 1 atm:
         po = (
-            0.99983952 + 
-            (6.788260e-5)*tc + 
+            0.99983952 +
+            (6.788260e-5)*tc +
             -(9.08659e-6)*tc*tc +
-            (1.022130e-7)*tc*tc*tc + 
+            (1.022130e-7)*tc*tc*tc +
             -(1.35439e-9)*tc*tc*tc*tc +
             (1.471150e-11)*tc*tc*tc*tc*tc +
-            -(1.11663e-13)*tc*tc*tc*tc*tc*tc + 
-            (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc + 
+            -(1.11663e-13)*tc*tc*tc*tc*tc*tc +
+            (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc +
             -(1.00659e-18)*tc*tc*tc*tc*tc*tc*tc*tc
         )
         #
         # Calculate bulk modulus at 1 atm:
         ko = (
             19652.17 +
-            148.1830*tc + 
-            -2.29995*tc*tc + 
-            0.01281*tc*tc*tc + 
-            -(4.91564e-5)*tc*tc*tc*tc + 
+            148.1830*tc +
+            -2.29995*tc*tc +
+            0.01281*tc*tc*tc +
+            -(4.91564e-5)*tc*tc*tc*tc +
             (1.035530e-7)*tc*tc*tc*tc*tc
         )
         #
         # Calculate temperature dependent coefficients:
         ca = (
-            3.26138 + 
-            (5.223e-4)*tc + 
-            (1.324e-4)*tc*tc + 
-            -(7.655e-7)*tc*tc*tc + 
+            3.26138 +
+            (5.223e-4)*tc +
+            (1.324e-4)*tc*tc +
+            -(7.655e-7)*tc*tc*tc +
             (8.584e-10)*tc*tc*tc*tc
         )
         cb = (
             (7.2061e-5) +
-            -(5.8948e-6)*tc + 
-            (8.69900e-8)*tc*tc + 
-            -(1.0100e-9)*tc*tc*tc + 
+            -(5.8948e-6)*tc +
+            (8.69900e-8)*tc*tc +
+            -(1.0100e-9)*tc*tc*tc +
             (4.3220e-12)*tc*tc*tc*tc
         )
         #
@@ -265,7 +266,7 @@ class SPLASH_DATA:
         pw = (1e3)*po*(ko + ca*pbar + cb*pbar**2)
         pw /= (ko + ca*pbar + cb*pbar**2 - pbar)
         return pw
-    #
+
     def elv2pres(self):
         """
         Name:     SPLASH_DATA.elv2pres
@@ -275,20 +276,20 @@ class SPLASH_DATA:
         """
         p = kPo*(1.0 - kL*self.elv/kTo)**(kG*kMa/(kR*kL))
         self.patm = p
-    #
+
     def grid_centroid(self):
         """
         Name:     SPLASH_DATA.grid_centroid
         Input:    None.
         Output:   tuple, longitude latitude pair (my_centroid)
         Features: Returns the nearest 0.5 deg. grid centroid for the class's
-                  coordinates based on the Euclidean distance to each of the 
-                  four surrounding grids; if any distances are equivalent, the 
+                  coordinates based on the Euclidean distance to each of the
+                  four surrounding grids; if any distances are equivalent, the
                   pixel north and east is selected by default
         """
         # Create lists of regular latitude and longitude:
         grid_res = 0.5
-        my_lon = self.lon 
+        my_lon = self.lon
         my_lat = self.lat
         lat_min = -90 + 0.5*grid_res
         lon_min = -180 + 0.5*grid_res
@@ -326,7 +327,7 @@ class SPLASH_DATA:
                 bb_lat_max = lats[-1] + grid_res
             #
         # Determine nearest centroid:
-        # NOTE: if dist_A equals dist_B, then centroid defaults positively 
+        # NOTE: if dist_A equals dist_B, then centroid defaults positively
         #       i.e., north / east
         if centroid_lon and centroid_lat:
             my_centroid = (centroid_lon, centroid_lat)
@@ -377,7 +378,7 @@ class SPLASH_DATA:
                 #
         # Return nearest centroid:
         return my_centroid
-    #
+
     def get_daily_status(self, d, write_out=True):
         """
         Name:     SPLASH_DATA.get_daily_status
@@ -424,14 +425,14 @@ class SPLASH_DATA:
         # Write to file:
         if write_out:
             self.save_to_file(d, sf, tair, pn)
-    #
+
     def get_daily_watch(self, v, ct):
         """
         Name:     SPLASH_DATA.get_daily_watch
         Input:    - str, variable of interest (v)
                   - datetime.date, current time (ct)
         Output:   numpy nd.array
-        Features: Returns 360x720 monthly WATCH dataset for a given variable 
+        Features: Returns 360x720 monthly WATCH dataset for a given variable
                   of interest (e.g., Tair, Rainf)
         """
         # Save class variable to local variable:
@@ -443,20 +444,20 @@ class SPLASH_DATA:
             my_file = glob.glob(my_path)[0]
         except IndexError:
             print "No WATCH file was found for variable: ", v
-            print "and month: ", ct.month 
+            print "and month: ", ct.month
         else:
             # Open netCDF file for reading:
             f = netcdf.NetCDFFile(my_file, "r")
             #
             #   VARIABLES:
-            #    * day (int), 
+            #    * day (int),
             #    * lat (grid box center, degrees north)
             #    * lon (grid box center, degrees east)
             #    * timestp (days since beginning of month)
             #
             #   DATA:
             #    * 'Rainf' units = kg m^-2 s^-1
-            #    * 'Tair' units = Kelvin  
+            #    * 'Tair' units = Kelvin
             #    *  Missing value = 1.00e+20
             #
             # Find time index:
@@ -468,7 +469,7 @@ class SPLASH_DATA:
             #
             f.close()
             return f_data
-    #
+
     def get_month_days(self, ts):
         """
         Name:     SPLASH_DATA.get_month_days
@@ -481,7 +482,7 @@ class SPLASH_DATA:
         ts2 = self.add_one_month(ts1)
         dts = (ts2 - ts1).days
         return dts
-    #
+
     def get_monthly_cru(self, v, ct):
         """
         Name:     SPLASH_DATA.get_monthly_cru
@@ -489,7 +490,7 @@ class SPLASH_DATA:
                   - datetime.date, current time (ct)
         Output:   numpy nd.array
         Depends:  get_time_index
-        Features: Returns 360x720 monthly CRU TS dataset for a given variable 
+        Features: Returns 360x720 monthly CRU TS dataset for a given variable
                   of interest (e.g., cld, pre, tmp)
         """
         # Save class variables to local variables
@@ -505,7 +506,7 @@ class SPLASH_DATA:
             f = netcdf.NetCDFFile(my_file, "r")
             #
             # Save data for variables of interest:
-            # NOTE: for CRU TS 3.21: 
+            # NOTE: for CRU TS 3.21:
             #       variables: 'lat', 'lon', 'time', v
             #       where v is 'tmp', 'pre', 'cld', 'vap'
             # LAT:  -89.75 -- 89.75
@@ -520,7 +521,7 @@ class SPLASH_DATA:
             #       'tmp' units = deg. C
             #       Missing value = 9.96e+36
             # Save the base time stamp:
-            bt = datetime.date(1900,1,1)
+            bt = datetime.date(1900, 1, 1)
             #
             # Read the time data as array:
             f_time = f.variables['time'].data
@@ -532,7 +533,7 @@ class SPLASH_DATA:
             f_data = f.variables[v].data[ti]
             f.close()
             return f_data
-    #
+
     def get_time_index(self, bt, ct, aot):
         """
         Name:     SPLASH_DATA.get_time_index
@@ -540,8 +541,8 @@ class SPLASH_DATA:
                   - datetime date, current timestamp to be found (ct)
                   - numpy nd.array, days since base timestamp (aot)
         Output:   int
-        Features: Finds the index in an array of CRU TS days for a given 
-                  timestamp 
+        Features: Finds the index in an array of CRU TS days for a given
+                  timestamp
         """
         # For CRU TS 3.21, the aot is indexed for mid-month days, e.g. 15--16th
         # therefore, to make certain that ct index preceeds the index for the
@@ -553,18 +554,18 @@ class SPLASH_DATA:
         dt = (ct - bt).days
         #
         # Append dt to the aot array:
-        aot = numpy.append(aot, [dt,])
+        aot = numpy.append(aot, [dt, ])
         #
         # Find the first index of dt in the sorted array:
-        idx = numpy.where(numpy.sort(aot)==dt)[0][0]
+        idx = numpy.where(numpy.sort(aot) == dt)[0][0]
         return idx
-    #
+
     def get_xy_nc(self):
         """
         Name:     SPLASH_DATA.get_xy_nc
         Input:    None.
         Output:   tuple, x-y indices
-        Features: Returns array indices for the class's pixel location at 0.5 
+        Features: Returns array indices for the class's pixel location at 0.5
                   degree resolution for a netCDF file (i.e., inverted raster)
         """
         lon = self.px_lon
@@ -575,7 +576,7 @@ class SPLASH_DATA:
         y = (lat + 90.0)/r - 0.5
         #
         return (int(x), int(y))
-    #
+
     def process_pn(self, ct, tc):
         """
         Name:     SPLASH_DATA.process_pn
@@ -613,14 +614,14 @@ class SPLASH_DATA:
             pn = numpy.nan
         #
         return pn
-    #
+
     def process_sf(self, ct):
         """
         Name:     SPLASH_DATA.process_sf
         Input:    datetime.date, current time (ct)
         Output:   float, sunshine fraction, unitless
         Depends:  get_monthly_cru
-        Features: Processes the daily fractional sunshine hours and save as 
+        Features: Processes the daily fractional sunshine hours and save as
                   class variable
         """
         if self.data_src['sf'] == 'cru':
@@ -640,7 +641,7 @@ class SPLASH_DATA:
             sf = numpy.nan
         #
         return sf
-    #
+
     def process_tair(self, ct):
         """
         Name:     SPLASH_DATA.process_tair
@@ -648,7 +649,7 @@ class SPLASH_DATA:
         Output:   float, air temperature, deg C
         Depends:  - get_monthly_cru
                   - get_daily_watch
-        Features: Processes the daily air temperature and save as class variable
+        Features: Processes daily air temperature and save as class variable
         """
         #
         if self.data_src['tair'] == 'cru':
@@ -672,7 +673,7 @@ class SPLASH_DATA:
             tair = numpy.nan
         #
         return tair
-    #
+
     def save_to_file(self, ts, sf, tair, pn):
         """
         Name:     SPLASH_DATA.save_to_file
@@ -681,7 +682,7 @@ class SPLASH_DATA:
                   - float, air temperature (tair)
                   - float, precipitation (pn)
         Output:   None.
-        Features: Writes daily variables (i.e., timestamp, sf, tair and pn) to 
+        Features: Writes daily variables (i.e., timestamp, sf, tair and pn) to
                   the output file in CSV format
         """
         output_line = "%s,%f,%f,%f\n" % (ts, sf, tair, pn)
@@ -689,11 +690,11 @@ class SPLASH_DATA:
             OUT = open(self.output_file, 'a')
             OUT.write(output_line)
         except IOError:
-            print "Error: cannot write to file: " 
+            print "Error: cannot write to file: "
             print self.output_file
         else:
             OUT.close()
-    #
+
     def writeout(self, f, d):
         """
         Name:     SPLASH_DATA.writeout
@@ -708,6 +709,7 @@ class SPLASH_DATA:
             print "Error: cannot write to file: ", f
         else:
             OUT.close()
+
 
 ###############################################################################
 ## FUNCTIONS
@@ -725,11 +727,11 @@ def add_one_day(dt0):
 ###############################################################################
 ## USER VARIABLES
 ###############################################################################
-# Create a class instance with longitude, latitude and elevation based on your 
+# Create a class instance with longitude, latitude and elevation based on your
 # location of interest:
-user_lat = 37.7    # degrees north 
-user_lon = -122.4  # degrees east  
-user_elv = 142.0   # meters AMSV (use 0 if unknown) 
+user_lat = 37.7    # degrees north
+user_lon = -122.4  # degrees east
+user_elv = 142.0   # meters AMSV (use 0 if unknown)
 my_class = SPLASH_DATA(user_lat, user_lon, user_elv)
 
 # Set the data input/output directories for your machine:
@@ -748,15 +750,11 @@ my_class.set_tair_source('watch')
 ###############################################################################
 ## MAIN
 ###############################################################################
-##
-## Set the date range you want to process
-##
+# Set the date range you want to process
 start_date = datetime.date(2000, 1, 1)
 end_date = datetime.date(2001, 1, 1)
 
-##
-## Iterate through time, saving daily data to file
-##
+# Iterate through time, saving daily data to file
 cur_date = start_date
 while cur_date < end_date:
     my_class.get_daily_status(cur_date, write_out=True)

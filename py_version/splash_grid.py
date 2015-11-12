@@ -4,15 +4,15 @@
 # splash_grid.py
 #
 # 2014-01-30 -- created
-# 2015-08-23 -- last updated
+# 2015-11-11 -- last updated
 #
 # ~~~~~~~~~
 # citation:
 # ~~~~~~~~~
-# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J. 
-# Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led 
+# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+# Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
 # algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
-# transpiration and plant-available moisture, Geoscientific Model Development, 
+# transpiration and plant-available moisture, Geoscientific Model Development,
 # 2015 (in progress)
 #
 # ~~~~~~~~~~~~
@@ -21,11 +21,11 @@
 #
 # NOT WORKING
 #
-# This script calculates the monthly outputs at 0.5 deg resolution based on 
+# This script calculates the monthly outputs at 0.5 deg resolution based on
 # the SPLASH model
 #
-# IMPORTANT NOTE: 
-#   Global variables are defined inside a function at definition; therefore, 
+# IMPORTANT NOTE:
+#   Global variables are defined inside a function at definition; therefore,
 #   you must re-run function definitions if you change global variable values
 #
 # Key (monthly) outputs:
@@ -40,7 +40,7 @@
 # 5. CWD = SUM_mo(PETi - AETi)
 #    where:
 #      PETi = daily potential evapotranspiration, mm
-# 
+#
 # The following input files are required:
 # 1. Tc, CRU TS 3.21 Monthly Mean Daily Temperature, deg. C
 #    "cru_ts3.21.1901.2012.tmp.dat.nc"
@@ -90,8 +90,8 @@
 # 31. updated value and reference for semi-major axis, a [14.10.31]
 # 32. fixed Cooper's and Spencer's declination equations [14.11.25]
 # 33. replaced simplified kepler with full kepler [14.11.25]
-# 34. removed options for approximation methods not considering variable 
-#     orbital velocity (e.g. Spencer, Woolf, Klein, Cooper, and Circle 
+# 34. removed options for approximation methods not considering variable
+#     orbital velocity (e.g. Spencer, Woolf, Klein, Cooper, and Circle
 #     methods) [15.01.13]
 # 35. updated get_monthly_cru to set nodata values equal to kerror [15.02.25]
 # 36. updated get_elevation to set nodata values equal to kerror [15.02.25]
@@ -103,6 +103,7 @@
 #     --> added nc_lat, nc_lon, nc_history, nc_write, get_date functions
 # 41. renaming (addresses issue #3) [15.08.23]
 # 42. import global constants from const.py [15.08.23]
+# 43. PEP8 style fixes [15.11.11]
 #
 # ~~~~~
 # todo:
@@ -125,13 +126,14 @@ import glob
 import numpy
 from scipy.io import netcdf
 
-from const import (kA, kalb_sw, kalb_vis, kb, kc, kCw, kd, ke, keps, kfFEC, 
+from const import (kA, kalb_sw, kalb_vis, kb, kc, kCw, kd, ke, keps, kfFEC,
                    kG, kGsc, kL, kMa, kMv, kPo, kR, kTo, kWm, kw, komega)
 
 ###############################################################################
 ## GLOBAL CONSTANTS:
 ###############################################################################
-kerror = -9999.# error value
+kerror = -9999.  # error value
+
 
 ###############################################################################
 ## CLASSES:
@@ -139,60 +141,60 @@ kerror = -9999.# error value
 class EVAP_G:
     """
     Name:     EVAP_G
-    Features: This class calculates daily 360x720 gridded radiation and 
+    Features: This class calculates daily 360x720 gridded radiation and
               evapotranspiration quantities
               - daily PPFD (ppfd_d), mol/m^2
               - daily EET (eet_d), mm
               - daily PET (pet_d), mm
               - daily AET (aet_d), mm
               - daily condensation (wc), mm
-    Refs:     Allen, R.G. (1996), Assessing integrity of weather data for 
+    Refs:     Allen, R.G. (1996), Assessing integrity of weather data for
                 reference evapotranspiration estimation, Journal of Irrigation
                 and Drainage Engineering, vol. 122, pp. 97--106.
-              Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998), 
-                'Meteorological data,' Crop evapotranspiration - Guidelines for 
-                computing crop water requirements - FAO Irrigation and drainage 
-                paper 56, Food and Agriculture Organization of the United 
+              Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998),
+                'Meteorological data,' Crop evapotranspiration - Guidelines for
+                computing crop water requirements - FAO Irrigation and drainage
+                paper 56, Food and Agriculture Organization of the United
                 Nations, online: http://www.fao.org/docrep/x0490e/x0490e07.htm
-              Berger, A.L. (1978), Long-term variations of daily insolation and 
-                quarternary climatic changes, Journal of Atmospheric Sciences, 
+              Berger, A.L. (1978), Long-term variations of daily insolation and
+                quarternary climatic changes, Journal of Atmospheric Sciences,
                 vol. 35, pp. 2362--2367.
-              Berger, A.L., M.F. Loutre, and C. Tricot (1993), Insolation and 
+              Berger, A.L., M.F. Loutre, and C. Tricot (1993), Insolation and
                 Earth's orbital periods, J. Geophys. Res., 98, 10341--10362.
-              Duffie, J. A. and W. A. Beckman (1991). Solar engineering of 
+              Duffie, J. A. and W. A. Beckman (1991). Solar engineering of
                 thermal processes. 4th ed. New Jersey: John Wiley and Sons
-              Federer (1982), Transpirational supply and demand: plant, soil, 
-                and atmospheric effects evaluated by simulation, Water 
+              Federer (1982), Transpirational supply and demand: plant, soil,
+                and atmospheric effects evaluated by simulation, Water
                 Resources Research, vol. 18, no. 2, pp. 355--362.
-              Ge, S., R.G. Smith, C.P. Jacovides, M.G. Kramer, R.I. Carruthers 
-                (2011), Dynamics of photosynthetic photon flux density (PPFD) 
-                and estimates in coastal northern California, Theoretical and 
+              Ge, S., R.G. Smith, C.P. Jacovides, M.G. Kramer, R.I. Carruthers
+                (2011), Dynamics of photosynthetic photon flux density (PPFD)
+                and estimates in coastal northern California, Theoretical and
                 Applied Climatology, vol. 105, pp. 107--118.
-              Henderson-Sellers, B. (1984), A new formula for latent heat of 
-                vaporization of water as a function of temperature, Quarterly 
+              Henderson-Sellers, B. (1984), A new formula for latent heat of
+                vaporization of water as a function of temperature, Quarterly
                 Journal of the Royal Meteorological Society 110, pp. 1186–1190
-              Linacre (1968), Estimating the net-radiation flux, Agricultural 
+              Linacre (1968), Estimating the net-radiation flux, Agricultural
                 Meteorology, vol. 5, pp. 49--63.
-              Prentice, I.C., M.T. Sykes, W. Cramer (1993), A simulation model 
-                for the transient effects of climate change on forest 
+              Prentice, I.C., M.T. Sykes, W. Cramer (1993), A simulation model
+                for the transient effects of climate change on forest
                 landscapes, Ecological Modelling, vol. 65, pp. 51--70.
-              Priestley, C.H.B. and R.J. Taylor (1972), On the assessment of 
-                surface heat flux and evaporation using large-scale parameters, 
+              Priestley, C.H.B. and R.J. Taylor (1972), On the assessment of
+                surface heat flux and evaporation using large-scale parameters,
                 Monthly Weather Review, vol. 100 (2), pp. 81--92.
-              Spencer, J. W. (1971), Fourier series representation of the 
+              Spencer, J. W. (1971), Fourier series representation of the
                 position of the sun, Search, vol. 2, p. 172.
-              Stine, W. B. and M. Geyer (2001). “Power from the Sun”. 
+              Stine, W. B. and M. Geyer (2001). “Power from the Sun”.
                 online: http://www.powerfromthesun.net/Book/chapter03/chapter03
               Wetherald, R.T., S. Manabe (1972), Response to joint ocean-
-                atmosphere model to the seasonal variation of the solar 
+                atmosphere model to the seasonal variation of the solar
                 radiation, Monthly Weather Review, vol. 100 (1), pp. 42--59.
-              Woolf, H. M. (1968). On the computation of solar evaluation 
-                angles and the determination of sunrise and sunset times. 
-                Tech. rep. NASA-TM-X-164. National Aeronautics and Space 
+              Woolf, H. M. (1968). On the computation of solar evaluation
+                angles and the determination of sunrise and sunset times.
+                Tech. rep. NASA-TM-X-164. National Aeronautics and Space
                 Administration (NASA).
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    # Class Initialization 
+    # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
     def __init__(self, n, elv, sf, tc, sw, y=0):
         """
@@ -225,7 +227,7 @@ class EVAP_G:
         (lon_array, lat_array) = self.get_lon_lat(my_x, my_y, 0.5)
         #
         # Convert lat array to grids (degrees)
-        lat_grid = numpy.reshape(numpy.repeat(lat_array, 720), (360,720), 'C')
+        lat_grid = numpy.reshape(numpy.repeat(lat_array, 720), (360, 720), 'C')
         #
         # Define missing data indexes:
         #   sw doesn't have error values
@@ -281,8 +283,8 @@ class EVAP_G:
         # 6. Calculate the sunset hour angle, degrees
         #    hs, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Create zeroed hour angle grid 
-        hs = numpy.zeros(shape=(360,720))
+        # Create zeroed hour angle grid
+        hs = numpy.zeros(shape=(360, 720))
         #
         # Indexes of pixels under polar night conditions:
         # Note: hs == 0 degrees (no further comp's)
@@ -300,7 +302,7 @@ class EVAP_G:
         hs[hs_reg] *= ru[hs_reg]
         hs[hs_reg] /= rv[hs_reg]
         hs[hs_reg] = numpy.arccos(hs[hs_reg])
-        hs[hs_reg] /= pir 
+        hs[hs_reg] /= pir
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 7. Calculate daily extraterrestrial solar radiation, J/m^2
@@ -358,8 +360,8 @@ class EVAP_G:
         # 12. Calculate net radiation cross-over hour angle, degrees
         #     hn, MATRIX (360,720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Create zeroed cross-over angle: 
-        hn = numpy.zeros(shape=(360,720))
+        # Create zeroed cross-over angle:
+        hn = numpy.zeros(shape=(360, 720))
         #
         # Define cosine of hn:
         cos_hn = numpy.copy(rnl)
@@ -460,7 +462,7 @@ class EVAP_G:
         #     hi, MATRIX (360x720)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Create zeroed intersection hour angle grid
-        hi = numpy.zeros(shape=(360,720))
+        hi = numpy.zeros(shape=(360, 720))
         #
         # Compute cos(hi)
         cos_hi = sw
@@ -489,7 +491,7 @@ class EVAP_G:
         aet_d[nodata_idx] *= 0.0
         aet_d[nodata_idx] += kerror
         self.aet_d = aet_d
-    #
+
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
@@ -501,7 +503,7 @@ class EVAP_G:
         Features: Calculates the cosine of angle(s) given in degrees
         """
         return numpy.cos(x*numpy.pi/180.0)
-    #
+
     def dsin(self, x):
         """
         Name:     EVAP_G.dsin
@@ -510,30 +512,30 @@ class EVAP_G:
         Features: Calculates the sine of angle(s) given in degrees
         """
         return numpy.sin(x*numpy.pi/180.0)
-    #
+
     def berger_tls(self, n):
         """
         Name:     EVAP_G.berger_tls
         Input:    int, day of year
-        Output:   tuple, 
+        Output:   tuple,
                   - true anomaly, degrees
                   - true longitude, degrees
         Features: Returns true anomaly and true longitude for a given day
         Depends:  - ke
                   - komega
                   - dsin
-        Ref:      Berger, A. L. (1978), Long term variations of daily insolation
-                  and quaternary climatic changes, J. Atmos. Sci., 35, 2362-
-                  2367.
+        Ref:      Berger, A. L. (1978), Long term variations of daily
+                  insolation and quaternary climatic changes, J. Atmos. Sci.,
+                  35, 2362-2367.
         """
         # Variable substitutes:
-        xee = ke**2 
+        xee = ke**2
         xec = ke**3
         xse = numpy.sqrt(1.0 - xee)
         pir = (numpy.pi/180.0)
         #
         # Mean longitude for vernal equinox:
-        xlam =(ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega)
+        xlam = (ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega)
         xlam -= xee/4.0*(0.5 + xse)*self.dsin(2.0*komega)
         xlam += xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
         xlam *= 2.0
@@ -559,22 +561,22 @@ class EVAP_G:
             my_tls += 360.0
         elif my_tls > 360:
             my_tls -= 360.0
-        # 
+        #
         # True anomaly:
         my_nu = (my_tls - komega)
         if my_nu < 0:
             my_nu += 360.0
         #
         return(my_nu, my_tls)
-    #
-    def get_lon_lat(self,x,y,r):
+
+    def get_lon_lat(self, x, y, r):
         """
         Name:     EVAP_G.get_lon_lat
         Input:    - int/nd.array, longitude index (x)
                   - int/nd.array, latitude index (y)
                   - float, pixel resolution (r)
         Output:   float/nd.array tuple, longitude(s) and latitude(s), degrees
-        Features: Returns lon-lat pair for an x-y index pair (numbered from the 
+        Features: Returns lon-lat pair for an x-y index pair (numbered from the
                   bottom-left corner) and pixel resolution
         """
         # Offset lat, lon to pixel centroid
@@ -586,17 +588,17 @@ class EVAP_G:
         lat = lat + (y*r)
         #
         return (lon, lat)
-    #
-    def julian_day(self,y,m,i):
+
+    def julian_day(self, y, m, i):
         """
         Name:     EVAP_G.julian_day
         Input:    - int, year (y)
                   - int, month (m)
                   - int, day of month (i)
         Output:   float, Julian Ephemeris Day
-        Features: Converts Gregorian date (year, month, day) to Julian 
+        Features: Converts Gregorian date (year, month, day) to Julian
                   Ephemeris Day
-        Ref:      Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," Astronomical 
+        Ref:      Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," Astronomical
                   Algorithms
         """
         if m <= 2.0:
@@ -608,7 +610,7 @@ class EVAP_G:
         #
         jde = int(365.25*(y + 4716)) + int(30.6001*(m + 1)) + i + b - 1524.5
         return jde
-    #
+
     def sat_slope(self, tc):
         """
         Name:     EVAP_G.sat_slope
@@ -632,7 +634,7 @@ class EVAP_G:
         s[nodata_idx] += kerror
         #
         return s
-    #
+
     def enthalpy_vap(self, tc):
         """
         Name:     EVAP_G.enthalpy_vap
@@ -655,7 +657,7 @@ class EVAP_G:
         lv[nodata_idx] += kerror
         #
         return lv
-    #
+
     def elv2pres(self, z):
         """
         Name:     EVAP_G.elv2pres
@@ -683,7 +685,7 @@ class EVAP_G:
         p[nodata_idx] += kerror
         #
         return p
-    #
+
     def density_h2o(self, tair, p):
         """
         Name:     EVAP_G.density_h2o
@@ -692,8 +694,8 @@ class EVAP_G:
         Output:   numpy nd.array, densities of water, kg/m^3
         Features: Calculates water density at a given temperature and pressure
                   NODATA = kerror
-        Ref:      F.H. Fisher and O.E Dial, Jr. (1975) Equation of state of 
-                  pure water and sea water, Tech. Rept., Marine Physical 
+        Ref:      F.H. Fisher and O.E Dial, Jr. (1975) Equation of state of
+                  pure water and sea water, Tech. Rept., Marine Physical
                   Laboratory, San Diego, CA.
         """
         # Find nodata indexes:
@@ -722,7 +724,7 @@ class EVAP_G:
         po[nodata_idx] += 0.5
         #
         # Calculate vinf, cm^3/g
-        vinf =  -(7.435626e-4)*tc
+        vinf = -(7.435626e-4)*tc
         vinf += (3.704258e-5)*tc*tc
         vinf += -(6.315724e-7)*tc*tc*tc
         vinf += (9.829576e-9)*tc*tc*tc*tc
@@ -746,7 +748,8 @@ class EVAP_G:
         v[nodata_idx] *= 0.0
         v[nodata_idx] += 1.0
         #
-        # Convert to density (g cm^-3) -> 1000 g/kg; 1000000 cm^3/m^3 -> kg/m^3:
+        # Convert to density (g cm^-3) -> 1000 g/kg;
+        # 1000000 cm^3/m^3 -> kg/m^3:
         rho = numpy.power(v, -1.)
         rho *= (1e3)
         #
@@ -755,7 +758,7 @@ class EVAP_G:
         rho[nodata_idx] += kerror
         #
         return rho
-    #
+
     def psychro(self, tair, p):
         """
         Name:     EVAP_G.psychro
@@ -765,10 +768,10 @@ class EVAP_G:
         Features: Calculates the psychrometric constant for a given temperature
                   and pressure
                   NODATA = kerror
-        Depends:  - kMa     
+        Depends:  - kMa
                   - kMv
                   - enthalpy_vap
-        Refs:     Allen et al. (1998); Tsilingiris (2008) 
+        Refs:     Allen et al. (1998); Tsilingiris (2008)
         """
         # Define nodata indexes:
         nodata_idx = numpy.where((tair == kerror) | (p == kerror))
@@ -779,7 +782,7 @@ class EVAP_G:
         #
         # Calculate the specific heat capacity of water, J/kg/K
         # Eq. 47, Tsilingiris (2008)
-        cp =  (2.050632750e-3)*tc
+        cp = (2.050632750e-3)*tc
         cp += -(1.631537093e-4)*tc*tc
         cp += (6.212300300e-6)*tc*tc*tc
         cp += -(8.830478888e-8)*tc*tc*tc*tc
@@ -806,17 +809,18 @@ class EVAP_G:
         pc[nodata_idx] += kerror
         #
         return pc
-#
+
+
 class DATA_G:
     """
     Name:     DATA_G
-    Features: This class handles the file IO for reading and writing gridded 
+    Features: This class handles the file IO for reading and writing gridded
               data.
-    
+
     @TODO: finish class
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    # Class Initialization 
+    # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
     def __init__(self, cdir, edir, pdir, tdir):
         """
@@ -843,7 +847,7 @@ class DATA_G:
         #
         # Initialize date to None:
         self.date = None
-    #
+
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
@@ -858,28 +862,28 @@ class DATA_G:
                   month-to-a-datetimedate-or-datet/
         """
         dt1 = dt0.replace(day=1)
-        dt2 = dt1 + datetime.timedelta(days=32) 
+        dt2 = dt1 + datetime.timedelta(days=32)
         dt3 = dt2.replace(day=1)
         return dt3
-    #
+
     def add_one_year(self, dt0):
         """
         Name:     DATA_G.add_one_year
         Input:    datetime.date
         Output:   datetime.date
-        Features: Adds one year to the datetime preserving calendar date, if it 
-                  exists, otherwise uses the following day (i.e., February 29 
+        Features: Adds one year to the datetime preserving calendar date, if it
+                  exists, otherwise uses the following day (i.e., February 29
                   becomes March 1)
         Ref:      G. Rees (2013) Stack Overflow
                   http://stackoverflow.com/questions/15741618/add-one-year-in-
                   current-date-python
         """
         try:
-            return dt0.replace(year = dt0.year + 1)
+            return dt0.replace(year=dt0.year + 1)
         except ValueError:
-            return dt0 + (datetime.date(dt0.year + 1, 1, 1) - 
-                          datetime.date(dt0.year, 1 ,1))
-    #
+            return dt0 + (datetime.date(dt0.year + 1, 1, 1) -
+                          datetime.date(dt0.year, 1, 1))
+
     def get_cru_file(self, d, voi):
         """
         Name:     DATA_G.get_cru_file
@@ -900,7 +904,7 @@ class DATA_G:
             print "No files found!"
         #
         return my_files
-    #
+
     def get_month_days(self, ts):
         """
         Name:     DATA_G.get_month_days
@@ -914,14 +918,14 @@ class DATA_G:
         dts = (ts2 - ts1).days
         #
         return dts
-    #
+
     def get_monthly_cru(self, ct, v):
         """
         Name:     DATA_G.get_monthly_cru
         Input:    - datetime date, current month datetime object (ct)
                   - str, variable of interest (v)
         Output:   numpy nd.array
-        Features: Returns 360x720 monthly CRU TS dataset for a given month and 
+        Features: Returns 360x720 monthly CRU TS dataset for a given month and
                   variable of interest (e.g., cld, pre, tmp)
                   NODATA = kerror
         Depends:  - get_cru_file
@@ -940,7 +944,7 @@ class DATA_G:
             f = netcdf.NetCDFFile(my_file, "r")
             #
             # Save data for variables of interest:
-            # NOTE: for CRU TS 3.2: 
+            # NOTE: for CRU TS 3.2:
             #       variables: 'lat', 'lon', 'time', v
             #       where v is 'tmp', 'pre', 'cld'
             # LAT:  -89.75 -- 89.75
@@ -954,7 +958,7 @@ class DATA_G:
             #       Missing value = 9.96e+36
             #
             # Save the base time stamp:
-            bt = datetime.date(1900,1,1)
+            bt = datetime.date(1900, 1, 1)
             #
             # Read the time data as array:
             f_time = f.variables['time'].data.copy()
@@ -975,7 +979,7 @@ class DATA_G:
             f_data[noval_idx] += kerror
             #
             return f_data
-    #
+
     def get_time_index(self, bt, ct, aot):
         """
         Name:     get_time_index
@@ -983,7 +987,7 @@ class DATA_G:
                   - datetime.date, current timestamp (ct)
                   - numpy.ndarray, array of days since base timestamp (aot)
         Output:   int, time index for given month
-        Features: Finds the index in an array of days for a given timestamp 
+        Features: Finds the index in an array of days for a given timestamp
         """
         # For CRU TS 3.2, the aot is indexed for mid-month days, e.g. 15--16th
         # therefore, to make certain that ct index preceeds the index for the
@@ -1006,7 +1010,7 @@ class DATA_G:
                 idx = None
         finally:
             return idx
-    #
+
     def get_year_days(self, ts):
         """
         Name:     DATA_G.get_year_days
@@ -1015,11 +1019,11 @@ class DATA_G:
         Features: Returns the total number of days in the year
         Depends:  add_one_year
         """
-        ts1 = datetime.date(ts.year, 1 , 1)
+        ts1 = datetime.date(ts.year, 1, 1)
         ts2 = self.add_one_year(ts1)
         #
         return (ts2 - ts1).days
-    #
+
     def read_elv(self, my_file):
         """
         Name:     DATA_G.read.elv
@@ -1041,7 +1045,7 @@ class DATA_G:
             f[noval_idx] += kerror
         finally:
             self.elv = f
-    #
+
     def read_monthly_clim(self, m):
         """
         Name:     DATA_G.read_monthly_clim
@@ -1067,9 +1071,9 @@ class DATA_G:
             self.set_date(m)
             #
             # Reset the data arrays:
-            self.tair = numpy.zeros(shape=(360,720))
-            self.pre = numpy.zeros(shape=(360,720))
-            self.sf = numpy.zeros(shape=(360,720))
+            self.tair = numpy.zeros(shape=(360, 720))
+            self.pre = numpy.zeros(shape=(360, 720))
+            self.sf = numpy.zeros(shape=(360, 720))
             #
             # Read monthly data:
             tmp = self.get_monthly_cru(m, 'tmp')
@@ -1078,10 +1082,10 @@ class DATA_G:
             #
             # Update good and noval indexes:
             self.noval_idx = numpy.where(
-                (self.elv == kerror) | (tmp == kerror) | (pre == kerror) | 
+                (self.elv == kerror) | (tmp == kerror) | (pre == kerror) |
                 (cld == kerror))
             self.good_idx = numpy.where(
-                (self.elv != kerror) & (tmp != kerror) & (pre != kerror) & 
+                (self.elv != kerror) & (tmp != kerror) & (pre != kerror) &
                 (cld != kerror))
             #
             # Convert cloudiness to fractional sunshine, sf
@@ -1100,7 +1104,7 @@ class DATA_G:
             self.tair = tmp
             self.pre = pre
             self.sf = sf
-    #
+
     def set_date(self, date):
         """
         Name:     DATA_G.set_date
@@ -1116,18 +1120,19 @@ class DATA_G:
         self.n = date.timetuple().tm_yday
         self.nm = self.get_month_days(date)
         self.ny = self.get_year_days(date)
-#
+
+
 class SPLASH_G:
     """
     Name:     SPLASH_G
-    Features: This class updates daily gridded quantities of radiation, 
+    Features: This class updates daily gridded quantities of radiation,
               evapotranspiration, soil moisture and runoff based on the
               SPLASH methodology.
-    
+
     @TODO: finish class
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    # Class Initialization 
+    # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
     def __init__(self, elv):
         """
@@ -1138,17 +1143,17 @@ class SPLASH_G:
         self.elv = elv
         #
         # Initialize daily status variables:
-        self.ho = numpy.zeros(shape=(360,720))     # solar irradiation, J/m2
-        self.hn = numpy.zeros(shape=(360,720))     # net radiation, J/m2
-        self.ppfd = numpy.zeros(shape=(360,720))   # PPFD, mol/m2
-        self.cond = numpy.zeros(shape=(360,720))   # condensation water, mm
-        self.wn = numpy.zeros(shape=(360,720))     # soil moisture, mm
-        self.precip = numpy.zeros(shape=(360,720)) # precipitation, mm
-        self.ro = numpy.zeros(shape=(360,720))     # runoff, mm
-        self.eet = numpy.zeros(shape=(360,720))    # equilibrium ET, mm
-        self.pet = numpy.zeros(shape=(360,720))    # potential ET, mm
-        self.aet = numpy.zeros(shape=(360,720))    # actual ET, mm
-    #
+        self.ho = numpy.zeros(shape=(360, 720))      # solar irradiation, J/m2
+        self.hn = numpy.zeros(shape=(360, 720))      # net radiation, J/m2
+        self.ppfd = numpy.zeros(shape=(360, 720))    # PPFD, mol/m2
+        self.cond = numpy.zeros(shape=(360, 720))    # condensation water, mm
+        self.wn = numpy.zeros(shape=(360, 720))      # soil moisture, mm
+        self.precip = numpy.zeros(shape=(360, 720))  # precipitation, mm
+        self.ro = numpy.zeros(shape=(360, 720))      # runoff, mm
+        self.eet = numpy.zeros(shape=(360, 720))     # equilibrium ET, mm
+        self.pet = numpy.zeros(shape=(360, 720))     # potential ET, mm
+        self.aet = numpy.zeros(shape=(360, 720))     # actual ET, mm
+
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
@@ -1159,10 +1164,10 @@ class SPLASH_G:
         Output:   datetime.date (dt1)
         Features: Adds one day to datetime
         """
-        dt1 = dt0 + datetime.timedelta(days=1) 
+        dt1 = dt0 + datetime.timedelta(days=1)
         #
         return dt1
-    #
+
     def spin_up(self, d, y):
         """
         Name:     SPLASH_G.spin
@@ -1183,7 +1188,7 @@ class SPLASH_G:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Create a soil moisture array:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        wn_vec = numpy.zeros(shape=(d.ny,360,720))
+        wn_vec = numpy.zeros(shape=(d.ny, 360, 720))
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Run one year:
@@ -1201,11 +1206,11 @@ class SPLASH_G:
             d.read_monthly_clim(cur_date)
             #
             # Calculate soil moisture and runoff:
-            sm, ro = self.quick_run(n=i+1, 
+            sm, ro = self.quick_run(n=i+1,
                                     y=y,
                                     wn=wn,
-                                    sf=d.sf, 
-                                    tc=d.tair, 
+                                    sf=d.sf,
+                                    tc=d.tair,
                                     pn=d.pre)
             #
             # Set no data values equal to zero & save to array:
@@ -1249,11 +1254,11 @@ class SPLASH_G:
                 d.read_monthly_clim(cur_date)
                 #
                 # Calculate soil moisture and runoff:
-                sm, ro = self.quick_run(n=i+1, 
+                sm, ro = self.quick_run(n=i+1,
                                         y=y,
                                         wn=wn,
-                                        sf=d.sf, 
-                                        tc=d.tair, 
+                                        sf=d.sf,
+                                        tc=d.tair,
                                         pn=d.pre)
                 #
                 # Set no data values equal to zero & save to array:
@@ -1285,7 +1290,7 @@ class SPLASH_G:
         self.wn[d.noval_idx] *= 0.0
         self.wn[d.noval_idx] += kerror
         #
-    #
+
     def quick_run(self, n, y, wn, sf, tc, pn):
         """
         Name:     SPLASH_G.quick_run
@@ -1320,7 +1325,7 @@ class SPLASH_G:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate runoff, mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ro = numpy.zeros(shape=(360,720))
+        ro = numpy.zeros(shape=(360, 720))
         #
         # Where bucket is too full, allocate to runoff and reset to max:
         full_idx = numpy.where(sm > kWm)
@@ -1333,7 +1338,7 @@ class SPLASH_G:
         sm[empty_idx] *= 0.0
         #
         return(sm, ro)
-    #
+
     def run_one_day(self, n, y, wn, sf, tc, pn):
         """
         Name:     SPLASH_G.run_one_day
@@ -1364,13 +1369,13 @@ class SPLASH_G:
         # 2. Calculate radiation and evaporation quantities
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         my_evap = EVAP_G(n, self.elv, sf, tc, sw, y)
-        self.ho = my_evap.ra_d     # daily solar irradiation, J/m2
-        self.hn = my_evap.rn_d     # daily net radiation, J/m2
-        self.ppfd = my_evap.ppfd_d # daily PPFD, mol/m2
-        self.cond = my_evap.cond   # daily condensation water, mm
-        self.eet = my_evap.eet_d   # daily equilibrium ET, mm
-        self.pet = my_evap.pet_d   # daily potential ET, mm
-        self.aet = my_evap.aet_d   # daily actual ET, mm
+        self.ho = my_evap.ra_d      # daily solar irradiation, J/m2
+        self.hn = my_evap.rn_d      # daily net radiation, J/m2
+        self.ppfd = my_evap.ppfd_d  # daily PPFD, mol/m2
+        self.cond = my_evap.cond    # daily condensation water, mm
+        self.eet = my_evap.eet_d    # daily equilibrium ET, mm
+        self.pet = my_evap.pet_d    # daily potential ET, mm
+        self.aet = my_evap.aet_d    # daily actual ET, mm
         #
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate today's soil moisture (sm), mm
@@ -1380,7 +1385,7 @@ class SPLASH_G:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate runoff (ro), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ro = numpy.zeros(shape=(360,720))
+        ro = numpy.zeros(shape=(360, 720))
         #
         # Where bucket is too full, allocate to runoff and reset to max:
         full_idx = numpy.where(sm > kWm)
@@ -1388,7 +1393,7 @@ class SPLASH_G:
         sm[full_idx] *= 0.0
         sm[full_idx] += kWm
         #
-        # Where bucket is too empty, reduce AET by discrepancy amount 
+        # Where bucket is too empty, reduce AET by discrepancy amount
         # & set soil moisture to min:
         empty_idx = numpy.where(sm < 0)
         self.aet[empty_idx] += sm[empty_idx]
@@ -1400,8 +1405,9 @@ class SPLASH_G:
         self.wn = sm  # daily soil moisture, mm
         self.ro = ro  # daily runoff, mm
 
+
 ###############################################################################
-## FUNCTIONS 
+## FUNCTIONS
 ###############################################################################
 def get_days(ts):
     """
@@ -1419,39 +1425,44 @@ def get_days(ts):
     # Return the number of days:
     return delta.days
 
+
 def nc_history():
     """
     Name:     nc_history
     Input:    None.
     Output:   string (my_str)
-    Features: Returns a string for netCDF file history field based on the file's
-              creation date
+    Features: Returns a string for netCDF file history field based on the
+              file's creation date
     """
     my_str = "created %s" % datetime.date.today()
     return my_str
+
 
 def nc_lat():
     """
     Name:     nc_lat
     Input:    None.
     Output:   numpy.ndarray, latitudes, degrees (my_lats)
-    Features: Returns an array of latitudes from -90 to 90 at 0.5 deg resolution
+    Features: Returns an array of latitudes from -90 to 90 at 0.5 deg
+              resolution
     """
     my_lats = [(-90 + 0.5*0.5) + 0.5*i for i in xrange(360)]
     #
     return numpy.array(my_lats)
+
 
 def nc_lon():
     """
     Name:     nc_lon
     Input:    None.
     Output:   numpy.ndarray, longitudes, degrees (my_lons)
-    Features: Returns an array of longitudes from -180 to 180 at 0.5 deg 
+    Features: Returns an array of longitudes from -180 to 180 at 0.5 deg
               resolution
     """
     my_lons = [(-180 + 0.5*0.5) + 0.5*i for i in xrange(720)]
     #
     return numpy.array(my_lons)
+
 
 def nc_write(my_array, nc_file, nc_title, var_sname, var_lname, var_units, d):
     """
@@ -1494,7 +1505,7 @@ def nc_write(my_array, nc_file, nc_title, var_sname, var_lname, var_units, d):
     #
     # Create latitude dimension & variable:
     f.createDimension('lat', 360)
-    lat = f.createVariable('lat', 'd', ('lat',) )
+    lat = f.createVariable('lat', 'd', ('lat',))
     lat[:] = nc_lat()
     lat.standard_name = 'latitude'
     lat.long_name = 'latitude'
@@ -1518,7 +1529,7 @@ def nc_write(my_array, nc_file, nc_title, var_sname, var_lname, var_units, d):
     t[0] = get_days(d)
     #
     # Create data variable:
-    data = f.createVariable(var_sname, 'd', ('time','lat','lon'))
+    data = f.createVariable(var_sname, 'd', ('time', 'lat', 'lon'))
     data._FillValue = kerror
     data.missing_value = kerror
     data.long_name = var_lname
@@ -1527,6 +1538,7 @@ def nc_write(my_array, nc_file, nc_title, var_sname, var_lname, var_units, d):
     #
     # Close and save netCDF file:
     f.close()
+
 
 def writeout(f, d):
     """
@@ -1545,7 +1557,7 @@ def writeout(f, d):
         OUT.close()
 
 ###############################################################################
-## DEFINITIONS 
+## DEFINITIONS
 ###############################################################################
 mac = False
 if mac:
@@ -1579,12 +1591,12 @@ start_date = datetime.date(2002, 1, 1)
 end_date = datetime.date(2003, 1, 1)
 
 ###############################################################################
-## MAIN PROGRAM 
+## MAIN PROGRAM
 ###############################################################################
 # Initialize monthly variables & daily soil moisture:
 wn = numpy.copy(my_class.wn)
-eet_mo = numpy.zeros(shape=(360,720))
-aet_mo = numpy.zeros(shape=(360,720))
+eet_mo = numpy.zeros(shape=(360, 720))
+aet_mo = numpy.zeros(shape=(360, 720))
 
 # Initialize the current day & input data:
 cur_date = start_date
@@ -1620,13 +1632,13 @@ while cur_date < my_class.add_one_day(end_date):
         cpa_mo[my_data.noval_idx] += kerror
         #
         # Save data to file:
-        nc_output_file = "%sSPLASH_%d-%02d_alpha.nc" % (output_dir, 
-                                                       out_date.year, 
-                                                       out_date.month)
+        nc_output_file = "%sSPLASH_%d-%02d_alpha.nc" % (output_dir,
+                                                        out_date.year,
+                                                        out_date.month)
         nc_write(cpa_mo, nc_output_file, 'Monthly Cramer-Prentice alpha',
                  'CPA', 'Cramer-Prentice bioclimatic moisture index', 'none',
                  out_date)
-        # 
+        #
         # Update output date:
         out_date = cur_date
         #
@@ -1647,7 +1659,7 @@ while cur_date < my_class.add_one_day(end_date):
         wn = numpy.copy(my_class.wn)
         eet_mo[my_data.good_idx] += my_class.eet[my_data.good_idx]
         aet_mo[my_data.good_idx] += my_class.aet[my_data.good_idx]
-    # 
+    #
     # Increment day:
     cur_date = my_class.add_one_day(cur_date)
 
@@ -1658,5 +1670,5 @@ my_evap = EVAP_G(n=174,
                  elv=my_data.elv,
                  sf=my_data.sf,
                  tc=my_data.tair,
-                 sw=0.5*numpy.ones(shape=(360,720)),
+                 sw=0.5*numpy.ones(shape=(360, 720)),
                  y=2001)
