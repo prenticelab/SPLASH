@@ -28,7 +28,9 @@ module modelparams
   real, parameter :: pi = 3.14159
 
   integer, parameter :: nmonth = 12       ! number of months in year
-  integer :: kN                           ! number of days in year (365 or 366)
+
+  ! Chose whether to use monthly or daily input data
+  logical, parameter :: use_daily_input = .true.
 
 end module modelparams
 
@@ -95,6 +97,45 @@ contains
 end module outputvars
 
 
+module daily_input
+  !////////////////////////////////////////////////////////////////
+  ! Module contains function to read daily values of one year 
+  ! (365/366) from a text file.
+  !----------------------------------------------------------------   
+  implicit none
+
+contains
+
+  function read1year_daily( filename, ndayyear ) result ( dval )
+    !////////////////////////////////////////////////////////////////
+    ! Function reads a file that contains 365 lines, each line for
+    ! a daily value. 
+    !----------------------------------------------------------------
+    ! arguments
+    character(len=*), intent(in) :: filename
+    integer, intent(in)          :: ndayyear   ! 366 in leap years, 365 otherwise
+
+    ! function return value
+    real, allocatable, dimension(:) :: dval    ! Daily value to be read in
+
+    ! allocate lengt of vector
+    allocate( dval(ndayyear) )
+
+    open( 20, file='../data/'//filename, status='old', form='formatted', action='read', err=888 )
+    read( 20, *) dval
+    close( 20 )
+
+    return
+
+    600 format (F9.7)
+    888 write(0,*) 'READ1YEAR_DAILY: error opening file '//trim(filename)//'. Abort. '
+    stop
+
+  end function read1year_daily
+
+end module daily_input
+
+
 program splash
   !////////////////////////////////////////////////////////////////
   ! SPLASH MAIN PROGRAM 
@@ -104,31 +145,66 @@ program splash
   !----------------------------------------------------------------
   use modelparams
   use outputvars
+  use daily_input
 
   implicit none
 
-  ! LOCAL VARIABLES
+  ! local variables
   real :: my_lon
   real :: my_lat
   real :: my_elv
 
-  real, dimension(nmonth) :: insf
-  real, dimension(nmonth) :: intc
-  real, dimension(nmonth) :: inppt
+  integer :: yr        ! year AD (CE)
+  integer :: inlen     ! =12 if monthly input data, =ndayyear if daily input data
+  integer :: ndayyear  ! 366 in leap years, 365 otherwise
 
   ! state variables of SPLASH (daily updated, used by different SRs)
-  real :: ra_d                         ! daily extraterrestrial solar radiation (J/m^2)
-  real :: rn_d                         ! daytime net radiation, J/m^2
+  real :: ra_d         ! daily extraterrestrial solar radiation (J/m^2)
+  real :: rn_d         ! daytime net radiation, J/m^2
+
+  ! Climate input variables
+  real, allocatable, dimension(:) :: insf
+  real, allocatable, dimension(:) :: intc
+  real, allocatable, dimension(:) :: inppt
+
+  ! Set current year (at which spinup is executed), and calculate number of days in year
+  yr = 2000 ! year 2000 data is read in => leap year!
+  ndayyear = julian_day(yr+1, 1, 1) - julian_day(yr, 1, 1)
+  
+  if (use_daily_input) then
+
+    inlen = ndayyear
+
+    ! allocate size of array
+    allocate( insf(ndayyear) )
+    allocate( intc(ndayyear) )
+    allocate( inppt(ndayyear) )
+
+    ! Reading daily input data from file
+    insf  = read1year_daily( "../data/daily_sf_2000_cruts.txt", ndayyear )
+    intc  = read1year_daily( "../data/daily_tair_2000_wfdei.txt", ndayyear )
+    inppt = read1year_daily( "../data/daily_pn_2000_wfdei.txt", ndayyear )
+
+  else
+
+    inlen = nmonth
+
+    ! allocate size of array
+    allocate( insf(nmonth) )
+    allocate( intc(nmonth) )
+    allocate( inppt(nmonth) )
+  
+    ! Example data (Met Office average climate for this gridcell)
+    insf  = (/0.21, 0.27, 0.30, 0.40, 0.39, 0.39, 0.40, 0.43, 0.36, 0.32, 0.23, 0.19/)
+    intc  = (/4.80, 4.85, 7.10, 9.10, 12.4, 15.3, 17.6, 17.3, 14.6, 11.2, 7.55, 5.05/)
+    inppt = (/61.0, 41.2, 44.5, 48.0, 46.4, 44.6, 46.0, 52.3, 50.3, 71.8, 66.3, 62.9/)
+
+  end if
 
   ! Define input variables
   my_lon = -0.641 ! longitude, degrees
   my_lat = 51.4   ! latitude, degrees
   my_elv = 74.0   ! elevation, m
-
-  ! Example data (Met Office average climate for this gridcell)
-  insf  = (/0.21, 0.27, 0.30, 0.40, 0.39, 0.39, 0.40, 0.43, 0.36, 0.32, 0.23, 0.19/)
-  intc  = (/4.80, 4.85, 7.10, 9.10, 12.4, 15.3, 17.6, 17.3, 14.6, 11.2, 7.55, 5.05/)
-  inppt = (/61.0, 41.2, 44.5, 48.0, 46.4, 44.6, 46.0, 52.3, 50.3, 71.8, 66.3, 62.9/)
 
   print*,'Running SPLASH ...'
 
@@ -157,33 +233,40 @@ program splash
   ! output variables are over-written in each year of spinup
   ! hence, values at the end of the spinup represent equilibrium
   print*,'spinning up soil moisture ...'
-  call spin_up( my_lon, my_lat, my_elv, inppt, intc, insf )
+  call spin_up( yr, my_lon, my_lat, my_elv, inppt, intc, insf, inlen, ndayyear )
   print*,'... done'
 
   print*,'SPLASH sucessfully completed.'
 
 contains
 
-  subroutine spin_up( lon, lat, elv, ppt, tc, sf )
+  subroutine spin_up( yr, lon, lat, elv, ppt, tc, sf, inlen, ndayyear )
     !----------------------------------------------------------------   
     ! Spins up the daily soil moisture
     !----------------------------------------------------------------   
-    use outputvars
+    ! arguments
+    integer, intent(in)                         :: yr    ! year AD  
+    real, intent(in)                            :: lon   ! longitude (degrees)
+    real, intent(in)                            :: lat   ! latitude (degrees)
+    real, intent(in)                            :: elv   ! altitude (m)
+    real, allocatable, dimension(:), intent(in) :: ppt   ! monthly precip (mm) 
+    real, allocatable, dimension(:), intent(in) :: tc    ! mean monthly temperature (deg C)
+    real, allocatable, dimension(:), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
+    integer, intent(in)                         :: inlen ! =12 if monthly input data, =ndayyear if daily input data
+    integer, intent(in)                         :: ndayyear ! number of days in this year
 
-    ! ARGUMENTS
-    real, intent(in) :: lon                          ! longitude (degrees)
-    real, intent(in) :: lat                          ! latitude (degrees)
-    real, intent(in) :: elv                          ! altitude (m)
-    real, dimension(nmonth), intent(in) :: ppt       ! monthly precip (mm) 
-    real, dimension(nmonth), intent(in) :: tc        ! mean monthly temperature (deg C)
-    real, dimension(nmonth), intent(in) :: sf        ! mean monthly sunshine fraction (unitless)
-
-    ! LOCAL VARIABLES
+    ! local variables
     integer :: spin_count                            ! counter variable
     real :: start_sm                                 ! soil moisture in first day of year
     real :: end_sm                                   ! soil moisture in last day of year
     real :: diff_sm                                  ! difference in soil moisture between first and last day of year
 
+    ! allocate memory
+    allocate( ppt(inlen) )
+    allocate( tc(inlen) )
+    allocate( sf(inlen) )
+
+    ! control variables
     spin_count = 1
     diff_sm = 9999.0
 
@@ -193,12 +276,12 @@ contains
       print*,'********************************************'
       print*,'spinup year', spin_count
       print*,'--------------------------------------------'
-      call run_one_year( lon, lat, elv, 2000, ppt, tc, sf)
+      start_sm = dwn(365)
+      call run_one_year( lon, lat, elv, yr, ppt, tc, sf, inlen, ndayyear )
+      end_sm   = dwn(365)
 
       ! Check to see if 1 Jan soil moisture matches 31 Dec:
-      start_sm = dwn(1)
-      end_sm = dwn(366)
-      diff_sm = abs(end_sm - start_sm)
+      diff_sm  = abs(end_sm - start_sm)
 
       print*,'soil moisture in equil. when diff < 0.0001'
       print*,'diff ',diff_sm
@@ -218,8 +301,6 @@ contains
     !----------------------------------------------------------------   
     ! Writes daily and monthly values to files
     !----------------------------------------------------------------   
-    use outputvars
-
     ! local variables
     character(len=256) :: prefix
     character(len=256) :: filnam
@@ -328,22 +409,26 @@ contains
   end subroutine write_to_file
 
 
-  subroutine run_one_year( lon, lat, elv, yr, ppt, tc, sf )
+  subroutine run_one_year( lon, lat, elv, yr, ppt, tc, sf, inlen, ndayyear )
     !----------------------------------------------------------------   
     ! Calculates daily and monthly quantities for one year
     !----------------------------------------------------------------   
-    use outputvars
+    ! arguments
+    real, intent(in) :: lon                              ! longitude (degrees)
+    real, intent(in) :: lat                              ! latitude (degrees)
+    real, intent(in) :: elv                              ! altitude (m)
+    integer, intent(in) :: yr                            ! year AD
+    real, allocatable, dimension(:), intent(in) :: ppt   ! monthly precip (mm) 
+    real, allocatable, dimension(:), intent(in) :: tc    ! mean monthly temperature (deg C)
+    real, allocatable, dimension(:), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
 
-    ! ARGUMENTS
-    real, intent(in) :: lon                          ! longitude (degrees)
-    real, intent(in) :: lat                          ! latitude (degrees)
-    real, intent(in) :: elv                          ! altitude (m)
-    integer, intent(in) :: yr                        ! year AD
-    real, dimension(nmonth), intent(in) :: ppt       ! monthly precip (mm) 
-    real, dimension(nmonth), intent(in) :: tc        ! mean monthly temperature (deg C)
-    real, dimension(nmonth), intent(in) :: sf        ! mean monthly sunshine fraction (unitless)
+    integer, intent(in) :: inlen                         ! =12 if monthly input data, =ndayyear if daily input data
+    integer, intent(in) :: ndayyear                      ! number of days in this year
 
-    ! LOCAL VARIABLES
+    ! local variables
+    real :: use_tc                       ! mean monthly or daily temperature (deg C)
+    real :: use_sf                       ! mean monthly or daily sunshine fraction (unitless)
+
     real :: ppfd_d                       ! daily PPFD (mol/m^2)
     real :: eet_d                        ! daily EET (mm)
     real :: pet_d                        ! daily PET (mm)
@@ -351,21 +436,19 @@ contains
     real :: wc                           ! daily condensation (mm)
     real :: sw                           ! evaporative supply rate (mm/h)
 
-    integer :: ndayyear                  ! number of days in this year (xxx not equal to kN???)
     integer :: doy                       ! day of year
     integer :: moy                       ! month of year
     integer :: ndaymonth                 ! number of days in month (formerly 'nm')
     integer :: idx                       ! day of year corresponding to yesterday
     integer :: dm                        ! day of month
 
+    ! allocate memory
+    allocate( ppt(inlen) )
+    allocate( tc(inlen) )
+    allocate( sf(inlen) )
+
     ! Reset monthly totals
     call initmonthly
-
-    ! Calculates days in year
-    ndayyear = julian_day(yr+1, 1, 1) - julian_day(yr, 1, 1)
-
-    ! xxx debug
-    print*,'ndayyear',ndayyear
 
     ! Iterate through months
     do moy=1,nmonth
@@ -377,9 +460,21 @@ contains
 
       ! Iterate through days in this month
       do dm=1,ndaymonth
+
         ! Calculate the day of the year
         ! xxx is this '+1' really necessary here?
         doy = julian_day(yr, moy, dm) - julian_day(yr, 1, 1) + 1
+
+        ! Select daily or monthly input data
+        if (use_daily_input) then
+          use_tc   = tc(doy)
+          use_sf   = sf(doy)
+          dpn(doy) = ppt(doy)
+        else
+          use_tc   = tc(moy)
+          use_sf   = sf(moy)
+          dpn(doy) = ppt(moy)/ndaymonth
+        end if
 
         ! Get index for yesterday (Note: zero indexing xxx)
         idx = int(doy-1)
@@ -393,12 +488,8 @@ contains
 
         ! Calculate radiation and evaporation quantities
         !print*,'calling evap for doy', doy, '...'
-        call evap( lon, lat, doy, ppfd_d, eet_d, pet_d, aet_d, wc, elv=elv, yr=2000, sf=sf(moy), tc=tc(moy), sw=sw )
+        call evap( ndayyear, lon, lat, doy, ppfd_d, eet_d, pet_d, aet_d, wc, elv=elv, yr=yr, sf=use_sf, tc=use_tc, sw=sw )
         !print*,'... done'
-
-        ! Calculate daily precipitation 
-        ! xxx 'doy' only for zero-indexing in Python?
-        dpn(doy) = ppt(moy)/ndaymonth
 
         ! Update soil moisture
         dwn(doy) = dwn(idx) + dpn(doy) + wc - aet_d
@@ -466,7 +557,7 @@ contains
   end subroutine run_one_year
 
 
-  subroutine evap( lon, lat, doy, ppfd_d, eet_d, pet_d, aet_d, wc, elv, yr, sf, tc, sw )
+  subroutine evap( ndayyear, lon, lat, doy, ppfd_d, eet_d, pet_d, aet_d, wc, elv, yr, sf, tc, sw )
     !----------------------------------------------------------------   
     ! This subroutine calculates daily radiation and evapotranspiration
     ! quantities
@@ -476,9 +567,10 @@ contains
     ! - daily AET (aet_d), mm
     ! - daily condensation (wc), mm
     !-------------------------------------------------------------  
-    ! ARGUMENTS
+    ! arguments
 
     ! inputs
+    integer, intent(in) :: ndayyear      ! number of days in this year
     real, intent(in) :: lon              ! longitude, degrees
     real, intent(in) :: lat              ! latitude, degrees
     integer, intent(in) :: doy           ! day of the year (formerly 'n')
@@ -498,7 +590,7 @@ contains
     real,    intent(in), optional :: sw  ! evaporative supply rate, mm/hr
 
 
-    ! LOCAL VARIABLES
+    ! local variables
     real     :: my_elv                   ! elevation, metres; aux. var. for local use        
     integer  :: my_yr                    ! year; aux. var. for local use
     real     :: my_sf                    ! fraction of sunshine hours ; for local use
@@ -578,17 +670,10 @@ contains
 
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! 1. Calculate number of days in year (kN), days
+    ! 1. Calculate number of days in year (kN), days (take from argument)
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if (my_yr==0) then
-      kN = 365
-      my_yr = 2001  ! xxx what is this used for?
-    else
-      kN = julian_day((yr+1),1,1) - julian_day(yr, 1, 1)
-    endif
-
-    ! xxx debug
-    !print*,'kN', kN
+    ! Nothing done here anymore, because this is calculated 
+    ! at higher level and passed onto here as argument.
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 2. Calculate heliocentric longitudes (nu and lambda), degrees
@@ -960,7 +1045,7 @@ contains
     !print*,'xlam', xlam
 
     ! Mean longitude for day of year:
-    dlamm = xlam + (day - 80.0)*(360.0/kN)
+    dlamm = xlam + (day - 80.0)*(360.0/ndayyear)
 
     ! Mean anomaly:
     anm = dlamm - komega
