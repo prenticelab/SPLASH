@@ -13,7 +13,7 @@ export FCOM
 EXE = runsplash
 
 standard:
-	$(FCOM) splash.F -o $(EXE)
+	$(FCOM) splash.f90 -o $(EXE)
 
 .PHONY: clean
 	clean:
