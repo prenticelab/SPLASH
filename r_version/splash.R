@@ -2,15 +2,15 @@
 #
 # splash.R
 #
-# last updated: 2015-08-22
+# last updated: 2015-11-23
 #
 # ~~~~~~~~~
 # citation:
 # ~~~~~~~~~
-# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J. 
-# Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led 
+# T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
+# Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
 # algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
-# transpiration and plant-available moisture, Geoscientific Model Development, 
+# transpiration and plant-available moisture, Geoscientific Model Development,
 # 2015 (in progress)
 #
 # ~~~~~~~~~~~~
@@ -38,6 +38,7 @@
 # 15. updated year extraction from filename in yearly loop example [15.01.30]
 # 16. created read_csv and read_txt functions [15.02.23]
 # 17. updated kR and kTo values and references [15.03.24]
+# 18. fixed plots for Figs. 3 & 4 of manuscript [15.11.23]
 #
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 #### Define functions #########################################################
@@ -69,8 +70,8 @@ spin_up <- function(mdat, dtot){
   #
   # Calculate the change:
   start_sm <- dtot$wn[1]
-  end_vals <- quick_run(mdat$lat_deg, mdat$elv_m, 1, mdat$year, 
-                        dtot$wn[mdat$num_lines], mdat$sf[1], mdat$tair[1], 
+  end_vals <- quick_run(mdat$lat_deg, mdat$elv_m, 1, mdat$year,
+                        dtot$wn[mdat$num_lines], mdat$sf[1], mdat$tair[1],
                         mdat$pn[1])
   diff_sm <- abs(end_vals$sm - start_sm)
   #
@@ -90,8 +91,8 @@ spin_up <- function(mdat, dtot){
     #
     # Calculate the change:
     start_sm <- dtot$wn[1]
-    end_vals <- quick_run(mdat$lat_deg, mdat$elv_m, 1, mdat$year, 
-                          dtot$wn[mdat$num_lines], mdat$sf[1], mdat$tair[1], 
+    end_vals <- quick_run(mdat$lat_deg, mdat$elv_m, 1, mdat$year,
+                          dtot$wn[mdat$num_lines], mdat$sf[1], mdat$tair[1],
                           mdat$pn[1])
     diff_sm <- abs(end_vals$sm - start_sm)
     spin_count <- spin_count + 1
@@ -277,45 +278,45 @@ run_one_day <- function(lat, elv, n, y, wn, sf, tc, pn){
 # * Allen, R.G. (1996), Assessing integrity of weather data for reference
 # *   evapotranspiration estimation, Journal of Irrigation and Drainage
 # *   Engineering, vol. 122, pp. 97--106.
-# * Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998), 'Meteorological 
-# *   data,' Crop evapotranspiration - Guidelines for computing crop water 
-# *   requirements - FAO Irrigation and drainage paper 56, Food and 
+# * Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998), 'Meteorological
+# *   data,' Crop evapotranspiration - Guidelines for computing crop water
+# *   requirements - FAO Irrigation and drainage paper 56, Food and
 # *   Agriculture Organization of the United Nations, Available:
 # *   http://www.fao.org/docrep/x0490e/x0490e07.htm
-# * Berger, A.L. (1978), Long-term variations of daily insolation and 
-# *   quarternary climatic changes, Journal of Atmospheric Sciences, 
+# * Berger, A.L. (1978), Long-term variations of daily insolation and
+# *   quarternary climatic changes, Journal of Atmospheric Sciences,
 # *   vol. 35, pp. 2362--2367.
-# * Berger, A.L., M.F. Loutre, and C. Tricot (1993), Insolation and 
+# * Berger, A.L., M.F. Loutre, and C. Tricot (1993), Insolation and
 # *   Earth's orbital periods, J. Geophys. Res., 98, 10341--10362.
-# * Duffie, J. A. and W. A. Beckman (1991). Solar engineering of thermal 
+# * Duffie, J. A. and W. A. Beckman (1991). Solar engineering of thermal
 # *   processes. 4th ed. New Jersey: John Wiley and Sons
-# * Federer (1982), Transpirational supply and demand: plant, soil, and 
-# *   atmospheric effects evaluated by simulation, Water Resources 
+# * Federer (1982), Transpirational supply and demand: plant, soil, and
+# *   atmospheric effects evaluated by simulation, Water Resources
 # *   Research, vol. 18, no. 2, pp. 355--362.
-# * Ge, S., R.G. Smith, C.P. Jacovides, M.G. Kramer, R.I. Carruthers 
-# *   (2011), Dynamics of photosynthetic photon flux density (PPFD) and 
-# *   estimates in coastal northern California, Theoretical and Applied 
+# * Ge, S., R.G. Smith, C.P. Jacovides, M.G. Kramer, R.I. Carruthers
+# *   (2011), Dynamics of photosynthetic photon flux density (PPFD) and
+# *   estimates in coastal northern California, Theoretical and Applied
 # *   Climatology, vol. 105, pp. 107--118.
 # * Henderson-Sellers, B. (1984), A new formula for latent heat of
 # *   vaporization of water as a function of temperature, Quarterly
 # *   Journal of the Royal Meteorological Society 110, pp. 1186–1190
-# * Linacre (1968), Estimating the net-radiation flux, Agricultural 
+# * Linacre (1968), Estimating the net-radiation flux, Agricultural
 # *   Meteorology, vol. 5, pp. 49--63.
-# * Prentice, I.C., M.T. Sykes, W. Cramer (1993), A simulation model for 
-# *   the transient effects of climate change on forest landscapes, 
+# * Prentice, I.C., M.T. Sykes, W. Cramer (1993), A simulation model for
+# *   the transient effects of climate change on forest landscapes,
 # *   Ecological Modelling, vol. 65, pp. 51--70.
-# * Priestley, C.H.B. and R.J. Taylor (1972), On the assessment of surface 
-# *   heat flux and evaporation using large-scale parameters, Monthly  
+# * Priestley, C.H.B. and R.J. Taylor (1972), On the assessment of surface
+# *   heat flux and evaporation using large-scale parameters, Monthly
 # *   Weather Review, vol. 100 (2), pp. 81--92.
-# * Spencer, J. W. (1971). “Fourier series representation of the position 
+# * Spencer, J. W. (1971). “Fourier series representation of the position
 # *   of the sun”. In: Search 2, p. 172.
-# * Stine, W. B. and M. Geyer (2001). “Power from the Sun”. In: Available 
+# * Stine, W. B. and M. Geyer (2001). “Power from the Sun”. In: Available
 # *   online: http://www.powerfromthesun.net/Book/chapter03/chapter03.
-# * Wetherald, R.T., S. Manabe (1972), Response to joint ocean-atmosphere 
-# *   model to the seasonal variation of the solar radiation, Monthly 
+# * Wetherald, R.T., S. Manabe (1972), Response to joint ocean-atmosphere
+# *   model to the seasonal variation of the solar radiation, Monthly
 # *   Weather Review, vol. 100 (1), pp. 42--59.
-# * Woolf, H. M. (1968). On the computation of solar evaluation angles 
-# *   and the determination of sunrise and sunset times. Tech. rep. 
+# * Woolf, H. M. (1968). On the computation of solar evaluation angles
+# *   and the determination of sunrise and sunset times. Tech. rep.
 # *   NASA-TM-X-164. National Aeronautics and Space Administration (NASA).
 # *
 # ************************************************************************
@@ -379,10 +380,10 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 06. Calculate the sunset hour angle (hs), degrees
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # Note: u/v == tan(delta)*tan(lat) 
+  # Note: u/v == tan(delta)*tan(lat)
   if (ru/rv >= 1.0){
     hs <- 180  # Polar day (no sunset)
-  } else if (ru/rv <= -1.0){ 
+  } else if (ru/rv <= -1.0){
     hs <- 0 # Polar night (no sunrise)
   } else {
     hs <- acos(-1.0*ru/rv)
@@ -427,7 +428,7 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   if ((rnl - rw*ru)/(rw*rv) >= 1.0){
     hn <- 0  # Net radiation is negative all day
-  } else if ((rnl - rw*ru)/(rw*rv) <= -1.0){ 
+  } else if ((rnl - rw*ru)/(rw*rv) <= -1.0){
     hn <- 180 # Net radiation is positive all day
   } else {
     hn <- acos((rnl - rw*ru)/(rw*rv))
@@ -445,7 +446,7 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
   # 14. Calculate nighttime net radiation (rnn_d), J/m^2
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   rnn_d <- (86400/pi)*(
-    rw*ru*(hs - hn)*pir + rw*rv*(dsin(hs) - dsin(hn)) + 
+    rw*ru*(hs - hn)*pir + rw*rv*(dsin(hs) - dsin(hn)) +
       rnl*(pi - 2*hs*pir + hn*pir)
   )
   et.srad$rnn_j.m2 <- rnn_d
@@ -506,8 +507,8 @@ evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0){
   # 21. Estimate daily actual evapotranspiration (aet_d), mm
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   aet_d <- (24/pi)*(
-    sw*hi*pir + 
-      rx*rw*rv*(dsin(hn) - dsin(hi)) + 
+    sw*hi*pir +
+      rx*rw*rv*(dsin(hn) - dsin(hi)) +
       (rx*rw*ru - rx*rnl)*(hn - hi)*pir
   )
   #
@@ -542,8 +543,8 @@ berger_tls <- function(n, N){
   pir <- pi/180.0
   #
   # Mean longitude for vernal equinox:
-  xlam <- (ke/2.0 + xec/8.0)*(1 + xse)*sin(komega*pir) - 
-    xee/4.0*(0.5 + xse)*sin(2.0*komega*pir) + 
+  xlam <- (ke/2.0 + xec/8.0)*(1 + xse)*sin(komega*pir) -
+    xee/4.0*(0.5 + xse)*sin(2.0*komega*pir) +
     xec/8.0*(1.0/3.0 + xse)*sin(3.0*komega*pir)
   xlam <- 2.0*xlam/pir
   #
@@ -556,7 +557,7 @@ berger_tls <- function(n, N){
   #
   # True anomaly (uncorrected):
   ranv <- ranm + (2.0*ke - xec/4.0)*sin(ranm) +
-    5.0/4.0*xee*sin(2.0*ranm) + 
+    5.0/4.0*xee*sin(2.0*ranm) +
     13.0/12.0*xec*sin(3.0*ranm)
   anv <- ranv/pir
   #
@@ -579,18 +580,18 @@ berger_tls <- function(n, N){
 # ************************************************************************
 # * Name: julian_day
 # *
-# * Input: double, year (y) 
-# *        double, month (m) 
+# * Input: double, year (y)
+# *        double, month (m)
 # *        double, day of month (i)
 # *
 # * Return: double, Julian day
 # *
 # * Features: This function converts a date in the Gregorian calendar
-# *           to a Julian day number (i.e., a method of consecutative 
-# *           numbering of days---does not have anything to do with 
+# *           to a Julian day number (i.e., a method of consecutative
+# *           numbering of days---does not have anything to do with
 # *           the Julian calendar!)
 # *
-# * Ref: Eq. 7.1 J. Meeus (1991), Chapter 7 "Julian Day", 
+# * Ref: Eq. 7.1 J. Meeus (1991), Chapter 7 "Julian Day",
 # *      Astronomical Algorithms
 # ************************************************************************
 julian_day <- function(y, m, i){
@@ -600,7 +601,7 @@ julian_day <- function(y, m, i){
   }
   a <- floor(y/100)
   b <- 2 - a + floor(a/4)
-  # 
+  #
   jde <- floor(365.25*(y + 4716)) + floor(30.6001*(m + 1)) + i + b - 1524.5
   return(jde)
 }
@@ -670,10 +671,10 @@ elv2pres <- function(z){
 # * Return: double, Pa/K
 # *
 # * Features: This function calculates the temperature-dependent slope of
-# *           the saturation pressure temperature curve using the 
+# *           the saturation pressure temperature curve using the
 # *           methodology presented in the eMast energy.cpp script
 # *
-# * Ref: Eq. 6, Prentice et al. (1993); 
+# * Ref: Eq. 6, Prentice et al. (1993);
 # *      Eq. 13, Allen et al. (1998)
 # ************************************************************************
 sat_slope <- function(tc){
@@ -691,7 +692,7 @@ sat_slope <- function(tc){
 # *           of vaporization (latent heat of vaporization)
 # *
 # * Ref: Eq. 8, Henderson-Sellers (1984), A new formula for latent heat
-# *      of vaporization of water as a function of temperature, Quarterly 
+# *      of vaporization of water as a function of temperature, Quarterly
 # *      Journal of the Royal Meteorological Society, vol. 110, pp. 1186--
 # *      1190.
 # ************************************************************************
@@ -707,45 +708,45 @@ enthalpy_vap <- function(tc){
 # *
 # * Return: double, kg/m^3
 # *
-# * Features: This function calculates the temperature and pressure 
+# * Features: This function calculates the temperature and pressure
 #             dependent density of pure water
 # *
-# * Ref: Chen, C.T., R.A. Fine, and F.J. Millero (1977), The equation 
-#          of state of pure water determined from sound speeds, The 
-#          Journal of Chemical Physics 66, 2142; 
+# * Ref: Chen, C.T., R.A. Fine, and F.J. Millero (1977), The equation
+#          of state of pure water determined from sound speeds, The
+#          Journal of Chemical Physics 66, 2142;
 #          doi: 10.1063/1.434179
 # ************************************************************************
 density_h2o <- function(tc, pa){
   # Calculate density of water at 1 atm, g/cm^3
-  po <- 0.99983952 + 
-    (6.788260e-5)*tc + 
+  po <- 0.99983952 +
+    (6.788260e-5)*tc +
     -(9.08659e-6)*tc*tc +
-    (1.022130e-7)*tc*tc*tc + 
+    (1.022130e-7)*tc*tc*tc +
     -(1.35439e-9)*tc*tc*tc*tc +
     (1.471150e-11)*tc*tc*tc*tc*tc +
-    -(1.11663e-13)*tc*tc*tc*tc*tc*tc + 
-    (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc + 
+    -(1.11663e-13)*tc*tc*tc*tc*tc*tc +
+    (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc +
     -(1.00659e-18)*tc*tc*tc*tc*tc*tc*tc*tc
   #
   # Calculate the bulk modulus of water at 1 atm, atm
   ko <- 19652.17 +
-    148.1830*tc + 
-    -2.29995*tc*tc + 
-    0.01281*tc*tc*tc + 
-    -(4.91564e-5)*tc*tc*tc*tc + 
+    148.1830*tc +
+    -2.29995*tc*tc +
+    0.01281*tc*tc*tc +
+    -(4.91564e-5)*tc*tc*tc*tc +
     (1.035530e-7)*tc*tc*tc*tc*tc
   #
   # Calculate temperature-dependend coefficients
-  ca <- 3.26138 + 
-    (5.223e-4)*tc + 
-    (1.324e-4)*tc*tc + 
-    -(7.655e-7)*tc*tc*tc + 
+  ca <- 3.26138 +
+    (5.223e-4)*tc +
+    (1.324e-4)*tc*tc +
+    -(7.655e-7)*tc*tc*tc +
     (8.584e-10)*tc*tc*tc*tc
   #
   cb <- (7.2061e-5) +
-    -(5.8948e-6)*tc + 
-    (8.69900e-8)*tc*tc + 
-    -(1.0100e-9)*tc*tc*tc + 
+    -(5.8948e-6)*tc +
+    (8.69900e-8)*tc*tc +
+    -(1.0100e-9)*tc*tc*tc +
     (4.3220e-12)*tc*tc*tc*tc
   #
   # Convert pressure to bar (1 bar = 100000 Pa)
@@ -763,23 +764,23 @@ density_h2o <- function(tc, pa){
 # *
 # * Return: double, Pa/K
 # *
-# * Features: This function calculates the temperature and pressure 
+# * Features: This function calculates the temperature and pressure
 # *           dependent psychrometric constant
 # *
 # *           Depends on:
 # *           - enthalpy_vap() . calculates latent heat of vaporization
 # *
 # * Ref: Temperature dependency of psychrometric constant (Eq. 8):
-# *      Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998), 
-# *        'Meteorological data,' Crop evapotranspiration - Guidelines 
-# *        for computing crop water requirements - FAO Irrigation and 
-# *        drainage paper 56, Food and Agriculture Organization of the 
-# *        United Nations, Available: 
+# *      Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998),
+# *        'Meteorological data,' Crop evapotranspiration - Guidelines
+# *        for computing crop water requirements - FAO Irrigation and
+# *        drainage paper 56, Food and Agriculture Organization of the
+# *        United Nations, Available:
 # *        http://www.fao.org/docrep/x0490e/x0490e07.htm
 # *
 # *     Pressure dependency of psychrometric constant (i.e., Cp):
-# *     Tsilingris (2008), Thermophysical and transport properties of 
-# *       humid air at temperature range between 0 and 100 °C, Energy 
+# *     Tsilingris (2008), Thermophysical and transport properties of
+# *       humid air at temperature range between 0 and 100 °C, Energy
 # *       Conversion and Management, vol. 49, pp. 1098--1110.
 # ************************************************************************
 psychro <- function(tc, pa){
@@ -794,7 +795,7 @@ psychro <- function(tc, pa){
   #
   # # Calculate latent heat of vaporization, J/kg
   lv <- enthalpy_vap(tc)
-  # 
+  #
   # # Calculate psychrometric constant, Pa/K
   return(cp*kMa*pa/(kMv*lv))
 }
@@ -851,7 +852,7 @@ read_csv <- function(fname, y=-1){
 # *
 # * Return: list object (my_data)
 # *
-# * Features: Reads plain text file (no header) of one of the input 
+# * Features: Reads plain text file (no header) of one of the input
 # *           arrays
 # *
 # ************************************************************************
@@ -883,12 +884,12 @@ read_txt <- function(my_data, fname, var, y=-1){
 # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 #### Define constants #########################################################
 # /////////////////////////////////////////////////////////////////////////////
-# NOTE: orbital parameters: eccentricity, obliquity, and longitude of the 
+# NOTE: orbital parameters: eccentricity, obliquity, and longitude of the
 # perihelion, are assumed constant while they infact vary slightly over time.
-# There are methods for their calculation (e.g., Meeus, 1991). Eccentricity 
-# varies 0.005--0.072 and is decreasing at rate of 0.00004 per century. 
+# There are methods for their calculation (e.g., Meeus, 1991). Eccentricity
+# varies 0.005--0.072 and is decreasing at rate of 0.00004 per century.
 # Obliquity varies 22.1--24.5 degrees with a period of ~41000 years.
-# 
+#
 kA <- 107             # constant for Rl (Monteith & Unsworth, 1990)
 kalb_sw <- 0.17       # shortwave albedo (Federer, 1968)
 kalb_vis <- 0.03      # visible light albedo (Sellers, 1985)
@@ -922,7 +923,7 @@ if (0){
 # Initialize daily results:
 daily_totals <- matrix(data=rep(0, 3294), nrow=366, ncol=9)
 daily_totals <- as.data.frame(daily_totals)
-names(daily_totals) <- c('ho',   # daily solar irradiation, J/m2 
+names(daily_totals) <- c('ho',   # daily solar irradiation, J/m2
                          'hn',   # daily net radiation, J/m2
                          'qn',   # daily PPFD, mol/m2
                          'cn',   # daily condensation, mm
@@ -935,11 +936,11 @@ names(daily_totals) <- c('ho',   # daily solar irradiation, J/m2
 # Initialize monthly results:
 monthly_totals <- matrix(data=rep(0, 72), nrow=12, ncol=6)
 monthly_totals <- as.data.frame(monthly_totals)
-names(monthly_totals) <- c("eq_m",  # monthly equilibrium ET, mm 
+names(monthly_totals) <- c("eq_m",  # monthly equilibrium ET, mm
                            "ep_m",  # monthly potential ET, mm
-                           "ea_m",  # monthly actual ET, mm 
-                           "cpa",   # Cramer-Prentice alpha, unitless 
-                           "cwd",   # climatic water deficit, mm 
+                           "ea_m",  # monthly actual ET, mm
+                           "cpa",   # Cramer-Prentice alpha, unitless
+                           "cwd",   # climatic water deficit, mm
                            "q_m")   # monthly PPFD, mol/m2
 
 # Location constants:
@@ -966,15 +967,15 @@ my_data$elv_m <- my_elv
 daily_totals <- spin_up(my_data, daily_totals)
 
 # Run one day:
-daily_vals <- run_one_day(my_data$lat_deg, 
-                          my_data$elv_m, 
-                          172, 
-                          my_data$year, 
-                          145.0, 
-                          0.5, 
-                          17.3, 
+daily_vals <- run_one_day(my_data$lat_deg,
+                          my_data$elv_m,
+                          172,
+                          my_data$year,
+                          145.0,
+                          0.5,
+                          17.3,
                           10.0)
-cat(paste("Daily values:\n", 
+cat(paste("Daily values:\n",
           "  Ho:", (1.0e-6)*daily_vals$ho, " MJ/m^2\n",
           "  HN:", (1.0e-6)*daily_vals$hn, " MJ/m^2\n",
           "  PAR:", daily_vals$ppfd, " mol/m^2\n",
@@ -1014,7 +1015,7 @@ for (m in all_months){
                               my_data$sf[n],
                               my_data$tair[n],
                               my_data$pn[n])
-    
+
     #
     # Update daily values:
     daily_totals$wn[n] <- daily_vals$wn
@@ -1025,25 +1026,23 @@ for (m in all_months){
     }
     #
     # Save daily results:
-    daily_totals$ho[n] <- ET$ra_j.m2
-    daily_totals$hn[n] <- ET$rn_j.m2
-    daily_totals$qn[n] <- ET$ppfd_mol.m2
-    daily_totals$cn[n] <- ET$cond_mm
-    daily_totals$eq_n[n] <- ET$eet_mm
-    daily_totals$ep_n[n] <- ET$pet_mm
-    daily_totals$ea_n[n] <- ET$aet_mm
+    daily_totals$ho[n] <- daily_vals$ho
+    daily_totals$hn[n] <- daily_vals$hn
+    daily_totals$qn[n] <- daily_vals$ppfd
+    daily_totals$cn[n] <- daily_vals$cond
+    daily_totals$eq_n[n] <- daily_vals$eet
+    daily_totals$ep_n[n] <- daily_vals$pet
+    daily_totals$ea_n[n] <- daily_vals$aet
     #
     # Update monthly totals:
-    monthly_totals$eq_m[m] <- monthly_totals$eq_m[m] + ET$eet_mm
-    monthly_totals$ep_m[m] <- monthly_totals$ep_m[m] + ET$pet_mm
-    monthly_totals$ea_m[m] <- monthly_totals$ea_m[m] + ET$aet_mm
-    monthly_totals$q_m[m] <- monthly_totals$q_m[m] + ET$ppfd_mol.m2
+    monthly_totals$eq_m[m] <- monthly_totals$eq_m[m] + daily_vals$eet
+    monthly_totals$ep_m[m] <- monthly_totals$ep_m[m] + daily_vals$pet
+    monthly_totals$ea_m[m] <- monthly_totals$ea_m[m] + daily_vals$aet
+    monthly_totals$q_m[m] <- monthly_totals$q_m[m] + daily_vals$ppfd
   } # end daily
   monthly_totals$cpa[m] <- monthly_totals$ea_m[m]/monthly_totals$eq_m[m]
   monthly_totals$cwd[m] <- monthly_totals$ep_m[m] - monthly_totals$ea_m[m]
 } # end monthly
-
-ET <- evap(my_lat, 172, my_elv, 2000, 0.5, 17.3, sw)
 
 #### Save Results ####
 daily_outfile <- '/home/user/Desktop/out/stash_results_daily.csv'
@@ -1076,14 +1075,14 @@ if (to_plot){
          col=c('black', 'cyan', 'green', 'red'),
          lty=c(1,2,1,3), lwd=c(2,2,2,2), inset=0.01,
          y.intersp=1.2, horiz=FALSE, bty='n')
-  
-  
+
+
   ##
-  ## Plot monthly results
+  ## Plot monthly results, Figure 4
   ##
-  tiff(out_file, width=900, height=500, units='px', 
+  tiff(out_file, width=900, height=500, units='px',
        compression='none', pointsize=18, res=72)
-  
+
   par(mfrow=c(4,1))
   # [1]
   par(mar=c(1,5,1,1))
@@ -1092,7 +1091,7 @@ if (to_plot){
   lines(monthly_totals$ea_m, lty=2, lwd=2)
   axis(side=1, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=12, by=1))
   axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=-50, to=175, by=25))
-  axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=200, by=50), 
+  axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=200, by=50),
        cex.axis=1.6)
   mtext(side=2, expression(italic(E[m])~(mm)), line=3, cex=1.1)
   legend('topright', legend=c(expression(italic(E[m]^{p})),
@@ -1102,11 +1101,11 @@ if (to_plot){
   text(0.6, 150, "(a)", pos=4, cex=1.6)
   # [2]
   par(mar=c(1,5,1,1))
-  plot(monthly_totals$cwd,type='l',lwd=2, col='black', 
+  plot(monthly_totals$cwd,type='l',lwd=2, col='black',
        ylim=c(0, max(monthly_totals$ep_m)), xlab=NA, ylab=NA, axes=F)
   axis(side=1, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=12, by=1))
   axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=-50, to=175, by=25))
-  axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=150, by=50), 
+  axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=150, by=50),
        cex.axis=1.6)
   mtext(side=2, expression(Delta*italic(E[m])~(mm)), line=3, cex=1.1)
   text(0.6, 150, "(b)", pos=4, cex=1.6)
@@ -1117,7 +1116,7 @@ if (to_plot){
   lines(monthly_totals$ea_m, lty=2, lwd=2)
   axis(side=1, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=12, by=1))
   axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=-50, to=175, by=25))
-  axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=150, by=50), 
+  axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-50, to=150, by=50),
        cex.axis=1.6)
   mtext(side=2, expression(italic(E[m])~(mm)), line=3, cex=1.1)
   legend('topright', legend=c(expression(italic(E[m]^{q})),
@@ -1127,26 +1126,26 @@ if (to_plot){
   text(0.6, 150, "(c)", pos=4, cex=1.6)
   # [4]
   par(mar=c(2,5,1,1))
-  plot(monthly_totals$cpa,type='l',lwd=2, col='black', 
+  plot(monthly_totals$cpa,type='l',lwd=2, col='black',
        ylim=c(0, 1.3), xlab=NA, ylab=NA, axes=F)
   axis(side=1, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=12, by=1))
   axis(side=1, las=1, lwd=0, line=-0.4, at=seq(from=1, to=12, by=1),
        cex.axis=1.6)
   axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=-0.3, to=1.2, by=0.3))
-  axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-0.3, to=1.2, by=0.3), 
+  axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=-0.3, to=1.2, by=0.3),
        cex.axis=1.6)
-  mtext(side=2, expression(alpha), line=3, cex=1.1)
+  mtext(side=2, expression(italic(alpha[m])), line=3, cex=1.1)
   text(0.6, 1.1, "(d)", pos=4, cex=1.6)
-  
+
   dev.off()
-  
-  
+
+
   ##
   ## Plot daily ET results
   ##
   par(mfrow=c(1,1))
   par(mar=c(2.5,4.5,1,1))
-  plot(daily_totals$ep_n, type='l', lwd=2, col='blue', 
+  plot(daily_totals$ep_n, type='l', lwd=2, col='blue',
        ylim=c(0,1.25*max(daily_totals$ep_n)),
        xlab=NA, ylab=NA, axes=F)
   lines(daily_totals$eq_n, lty=1, lwd=2, col='green')
@@ -1157,27 +1156,27 @@ if (to_plot){
   axis(side=2, las=1, tck=-0.02, labels=NA, at=seq(from=0, to=8, by=1))
   axis(side=2, las=1, lwd=0, line=-0.4, at=seq(from=0, to=8, by=1), cex.axis=1.2)
   mtext(side=2, expression(list(Evapotranspiration, mm~d^{-1})), line=2, cex=1.2)
-  legend('top',legend=c("Potential", 
-                        "Equilibrium   ", 
+  legend('top',legend=c("Potential",
+                        "Equilibrium   ",
                         "Actual"),
          col=c('blue', 'green', 'red'),
          lty=c(1,1,2), lwd=c(2,2,2), inset=0.01, x.intersp=1.1,
          y.intersp=2.0, horiz=TRUE, bty='n', cex=1.2)
-  
-  
+
+
   ##
-  ## Plot daily results
+  ## Plot daily results, Figure 3
   ##
-  tiff(out_file, width=900, height=1000, units='px', 
+  tiff(out_file, width=900, height=1000, units='px',
        compression='none', pointsize=16, res=72)
-  
+
   par(mfrow=c(8,1))
   # [1]
   par(mar=c(1,5,1,1))
-  plot(DATA$sf, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+  plot(my_data$sf, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
   axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
   axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=0.3, to=0.7, by=0.1))
-  axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6, 
+  axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6,
        at=seq(from=0.3, to=0.7, by=0.1))
   mtext(side=2, expression(italic(S[f])), line=3, cex=1.1)
   text(-12, 0.65, "(a)", pos=4, cex=1.7)
@@ -1195,16 +1194,16 @@ if (to_plot){
   plot(daily_totals$cn, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
   axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
   axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=0.4, to=0.8, by=0.1))
-  axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6, 
+  axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6,
        at=seq(from=0.4, to=0.8, by=0.1))
   mtext(side=2, expression(italic(C[n])~(mm)), line=3, cex=1.1)
   text(-12, 0.75, "(c)", pos=4, cex=1.7)
   # [4]
   par(mar=c(1,5,1,1))
-  plot(DATA$pn, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+  plot(my_data$pn, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
   axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
   axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=-5, to=25, by=5))
-  axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6, 
+  axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6,
        at=seq(from=-5, to=25, by=5))
   mtext(side=2, expression(italic(P[n])~(mm)), line=3, cex=1.1)
   text(-12, 22, "(d)", pos=4, cex=1.7)
@@ -1228,10 +1227,10 @@ if (to_plot){
   text(-12, 17, "(f)", pos=4, cex=1.7)
   # [7]
   par(mar=c(1,5,1,1))
-  plot(DATA$tair, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
+  plot(my_data$tair, type='l', lwd=2, xlab=NA, ylab=NA, axes=F)
   axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
   axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=0, to=25, by=5))
-  axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6, 
+  axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6,
        at=seq(from=0, to=25, by=5))
   mtext(side=2, expression(italic(T[air])~(degree*C)), line=3, cex=1.1)
   text(-12, 23, "(g)", pos=4, cex=1.7)
@@ -1241,14 +1240,14 @@ if (to_plot){
        ylim=c(0, max(daily_totals$ep_n)))
   lines(daily_totals$ea_n, lty=2, lwd=2)
   axis(side=1, las=1, tck=-0.03, labels=NA, at=seq(from=-60, to=720, by=60))
-  axis(side=1, las=1, lwd=0, line=-0.4, at=seq(from=-60, to=720, by=60), 
+  axis(side=1, las=1, lwd=0, line=-0.4, at=seq(from=-60, to=720, by=60),
        cex.axis=1.6)
   axis(side=2, las=1, tck=-0.03, labels=NA, at=seq(from=-1.5, to=6, by=1.5))
   axis(side=2, las=1, lwd=0, line=-0.4, cex.axis=1.6,
        at=seq(from=-1.5, to=6, by=1.5))
   mtext(side=2, expression(italic(E[n])~(mm)), line=3, cex=1.1)
   text(-12, 5, "(h)", pos=4, cex=1.7)
-  
+
   dev.off()
 }
 
@@ -1261,7 +1260,7 @@ if (to_loop){
     #
     my_file <- paste(data_dir, f, sep='')
     DATA <- read.csv(my_file)
-    # 
+    #
     # Extract year from file name (the only numbers in the file name!)
     y <- as.numeric(gsub("[^0-9]", "", f))
     ny <- julian_day(y+1, 1, 1) - julian_day(y, 1, 1)
@@ -1330,10 +1329,10 @@ if (to_loop){
     } # end monthly
     #
     # Save results to file:
-    daily_outfile <- paste('/home/user/Desktop/out/stash_results_', 
+    daily_outfile <- paste('/home/user/Desktop/out/stash_results_',
                            as.character(y), '-daily.csv', sep='')
     write.csv(daily_totals, file=daily_outfile)
-    monthly_outfile <- paste('/home/user/Desktop/out/stash_results_', 
+    monthly_outfile <- paste('/home/user/Desktop/out/stash_results_',
                              as.character(y), '-monthly.csv', sep='')
     write.csv(monthly_totals, file=monthly_outfile)
   }
