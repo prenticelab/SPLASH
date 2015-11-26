@@ -41,8 +41,3 @@ for (i in s:e){
                 destfile = paste("Daily/Shortwave_rad/SW",i,formatC(x,width = 2,flag = 0),".nc.gz", sep = ""), method = "libcurl")
 }
 
-## blah blah
-## blah blah
-## blah blah 
-# blah
-# blah
