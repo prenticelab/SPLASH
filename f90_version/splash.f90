@@ -128,7 +128,7 @@ contains
     return
 
     600 format (F9.7)
-    888 write(0,*) 'READ1YEAR_DAILY: error opening file '//trim(filename)//'. Abort. '
+    888 write(0,*) 'READ1YEAR_DAILY: Error opening file '//trim(filename)//'. Abort. '
     stop
 
   end function read1year_daily
