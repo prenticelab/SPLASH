@@ -5,7 +5,7 @@
 # Repository Details
 ---------------
 
-* LAST UPDATED: 2015-10-02
+* LAST UPDATED: 2015-12-06
 * TEAM: labprentice
 * REPO: splash (private)
 
@@ -71,16 +71,16 @@ This directory holds the C++ version of the SPLASH code.
     * C++ header file for SPLASH class.
 
 ## f90_version/
-This directory holds the FORTRAN90 version of the SPLASH code. 
+This directory holds the FORTRAN90 version of the SPLASH code.
 
-* __Makefile__ 
+* __Makefile__
     * Use to compile the splash.F script.
 
-* __splash.F__ 
+* __splash.F__
     * Runs SPLASH for one year, following a spin-up of soil moisture, based on example monthly meteorological data (hard-coded).
 
 ## py_version/
-This directory holds the Python version of the SPLASH code. 
+This directory holds the Python version of the SPLASH code.
 
 * __const.py__
     * Contains definitions for SPLASH global constants.
@@ -99,15 +99,15 @@ This directory holds the Python version of the SPLASH code.
 * __main.py__
     * Main function for running the SPLASH code.
 
-* __splash.py__ 
+* __splash.py__
     * SPLASH class definition for updating daily quantities of radiation, evapotranspiration, soil moisture and runoff.
 
 * __splash_data.py__
     * SPLASH_DATA class and script to produce a CSV file with daily input data (i.e., sunshine fraction, air temperature, and precipitation)
 
-* __splash_grid.py__ 
+* __splash_grid.py__
     * __NOT FULLY TESTED!__
-    * Implements the EVAP_G class for grid-based processing 
+    * Implements the EVAP_G class for grid-based processing
     * Inputs include:
         * day of year
         * elevation (360x720 array), meters
@@ -118,30 +118,51 @@ This directory holds the Python version of the SPLASH code.
     * CRU-based input data is used (user must have a copy of data files and specify their location)
 
 ## r_version/
-This directory holds the R version of the SPLASH code. 
+This directory holds the R version of the SPLASH code.
 
-* __splash.R__ 
-    * Function-based implementation of the SPLASH code, including:
-        * reading input data from file
-        * spin-up of soil moisture
-        * running SPLASH at the daily time scale
-    * Includes plotting examples of monthly and daily results
+* __const.R__
+    * This script contains the global constants defined in SPLASH.
+* __data.R__
+    * This script contains functions to handle the file IO for reading and writing data, i.e.:
+        * read_csv(character fname, double y=-1)
+        * read_txt(list my_data, character fname, character var, double y=-1)
+* __evap.R__
+    * This script contains functions to calculate daily radiation, condensation, and evapotranspiration, i.e.:
+        * berger_tls(double n, double N)
+        * density_h2o(double tc, double pa)
+        * dcos(double d)
+        * dsin(double d)
+        * elv2pres(double z)
+        * enthalpy_vap(double tc)
+        * evap(double lat, double n, double elv=0, double y=0, double sf=1, double tc=23.0, double sw=1.0)
+        * julian_day(double y, double m, double i)
+        * psychro(double tc, double pa)
+        * sat_slope(double tc)
+* __main.R__
+    * This script runs the SPLASH model for one year.
+* __splash.R__
+    * This script contains functions for running SPLASH for point-based data, i.e.:
+        * spin_up(list mdat, list dtot)
+        * quick_run(double lat, double elv, double n, double y, double wn, double sf, double tc, double pn)
+        * run_one_day(double lat, double elv, double n, double y, double wn, double sf, double tc, double pn)
+* __test.R__
+    * This script performs SPLASH consistency tests.
 
 
 # Simple Process-Led Algorithms for Simulating Habitats (SPLASH): Modelling Radiation, Evapotranspiration and Plant-Available Moisture
 ----------------------------------------------------------------------------
 ## Theory
 There is a growing need of global ecophysiological datasets for the study of vegetation dynamics under changing climate scenarios; however, simulation of natural processes is often necessary due to the lack of observations.
-Bioclimatic indices, such as the climatic water deficit and the plant available water coefficient, are improvements over indices of mean annual temperature and precipitation. The algorithms to produce these indices are based on the STASH (STAtic SHell) model, developed as a simple process-based predictive model for the simulation of tree species distributions at the regional scale (Sykes and Prentice, 1995, 1996; Sykes et al., 1996). 
+Bioclimatic indices, such as the climatic water deficit and the plant available water coefficient, are improvements over indices of mean annual temperature and precipitation. The algorithms to produce these indices are based on the STASH (STAtic SHell) model, developed as a simple process-based predictive model for the simulation of tree species distributions at the regional scale (Sykes and Prentice, 1995, 1996; Sykes et al., 1996).
 
-In this work, we update, correct and improve the mechanistic processes of the STASH model, now entitled SPLASH (Simple Process-Led Algorithms for Simulating Habitats), to create simple, generic and robust algorithms of analytical formulae, developed under a set of practical assumptions and simplifications, to provide key modeling parameters (e.g., radiation, evapotranspiration, and soil moisture) at relevant time scales. 
+In this work, we update, correct and improve the mechanistic processes of the STASH model, now entitled SPLASH (Simple Process-Led Algorithms for Simulating Habitats), to create simple, generic and robust algorithms of analytical formulae, developed under a set of practical assumptions and simplifications, to provide key modeling parameters (e.g., radiation, evapotranspiration, and soil moisture) at relevant time scales.
 The model, currently designed to run for a specific location (i.e., latitude and elevation), operates on a minimum of three meteorological inputs including: precipitation (mm), air temperature (Celsius), and fraction of bright sunshine (unitless).
 
 The methodology follows the steps outlined in Cramer & Prentice (1988) where daily soil moisture (*Wn*) is calculated based on the previous day's moisture content, incremented by daily precipitation (*Pn*) and condensation (*Cn*), and reduced by the daily actual evapotranspiration (*Ea*):
 
 ![equation](http://www.sciweavers.org/tex2img.php?eq=W_n%3DW_%7Bn-1%7D%2BP_n%2BC_n-E%5Ea_n&bc=White&fc=Black&im=jpg&fs=12&ff=arev&edit=0)
 
-To solve the simple bucket model presented above, the following steps are taken at the daily timescale: calculate the radiation terms, estimate the condensation, estimate the evaporative supply, estimate the evaporative demand, calculate the actual evapotranspiration, and update the daily soil moisture. 
+To solve the simple bucket model presented above, the following steps are taken at the daily timescale: calculate the radiation terms, estimate the condensation, estimate the evaporative supply, estimate the evaporative demand, calculate the actual evapotranspiration, and update the daily soil moisture.
 At the end of each month, daily quantities may be aggregated into monthly totals and additional moisture indexes may be calculated.
 
 ## Key Outputs
