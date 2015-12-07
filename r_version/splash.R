@@ -84,7 +84,7 @@ spin_up <- function(mdat, dtot) {
         diff_sm <- abs(end_vals$sm - start_sm)
         spin_count <- spin_count + 1
     }
-    cat(paste("Spun", spin_count, "years"))
+    cat(paste("Spun", spin_count, "years\n"))
     return(dtot)
 }
 
