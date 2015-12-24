@@ -16,7 +16,7 @@
 # 2015 (in progress)
 
 ###############################################################################
-## IMPORT MODULES:
+# IMPORT MODULES:
 ###############################################################################
 import numpy
 from const import (ke, keps, kGsc, kA, kb, kc, kd, kfFEC, kalb_vis, kalb_sw,
@@ -24,7 +24,7 @@ from const import (ke, keps, kGsc, kA, kb, kc, kd, kfFEC, kalb_vis, kalb_sw,
 
 
 ###############################################################################
-## CLASSES
+# CLASSES
 ###############################################################################
 class EVAP:
     """

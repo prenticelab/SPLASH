@@ -16,7 +16,12 @@
 # 2015 (in progress)
 
 ###############################################################################
-## GLOBAL CONSTANTS:
+# IMPORT MODULES:
+###############################################################################
+import numpy
+
+###############################################################################
+# GLOBAL CONSTANTS:
 ###############################################################################
 kA = 107         # constant for Rnl (Monteith & Unsworth, 1990)
 kalb_sw = 0.17   # shortwave albedo (Federer, 1968)
@@ -39,3 +44,4 @@ kTo = 288.15     # base temperature, K (Berberan-Santos et al., 1997)
 kWm = 150        # soil moisture capacity, mm (Cramer & Prentice, 1988)
 kw = 0.26        # entrainment factor (Lhomme, 1997; Priestley & Taylor, 1972)
 komega = 283.0   # longitude of perihelion for 2000 CE, degrees (Berger, 1978)
+pir = (numpy.pi/180.0)
