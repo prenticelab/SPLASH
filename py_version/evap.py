@@ -1,10 +1,8 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 #
 # evap.py
 #
-# 2014-01-30 -- created
-# 2015-11-11 -- last updated
+# 2015-12-29 -- last updated
 #
 # ~~~~~~~~~
 # citation:
@@ -18,9 +16,13 @@
 ###############################################################################
 # IMPORT MODULES:
 ###############################################################################
+import logging
+import logging.handlers
+
 import numpy
-from const import (ke, keps, kGsc, kA, kb, kc, kd, kfFEC, kalb_vis, kalb_sw,
-                   kw, komega, kG, kL, kR, kPo, kTo, kMa, kMv)
+
+from const import (kw, kG, kL, kR, kPo, kTo, kMa, kMv, pir)
+from solar import SOLAR
 
 
 ###############################################################################
@@ -36,244 +38,133 @@ class EVAP:
               - PET (pet_d), mm/day
               - AET (aet_d), mm/day
               - condensation (cn), mm/day
-    Refs:     Allen, R.G. (1996), Assessing integrity of weather data for
-                reference evapotranspiration estimation, Journal of Irrigation
-                and Drainage Engineering, vol. 122, pp. 97--106.
-              Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998),
-                'Meteorological data,' Crop evapotranspiration - Guidelines for
-                computing crop water requirements - FAO Irrigation and drainage
-                paper 56, Food and Agriculture Organization of the United
-                Nations, online: http://www.fao.org/docrep/x0490e/x0490e07.htm
-              Berger, A.L. (1978), Long-term variations of daily insolation and
-                quarternary climatic changes, Journal of Atmospheric Sciences,
-                vol. 35, pp. 2362--2367.
-              Berger, A.L., M.F. Loutre, and C. Tricot (1993), Insolation and
-                Earth's orbital periods, J. Geophys. Res., 98, 10341--10362.
-              Duffie, J. A. and W. A. Beckman (1991). Solar engineering of
-                thermal processes. 4th ed. New Jersey: John Wiley and Sons
-              Federer (1982), Transpirational supply and demand: plant, soil,
-                and atmospheric effects evaluated by simulation, Water
-                Resources Research, vol. 18, no. 2, pp. 355--362.
-              Ge, S., R.G. Smith, C.P. Jacovides, M.G. Kramer, R.I. Carruthers
-                (2011), Dynamics of photosynthetic photon flux density (PPFD)
-                and estimates in coastal northern California, Theoretical and
-                Applied Climatology, vol. 105, pp. 107--118.
-              Henderson-Sellers, B. (1984), A new formula for latent heat of
-                vaporization of water as a function of temperature, Quarterly
-                Journal of the Royal Meteorological Society 110, pp. 1186–1190
-              Linacre (1968), Estimating the net-radiation flux, Agricultural
-                Meteorology, vol. 5, pp. 49--63.
-              Prentice, I.C., M.T. Sykes, W. Cramer (1993), A simulation model
-                for the transient effects of climate change on forest
-                landscapes, Ecological Modelling, vol. 65, pp. 51--70.
-              Priestley, C.H.B. and R.J. Taylor (1972), On the assessment of
-                surface heat flux and evaporation using large-scale parameters,
-                Monthly Weather Review, vol. 100 (2), pp. 81--92.
-              Spencer, J. W. (1971), Fourier series representation of the
-                position of the sun, Search, vol. 2, p. 172.
-              Stine, W. B. and M. Geyer (2001). “Power from the Sun”.
-                online: http://www.powerfromthesun.net/Book/chapter03/chapter03
-              Wetherald, R.T., S. Manabe (1972), Response to joint ocean-
-                atmosphere model to the seasonal variation of the solar
-                radiation, Monthly Weather Review, vol. 100 (1), pp. 42--59.
-              Woolf, H. M. (1968). On the computation of solar evaluation
-                angles and the determination of sunrise and sunset times.
-                Tech. rep. NASA-TM-X-164. National Aeronautics and Space
-                Administration (NASA).
+    Version:  1.0.0-dev
+              - replaced radiation methods with SOLAR class [15.12.29]
+              - implemented logging [15.12.29]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
-    def __init__(self, lat, n, elv=0.0, y=0, sf=1.0, tc=23.0, sw=1.0):
+    def __init__(self, lat, elv=0.0):
         """
         Name:     EVAP.__init__
         Input:    - float, latitude, degrees (lat)
-                  - int, day of the year (n)
                   - float, elevation, m (elv)
-                  - int, year (y)
-                  - float, fraction of sunshine hours (sf)
-                  - float, mean daily air temperature, C (tc)
-                  - float, evaporative supply rate, mm/hr (sw)
         """
+        # Create a class logger
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("EVAP class called")
+
         # Assign default public variables:
-        self.user_elv = elv
-        self.user_year = y
-        self.user_sf = sf
-        self.user_tc = tc
-        self.user_sw = sw
-        #
-        # Error handle and assign required public variables:
-        if lat > 90.0 or lat < -90.0:
-            print "Latitude outside range of validity (-90 to 90)!"
-            exit(1)
+        self.elv = elv
+        self.logger.info("elevation set to %f m", elv)
+
+        # Create SOLAR class:
+        try:
+            self.solar = SOLAR(lat, elv)
+        except:
+            self.logger.exception("failed to initialize SOLAR class")
         else:
-            self.user_lat = lat
-            #
-        if n < 1 or n > 366:
-            print "Day of year outside range of validity (1 to 366)!"
-            exit(1)
-        else:
-            self.user_day = n
-            #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 1. Calculate number of days in year (kN), days
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if y == 0:
-            kN = 365
-            self.user_year = 2001
-        else:
-            kN = self.julian_day((y+1), 1, 1) - self.julian_day(y, 1, 1)
-        self.kN = kN
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 2. Calculate heliocentric longitudes (nu and lambda), degrees
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Berger (1978)
-        my_nu, my_lambda = self.berger_tls(n)
-        self.my_nu = my_nu
-        self.my_lambda = my_lambda
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 3. Calculate distance factor (dr), unitless
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Berger et al. (1993)
-        kee = ke**2
-        my_rho = (1.0 - kee)/(1.0 + ke*self.dcos(my_nu))
-        dr = (1.0/my_rho)**2
-        self.dr = dr
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 4. Calculate declination angle (delta), degrees
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Woolf (1968)
-        pir = (numpy.pi/180.0)
-        delta = numpy.arcsin(self.dsin(my_lambda)*self.dsin(keps))
-        delta /= pir
-        self.delta = delta
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 5. Calculate variable substitutes (u and v), unitless
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ru = self.dsin(delta)*self.dsin(lat)
-        rv = self.dcos(delta)*self.dcos(lat)
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 6. Calculate the sunset hour angle (hs), degrees
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 3.22, Stine & Geyer (2001)
-        if (ru/rv) >= 1.0:
-            # Polar day (no sunset)
-            hs = 180.0
-        elif (ru/rv) <= -1.0:
-            # Polar night (no sunrise)
-            hs = 0.0
-        else:
-            hs = -1.0*ru/rv
-            hs = numpy.arccos(hs)
-            hs /= pir
-        self.hs = hs
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 7. Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 1.10.3, Duffy & Beckman (1993)
-        ra_d = (86400.0/numpy.pi)*kGsc*dr*(ru*pir*hs + rv*self.dsin(hs))
-        self.ra_d = ra_d
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 8. Calculate transmittivity (tau), unitless
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
-        tau_o = (kc + kd*sf)
-        tau = tau_o*(1.0 + (2.67e-5)*elv)
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 9. Calculate daily PPFD (ppfd_d), mol/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*ra_d
-        self.ppfd_d = ppfd_d
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 10. Estimate net longwave radiation (rnl), W/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
-        rnl = (kb + (1.0 - kb)*sf)*(kA - tc)
-        self.rnl = rnl
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 11. Calculate variable substitute (rw), W/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rw = (1.0 - kalb_sw)*tau*kGsc*dr
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 12. Calculate net radiation cross-over hour angle (hn), degrees
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if (rnl - rw*ru)/(rw*rv) >= 1.0:
-            # Net radiation negative all day
-            hn = 0
-        elif (rnl - rw*ru)/(rw*rv) <= -1.0:
-            # Net radiation positive all day
-            hn = 180.0
-        else:
-            hn = (rnl - rw*ru)/(rw*rv)
-            hn = numpy.arccos(hn)
-            hn /= pir
-        self.hn = hn
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 13. Calculate daytime net radiation (rn_d), J/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rn_d = (86400.0/numpy.pi)*(hn*pir*(rw*ru - rnl) + rw*rv*self.dsin(hn))
-        self.rn_d = rn_d
-        #
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 14. Calculate nighttime net radiation (rnn_d), J/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rnn_d = rw*ru*(hs - hn)*pir
-        rnn_d += rw*rv*(self.dsin(hs) - self.dsin(hn))
-        rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
-        rnn_d *= (86400.0/numpy.pi)
-        #
+            self.logger.debug("initialized solar class")
+
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Function Definitions
+    # ////////////////////////////////////////////////////////////////////////
+    def calculate_daily_fluxes(self, sw, n, y=0, sf=1.0, tc=23.0):
+        """
+        Name:     EVAP.calculate_daily_fluxes
+        Input:    - float, evaporative supply rate, mm/hr (sw)
+                  - int, day of the year (n)
+                  - [optional] int, year (y)
+                  - [optional] float, fraction of sunshine hours (sf)
+                  - [optional] float, mean daily air temperature, C (tc)
+        """
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 15. Calculate water-to-energy conversion (econ), m^3/J
+        # 0. Validate supply rate
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if sw < 0:
+            self.logger.error("supply rate is outside range of validity")
+            raise ValueError("Please provide a valid evporative supply rate")
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 1. Calculate radiation
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        try:
+            self.solar.calculate_daily_fluxes(n, y, sf, tc)
+        except:
+            self.logger.exception("failed to calculate daily radiation fluxes")
+            raise
+        else:
+            ru = self.solar.ru
+            rv = self.solar.rv
+            rw = self.solar.rw
+            rnl = self.solar.rnl
+            hn = self.solar.hn
+            rn_d = self.solar.rn_d
+            rnn_d = self.solar.rnn_d
+            self.logger.info(
+                ("calculating daily evaporative fluxes for day %d of %d for "
+                 "year %d with sunshine fraction %f, air temperature %f "
+                 "Celcuis, and supply rate %f") % (
+                    n, self.solar.kN, self.solar.year, sf, tc, sw))
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 2. Calculate water-to-energy conversion (econ), m^3/J
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Slope of saturation vap press temp curve, Pa/K
         s = self.sat_slope(tc)
+        self.sat = s
+        self.logger.info("slope of saturation, s, set to %f Pa/K", s)
+
         # Enthalpy of vaporization, J/kg
         lv = self.enthalpy_vap(tc)
+        self.lv = lv
+        self.logger.info("enthalpy of vaporization set to %f MJ/kg", (1e-6)*lv)
+
         # Density of water, kg/m^3
-        pw = self.density_h2o(tc, self.elv2pres(elv))
+        pw = self.density_h2o(tc, self.elv2pres(self.elv))
+        self.pw = pw
+        self.logger.info("density of water set to %f kg/m^3", pw)
+
         # Psychrometric constant, Pa/K
-        g = self.psychro(tc, self.elv2pres(elv))
-        #
+        g = self.psychro(tc, self.elv2pres(self.elv))
+        self.psy = g
+        self.logger.info("psychrometric constant set to %f Pa/K", g)
+
         econ = s/(lv*pw*(s + g))
         self.econ = econ
-        #
+        self.logger.info("Econ set to %f mm^3/J", (1e9)*econ)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 16. Calculate daily condensation (cn), mm
+        # 3. Calculate daily condensation (cn), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         cn = (1e3)*econ*numpy.abs(rnn_d)
         self.cond = cn
-        #
+        self.logger.info("daily condensation set to %f mm", cn)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 17. Estimate daily EET (eet_d), mm
+        # 4. Estimate daily EET (eet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         eet_d = (1e3)*econ*rn_d
         self.eet_d = eet_d
-        #
+        self.logger.info("daily EET set to %f mm", eet_d)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 18. Estimate daily PET (pet_d), mm
+        # 5. Estimate daily PET (pet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         pet_d = (1.0 + kw)*eet_d
         self.pet_d = pet_d
-        #
+        self.logger.info("daily PET set to %f mm", pet_d)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 19. Calculate variable substitute (rx), (mm/hr)/(W/m^2)
+        # 6. Calculate variable substitute (rx), (mm/hr)/(W/m^2)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         rx = (3.6e6)*(1.0 + kw)*econ
-        #
+        self.rx = rx
+        self.logger.info("variable substitute, rx, set to %f", rx)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 20. Calculate the intersection hour angle (hi), degrees
+        # 7. Calculate the intersection hour angle (hi), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         cos_hi = sw/(rw*rv*rx) + rnl/(rw*rv) - ru/rv
         if cos_hi >= 1.0:
@@ -286,19 +177,18 @@ class EVAP:
             hi = numpy.arccos(cos_hi)
             hi /= pir
         self.hi = hi
-        #
+        self.logger.info("intersection hour angle, hi, set to %f", hi)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 21. Estimate daily AET (aet_d), mm
+        # 8. Estimate daily AET (aet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         aet_d = sw*hi*pir
         aet_d += rx*rw*rv*(self.dsin(hn) - self.dsin(hi))
         aet_d += (rx*rw*ru - rx*rnl)*(hn - hi)*pir
         aet_d *= (24.0/numpy.pi)
         self.aet_d = aet_d
+        self.logger.info("daily AET set to %f mm", aet_d)
 
-    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    # Class Function Definitions
-    # ////////////////////////////////////////////////////////////////////////
     def dcos(self, x):
         """
         Name:     EVAP.dcos
@@ -306,7 +196,8 @@ class EVAP:
         Output:   float, cos(x*pi/180)
         Features: Calculates the cosine of an angle given in degrees
         """
-        return numpy.cos(x*numpy.pi/180.0)
+        self.logger.debug("calculating cosine of %f degrees", x)
+        return numpy.cos(x*pir)
 
     def dsin(self, x):
         """
@@ -315,84 +206,8 @@ class EVAP:
         Output:   float, sin(x*pi/180)
         Features: Calculates the sine of an angle given in degrees
         """
-        return numpy.sin(x*numpy.pi/180.0)
-
-    def berger_tls(self, n):
-        """
-        Name:     EVAP.berger_tls
-        Input:    int, day of year
-        Output:   tuple,
-                  - true anomaly, degrees
-                  - true longitude, degrees
-        Features: Returns true anomaly and true longitude for a given day
-        Depends:  - ke
-                  - komega
-        Ref:      Berger, A. L. (1978), Long term variations of daily
-                  insolation and quaternary climatic changes, J. Atmos. Sci.,
-                  35, 2362-2367.
-        """
-        # Variable substitutes:
-        xee = ke**2
-        xec = ke**3
-        xse = numpy.sqrt(1.0 - xee)
-        pir = numpy.pi/180.0
-        #
-        # Mean longitude for vernal equinox:
-        xlam = (ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega)
-        xlam -= xee/4.0*(0.5 + xse)*self.dsin(2.0*komega)
-        xlam += xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
-        xlam *= 2.0
-        xlam /= pir
-        #
-        # Mean longitude for day of year:
-        dlamm = xlam + (n - 80.0)*(360.0/self.kN)
-        #
-        # Mean anomaly:
-        anm = (dlamm - komega)
-        ranm = (anm*pir)
-        #
-        # True anomaly:
-        ranv = ranm
-        ranv += (2.0*ke - xec/4.0)*numpy.sin(ranm)
-        ranv += 5.0/4.0*xee*numpy.sin(2.0*ranm)
-        ranv += 13.0/12.0*xec*numpy.sin(3.0*ranm)
-        anv = ranv/pir
-        #
-        # True longitude:
-        my_tls = anv + komega
-        if my_tls < 0:
-            my_tls += 360.0
-        elif my_tls > 360:
-            my_tls -= 360.0
-        #
-        # True anomaly:
-        my_nu = (my_tls - komega)
-        if my_nu < 0:
-            my_nu += 360.0
-        #
-        return(my_nu, my_tls)
-
-    def julian_day(self, y, m, i):
-        """
-        Name:     EVAP.julian_day
-        Input:    - int, year (y)
-                  - int, month (m)
-                  - int, day of month (i)
-        Output:   float, Julian Ephemeris Day
-        Features: Converts Gregorian date (year, month, day) to Julian
-                  Ephemeris Day
-        Ref:      Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," Astronomical
-                  Algorithms
-        """
-        if m <= 2.0:
-            y -= 1.0
-            m += 12.0
-        #
-        a = int(y/100)
-        b = 2 - a + int(a/4)
-        #
-        jde = int(365.25*(y + 4716)) + int(30.6001*(m + 1)) + i + b - 1524.5
-        return jde
+        self.logger.debug("calculating sine of %f degrees", x)
+        return numpy.sin(x*pir)
 
     def sat_slope(self, tc):
         """
@@ -405,6 +220,8 @@ class EVAP:
         s = (17.269)*(237.3)*(610.78)*(
             numpy.exp(tc*17.269/(tc + 237.3))/((tc + 237.3)**2)
         )
+        self.logger.debug(
+            "calculating temperature dependency at %f degrees", tc)
         return s
 
     def enthalpy_vap(self, tc):
@@ -415,6 +232,8 @@ class EVAP:
         Features: Calculates the enthalpy of vaporization, J/kg
         Ref:      Eq. 8, Henderson-Sellers (1984)
         """
+        self.logger.debug(
+            "calculating temperature dependency at %f degrees", tc)
         return (1.91846e6*((tc + 273.15)/(tc + 273.15 - 33.91))**2)
 
     def elv2pres(self, z):
@@ -432,6 +251,7 @@ class EVAP:
                   - kR
         Ref:      Allen et al. (1998)
         """
+        self.logger.debug("estimating atmospheric pressure at %f m", z)
         p = kPo*(1.0 - kL*z/kTo)**(kG*kMa/(kR*kL))
         return p
 
@@ -445,7 +265,11 @@ class EVAP:
                   pressure
         Ref:      Chen et al. (1977)
         """
-        # Calculate density at 1 atm:
+        self.logger.debug(
+            ("calculating density of water at temperature %f Celcius and "
+             "pressure %f Pa") % (tc, p))
+
+        # Calculate density at 1 atm (kg/m^3):
         po = 0.99983952
         po += (6.788260e-5)*tc
         po += -(9.08659e-6)*tc*tc
@@ -455,35 +279,39 @@ class EVAP:
         po += -(1.11663e-13)*tc*tc*tc*tc*tc*tc
         po += (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc
         po += -(1.00659e-18)*tc*tc*tc*tc*tc*tc*tc*tc
-        #
-        # Calculate bulk modulus at 1 atm:
+        self.logger.info("water density at 1 atm calculated as %f kg/m^3", po)
+
+        # Calculate bulk modulus at 1 atm (bar):
         ko = 19652.17
         ko += 148.1830*tc
         ko += -2.29995*tc*tc
         ko += 0.01281*tc*tc*tc
         ko += -(4.91564e-5)*tc*tc*tc*tc
         ko += (1.035530e-7)*tc*tc*tc*tc*tc
-        #
+        self.logger.info("bulk modulus at 1 atm calculated as %f bar", ko)
+
         # Calculate temperature dependent coefficients:
         ca = 3.26138
         ca += (5.223e-4)*tc
         ca += (1.324e-4)*tc*tc
         ca += -(7.655e-7)*tc*tc*tc
         ca += (8.584e-10)*tc*tc*tc*tc
-        #
+        self.logger.info("temperature coef, Ca, calculated as %f", ca)
+
         cb = (7.2061e-5)
         cb += -(5.8948e-6)*tc
         cb += (8.69900e-8)*tc*tc
         cb += -(1.0100e-9)*tc*tc*tc
         cb += (4.3220e-12)*tc*tc*tc*tc
-        #
+        self.logger.info("temperature coef, Cb, calculated as %f bar^-1", cb)
+
         # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
         pbar = (1.0e-5)*p
-        #
+        self.logger.info("atmospheric pressure calculated as %f bar", pbar)
+
         pw = (ko + ca*pbar + cb*pbar**2.0)
         pw /= (ko + ca*pbar + cb*pbar**2.0 - pbar)
         pw *= (1e3)*po
-        #
         return pw
 
     def psychro(self, tc, p):
@@ -499,6 +327,10 @@ class EVAP:
                   - kMv
         Refs:     Allen et al. (1998); Tsilingiris (2008)
         """
+        self.logger.debug(
+            ("calculating psychrometric constant at temperature %f Celcius "
+             "and pressure %f Pa") % (tc, p))
+
         # Calculate the specific heat capacity of water, J/kg/K
         # Eq. 47, Tsilingiris (2008)
         cp = 1.0045714270
@@ -508,10 +340,43 @@ class EVAP:
         cp += -(8.830478888e-8)*tc*tc*tc*tc
         cp += (5.071307038e-10)*tc*tc*tc*tc*tc
         cp *= (1e3)
-        #
+        self.logger.info("specific heat capacity calculated as %f J/kg/K", cp)
+
         # Calculate latent heat of vaporization, J/kg
         lv = self.enthalpy_vap(tc)
-        #
+        self.logger.info(
+            "enthalpy of vaporization calculated as %f MJ/kg", (1e-6)*lv)
+
         # Calculate psychrometric constant, Pa/K
         # Eq. 8, Allen et al. (1998)
         return (cp*kMa*p/(kMv*lv))
+
+###############################################################################
+# MAIN PROGRAM
+###############################################################################
+if __name__ == '__main__':
+    # Create a root logger:
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    # Instantiating logging handler and record format:
+    fh = logging.handlers.RotatingFileHandler("evap.log", backupCount=9)
+    rec_format = "%(asctime)s:%(levelname)s:%(name)s:%(funcName)s:%(message)s"
+    formatter = logging.Formatter(rec_format, datefmt="%Y-%m-%d %H:%M:%S")
+    fh.setFormatter(formatter)
+
+    # Send logging handler to root logger:
+    root_logger.addHandler(fh)
+
+    # Test one-year of SPLASH:
+    my_lat = 37.7
+    my_elv = 142.
+    my_day = 172
+    my_year = 2000
+    my_sf = 1.0
+    my_temp = 23.0
+    my_sw = 0.9
+
+    my_class = EVAP(my_lat, my_elv)
+    my_class.calculate_daily_fluxes(my_sw, my_day, my_year, my_sf, my_temp)
+    fh.doRollover()

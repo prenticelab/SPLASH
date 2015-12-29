@@ -66,6 +66,184 @@ class SOLAR:
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
+    def calculate_daily_fluxes(self, n, y=0, sf=1.0, tc=23.0):
+        """
+        Name:     SOLAR.calculate_daily_fluxes
+        Input:    - int, day of the year (n)
+                  - [optional] int, year (y)
+                  - [optional] float, fraction of sunshine hours (sf)
+                  - [optional] float, mean daily air temperature, C (tc)
+        Depends:  - julian_day
+                  - berger_tls
+                  - dcos
+                  - dsin
+        """
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 0. Validate day of year
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if n < 1 or n > 366:
+            self.logger.error(
+                "Day of year outside range of validity, (1 to 366)!")
+            raise ValueError(
+                "Day of year outside range of validity (1 to 366)!")
+        else:
+            self.day = n
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 1. Calculate number of days in year (kN), days
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if y == 0:
+            kN = 365
+            self.year = 2001
+        elif y < 0:
+            self.logger.error("year set out of range")
+            raise ValueError(
+                "Please use a valid Julian or Gregorian calendar year")
+        else:
+            kN = self.julian_day((y+1), 1, 1) - self.julian_day(y, 1, 1)
+            self.year = y
+        self.kN = kN
+        self.logger.info(
+            ("calculating daily radiation fluxes for day %d of %d "
+             "for year %d with sunshine fraction %f and air temperature "
+             "%f Celcius") % (n, kN, self.year, sf, tc))
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 2. Calculate heliocentric longitudes (nu and lambda), degrees
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Berger (1978)
+        my_nu, my_lambda = self.berger_tls(n)
+        self.my_nu = my_nu
+        self.my_lambda = my_lambda
+        self.logger.info("true anomaly, nu, set to %f degrees", my_nu)
+        self.logger.info("true lon, lambda, set to %f degrees", my_lambda)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 3. Calculate distance factor (dr), unitless
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Berger et al. (1993)
+        kee = ke**2
+        my_rho = (1.0 - kee)/(1.0 + ke*self.dcos(my_nu))
+        dr = (1.0/my_rho)**2
+        self.dr = dr
+        self.logger.info("relative Earth-Sun distance, rho, set to %f", my_rho)
+        self.logger.info("distance factor, dr, set to %f", dr)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 4. Calculate declination angle (delta), degrees
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Woolf (1968)
+        delta = numpy.arcsin(self.dsin(my_lambda)*self.dsin(keps))
+        delta /= pir
+        self.delta = delta
+        self.logger.info("declination, delta, set to %f", delta)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 5. Calculate variable substitutes (u and v), unitless
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ru = self.dsin(delta)*self.dsin(self.lat)
+        rv = self.dcos(delta)*self.dcos(self.lat)
+        self.ru = ru
+        self.rv = rv
+        self.logger.info("variable substitute, ru, set to %f", ru)
+        self.logger.info("variable substitute, rv, set to %f", rv)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 6. Calculate the sunset hour angle (hs), degrees
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Eq. 3.22, Stine & Geyer (2001)
+        if (ru/rv) >= 1.0:
+            # Polar day (no sunset)
+            self.logger.debug("polar day---no sunset")
+            hs = 180.0
+        elif (ru/rv) <= -1.0:
+            # Polar night (no sunrise)
+            self.logger.debug("polar night---no sunrise")
+            hs = 0.0
+        else:
+            hs = -1.0*ru/rv
+            hs = numpy.arccos(hs)
+            hs /= pir
+        self.hs = hs
+        self.logger.info("sunset angle, hs, set to %f", hs)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 7. Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Eq. 1.10.3, Duffy & Beckman (1993)
+        ra_d = (86400.0/numpy.pi)*kGsc*dr*(ru*pir*hs + rv*self.dsin(hs))
+        self.ra_d = ra_d
+        self.logger.info("daily ET radiation set to %f MJ/m^2", (1.0e-6)*ra_d)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 8. Calculate transmittivity (tau), unitless
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
+        tau_o = (kc + kd*sf)
+        tau = tau_o*(1.0 + (2.67e-5)*self.elv)
+        self.tau = tau
+        self.logger.info("base transmittivity set to %f", tau_o)
+        self.logger.info("transmittivity set to %f", tau)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 9. Calculate daily PPFD (ppfd_d), mol/m^2
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*ra_d
+        self.ppfd_d = ppfd_d
+        self.logger.info("daily PPFD set to %f mol/m^2", ppfd_d)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 10. Estimate net longwave radiation (rnl), W/m^2
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
+        rnl = (kb + (1.0 - kb)*sf)*(kA - tc)
+        self.rnl = rnl
+        self.logger.info("net longwave radiation set to %f W/m^2", rnl)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 11. Calculate variable substitute (rw), W/m^2
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        rw = (1.0 - kalb_sw)*tau*kGsc*dr
+        self.rw = rw
+        self.logger.info("variable substitute, rw, set to %f", rw)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 12. Calculate net radiation cross-over hour angle (hn), degrees
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if (rnl - rw*ru)/(rw*rv) >= 1.0:
+            # Net radiation negative all day
+            self.logger.debug("net radiation negative all day")
+            hn = 0
+        elif (rnl - rw*ru)/(rw*rv) <= -1.0:
+            # Net radiation positive all day
+            self.logger.debug("net radiation positive all day")
+            hn = 180.0
+        else:
+            hn = (rnl - rw*ru)/(rw*rv)
+            hn = numpy.arccos(hn)
+            hn /= pir
+        self.hn = hn
+        self.logger.info("cross-over hour angle set to %f", hn)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 13. Calculate daytime net radiation (rn_d), J/m^2
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        rn_d = (86400.0/numpy.pi)*(hn*pir*(rw*ru - rnl) + rw*rv*self.dsin(hn))
+        self.rn_d = rn_d
+        self.logger.info(
+            "daytime net radiation set to %f MJ/m^2", (1.0e-6)*rn_d)
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 14. Calculate nighttime net radiation (rnn_d), J/m^2
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        rnn_d = rw*ru*(hs - hn)*pir
+        rnn_d += rw*rv*(self.dsin(hs) - self.dsin(hn))
+        rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
+        rnn_d *= (86400.0/numpy.pi)
+        self.rnn_d = rnn_d
+        self.logger.info(
+            "nighttime net radiation set to %f MJ/m^2", (1.0e-6)*rnn_d)
+
     def dcos(self, x):
         """
         Name:     SOLAR.dcos
@@ -170,183 +348,8 @@ class SOLAR:
         jde = int(365.25*(y + 4716)) + int(30.6001*(m + 1)) + i + b - 1524.5
         return jde
 
-    def calculate_daily_fluxes(self, n, y=0, sf=1.0, tc=23.0):
-        """
-        Name:     SOLAR.calculate_daily_fluxes
-        Input:    - int, day of the year (n)
-                  - [optional] int, year (y)
-                  - [optional] float, fraction of sunshine hours (sf)
-                  - [optional] float, mean daily air temperature, C (tc)
-        Depends:  - julian_day
-                  - berger_tls
-                  - dcos
-                  - dsin
-        """
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 0. Validate day of year
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if n < 1 or n > 366:
-            self.logger.error(
-                "Day of year outside range of validity, (1 to 366)!")
-            raise ValueError(
-                "Day of year outside range of validity (1 to 366)!")
-        else:
-            self.logger.info("day of year set to %d", n)
-            self.day = n
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 1. Calculate number of days in year (kN), days
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if y == 0:
-            kN = 365
-            self.year = 2001
-            self.logger.info("year set to %d", 2001)
-        else:
-            kN = self.julian_day((y+1), 1, 1) - self.julian_day(y, 1, 1)
-            self.year = y
-            self.logger.info("year set to %d", y)
-        self.kN = kN
-        self.logger.info("number of days in year set to %d", kN)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 2. Calculate heliocentric longitudes (nu and lambda), degrees
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Berger (1978)
-        my_nu, my_lambda = self.berger_tls(n)
-        self.my_nu = my_nu
-        self.my_lambda = my_lambda
-        self.logger.info("nu set to %f degrees", my_nu)
-        self.logger.info("lambda set to %f degrees", my_lambda)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 3. Calculate distance factor (dr), unitless
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Berger et al. (1993)
-        kee = ke**2
-        my_rho = (1.0 - kee)/(1.0 + ke*self.dcos(my_nu))
-        dr = (1.0/my_rho)**2
-        self.dr = dr
-        self.logger.info("rho set to %f", my_rho)
-        self.logger.info("distance factor, dr, set to %f", dr)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 4. Calculate declination angle (delta), degrees
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Woolf (1968)
-        delta = numpy.arcsin(self.dsin(my_lambda)*self.dsin(keps))
-        delta /= pir
-        self.delta = delta
-        self.logger.info("declination, delta, set to %f", delta)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 5. Calculate variable substitutes (u and v), unitless
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ru = self.dsin(delta)*self.dsin(self.lat)
-        rv = self.dcos(delta)*self.dcos(self.lat)
-        self.ru = ru
-        self.rv = rv
-        self.logger.info("variable substitute, ru, set to %f", ru)
-        self.logger.info("variable substitute, rv, set to %f", rv)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 6. Calculate the sunset hour angle (hs), degrees
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 3.22, Stine & Geyer (2001)
-        if (ru/rv) >= 1.0:
-            # Polar day (no sunset)
-            self.logger.debug("polar day---no sunset")
-            hs = 180.0
-        elif (ru/rv) <= -1.0:
-            # Polar night (no sunrise)
-            self.logger.debug("polar night---no sunrise")
-            hs = 0.0
-        else:
-            hs = -1.0*ru/rv
-            hs = numpy.arccos(hs)
-            hs /= pir
-        self.hs = hs
-        self.logger.info("sunset angle, hs, set to %f", hs)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 7. Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 1.10.3, Duffy & Beckman (1993)
-        ra_d = (86400.0/numpy.pi)*kGsc*dr*(ru*pir*hs + rv*self.dsin(hs))
-        self.ra_d = ra_d
-        self.logger.info("daily ET radiation set to %f MJ/m^2", (1.0e-6)*ra_d)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 8. Calculate transmittivity (tau), unitless
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 11, Linacre (1968); Eq. 2, Allen (1996)
-        tau_o = (kc + kd*sf)
-        tau = tau_o*(1.0 + (2.67e-5)*self.elv)
-        self.tau = tau
-        self.logger.info("base transmittivity set to %f", tau_o)
-        self.logger.info("transmittivity set to %f", tau)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 9. Calculate daily PPFD (ppfd_d), mol/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*ra_d
-        self.ppfd_d = ppfd_d
-        self.logger.info("daily PPFD set to %f mol/m^2", ppfd_d)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 10. Estimate net longwave radiation (rnl), W/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
-        rnl = (kb + (1.0 - kb)*sf)*(kA - tc)
-        self.rnl = rnl
-        self.logger.info("net longwave radiation set to %f W/m^2", rnl)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 11. Calculate variable substitute (rw), W/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rw = (1.0 - kalb_sw)*tau*kGsc*dr
-        self.rw = rw
-        self.logger.info("variable substitute, rw, set to %f", rw)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 12. Calculate net radiation cross-over hour angle (hn), degrees
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if (rnl - rw*ru)/(rw*rv) >= 1.0:
-            # Net radiation negative all day
-            self.logger.debug("net radiation negative all day")
-            hn = 0
-        elif (rnl - rw*ru)/(rw*rv) <= -1.0:
-            # Net radiation positive all day
-            self.logger.debug("net radiation positive all day")
-            hn = 180.0
-        else:
-            hn = (rnl - rw*ru)/(rw*rv)
-            hn = numpy.arccos(hn)
-            hn /= pir
-        self.hn = hn
-        self.logger.info("net radiation cross-over angle set to %f", hn)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 13. Calculate daytime net radiation (rn_d), J/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rn_d = (86400.0/numpy.pi)*(hn*pir*(rw*ru - rnl) + rw*rv*self.dsin(hn))
-        self.rn_d = rn_d
-        self.logger.info(
-            "daytime net radiation set to %f MJ/m^2", (1.0e-6)*rn_d)
-
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 14. Calculate nighttime net radiation (rnn_d), J/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rnn_d = rw*ru*(hs - hn)*pir
-        rnn_d += rw*rv*(self.dsin(hs) - self.dsin(hn))
-        rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
-        rnn_d *= (86400.0/numpy.pi)
-        self.rnn_d = rnn_d
-        self.logger.info(
-            "nighttime net radiation set to %f MJ/m^2", (1.0e-6)*rnn_d)
-
-
 ###############################################################################
-## MAIN PROGRAM
+# MAIN PROGRAM
 ###############################################################################
 if __name__ == '__main__':
     # Create a root logger:
