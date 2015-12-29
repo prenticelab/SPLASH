@@ -11,9 +11,9 @@
 # ~~~~~~~~~
 # T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
-# led algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
-# transpiration and plant-available moisture, Geoscientific Model Development,
-# 2015 (in progress)
+# led algorithms for simulating habitats (SPLASH): Robust indices of radiation,
+# evapotranspiration and plant-available moisture, Geoscientific Model
+# Development, 2015 (in progress)
 
 ###############################################################################
 # IMPORT MODULES:
