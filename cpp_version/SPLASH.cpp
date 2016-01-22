@@ -1,31 +1,33 @@
-#include "SPLASH.h"
 #include <cstdlib>
 #include <iostream>
 #include <vector>
+
+#include "global.h"
+#include "SPLASH.h"
 
 using namespace std;
 
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * SPLASH.cpp
- * 
+ *
  * 2015-02-17 -- created
- * 2015-08-22 -- last updated
- * 
+ * 2016-01-22 -- last updated
+ *
  * ~~~~~~~~~
  * citation:
  * ~~~~~~~~~
  * T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
  * Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
- * algorithms for simulating habitats (SPLASH): Modelling radiation evapo-
- * transpiration and plant-available moisture, Geoscientific Model Development, 
- * 2015 (in progress)
- * 
+ * algorithms for simulating habitats (SPLASH): Robust indices of radiation
+ * evapotranspiration and plant-available moisture, Geoscientific Model
+ * Development, 2016 (in progress)
+ *
  * ~~~~~~~~~~~~
  * description:
  * ~~~~~~~~~~~~
- * This class updates daily quantities of radiation, evapotranspiration, soil 
+ * This class updates daily quantities of radiation, evapotranspiration, soil
  * moisture and runoff based on the SPLASH methodology.
- * 
+ *
  * ~~~~~~~~~~
  * changelog:
  * ~~~~~~~~~~
@@ -35,40 +37,34 @@ using namespace std;
  * 04. added smr struct (dsoil) [15.02.19]
  * 05. added vector to include list [15.02.19]
  * 06. created quick_run & spin_up functions [15.02.19]
- * 
+ * 07. included global.h [16.01.22]
+ *
  * //////////////////////////////////////////////////////////////////////// */
 
-// \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-// Class Constructors: 
-// ////////////////////////////////////////////////////////////////////////
-SPLASH::SPLASH(double latitude, double elevation)
-    : lat(latitude), elv(elevation), precip(0.0)
+/* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+   Class Constructors:
+   ///////////////////////////////////////////////////////////////////// */
+SPLASH::SPLASH(double a, double b)
+    : lat(a), elv(b), precip(0.0)
 {
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Initialize constants:
+    // Initialize class & structure values:
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    kCw = 1.05;       // (Federer, 1982)
-    kWm = 150.0;      // (Cramer & Prentice, 1988)
-    
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Initialize structure values:
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    dvap.ho = 0.0;
-    dvap.hn = 0.0;
-    dvap.ppfd = 0.0;
+    evap = EVAP(a, b);
+
     dvap.cond = 0.0;
     dvap.eet = 0.0;
     dvap.pet = 0.0;
     dvap.aet = 0.0;
-    
+
     dsoil.sm = 0.0;
     dsoil.ro = 0.0;
 }
 
-// \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-// Class Function Definitions
-// ////////////////////////////////////////////////////////////////////////
-void SPLASH::quick_run(int n, int y, double wn, double sf, double tc, 
+/* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+   Class Function Definitions
+   ///////////////////////////////////////////////////////////////////// */
+void SPLASH::quick_run(int n, int y, double wn, double sf, double tc,
                        double pn, smr &dsm) {
     /* ***********************************************************************
     Name:     SPLASH.quick_run
@@ -80,42 +76,42 @@ void SPLASH::quick_run(int n, int y, double wn, double sf, double tc,
               - double, daily precipitation, mm (pn)
               - smr, daily soil moisture & runoff
     Output:   None.
-    Features: Calculates daily soil moisture and runoff based on STASH 
+    Features: Calculates daily soil moisture and runoff based on STASH
               methods.
     *********************************************************************** */
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 1. Calculate evaporative supply rate (sw), mm/h
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    double sw = kCw*(wn/kWm);
-    
+    double sw = Global::Cw*(wn/Global::Wm);
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 2. Calculate radiation and evaporation quantities
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    EVAP my_evap(lat, n, elv, y, sf, tc, sw);
-    etr dn = my_evap.get_vals();
-    
+    evap.calculate_daily_fluxes(sw, n, y, sf, tc);
+    etr dn = evap.get_vals();
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 3. Calculate today's soil moisture (sm), mm
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     double sm = wn + pn + dn.cond - dn.aet;
-    
+
     // ~~~~~~~~~~~~~~~~~~~~~~~
     // 4. Calculate runoff, mm
     // ~~~~~~~~~~~~~~~~~~~~~~~
     double ro = 0.0;
-    if (sm > kWm){
+    if (sm > Global::Wm){
         // Bucket is too full:
         //   allocate excess water to runoff
         //   set soil moisture to capacity
-        ro = (sm - kWm);
-        sm = kWm;
+        ro = (sm - Global::Wm);
+        sm = Global::Wm;
     } else if (sm < 0){
         // Bucket is too empty:
         //   set soil moisture & runoff to zero
         ro = 0.0;
         sm = 0.0;
     }
-    
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 5. Update soil moisture & runoff
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,7 +119,7 @@ void SPLASH::quick_run(int n, int y, double wn, double sf, double tc,
     dsm.ro = ro;
 }
 
-void SPLASH::run_one_day(int n, int y, double wn, double sf, double tc, 
+void SPLASH::run_one_day(int n, int y, double wn, double sf, double tc,
                          double pn) {
     /* ***********************************************************************
     Name:     SPLASH.run_one_day
@@ -134,40 +130,40 @@ void SPLASH::run_one_day(int n, int y, double wn, double sf, double tc,
               - double, daily air temperature, deg C (tc)
               - double, daily precipitation, mm (pn)
     Output:   None.
-    Features: Calculates daily soil moisture and runoff based on STASH 
+    Features: Calculates daily soil moisture and runoff based on STASH
               methods and updates class variables accordingly.
     *********************************************************************** */
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 0. Set meteorological variable:
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     precip = pn;
-    
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 1. Calculate evaporative supply rate (sw), mm/h
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    double sw = kCw*(wn/kWm);
-    
+    double sw = Global::Cw*(wn/Global::Wm);
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 2. Calculate radiation and evaporation quantities
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    EVAP my_evap(lat, n, elv, y, sf, tc, sw);
-    dvap = my_evap.get_vals();
-    
+    evap.calculate_daily_fluxes(sw, n, y, sf, tc);
+    dvap = evap.get_vals();
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 3. Calculate today's soil moisture (sm), mm
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     double sm = wn + pn + dvap.cond - dvap.aet;
-    
+
     // ~~~~~~~~~~~~~~~~~~~~~~~
     // 4. Calculate runoff, mm
     // ~~~~~~~~~~~~~~~~~~~~~~~
     double ro = 0.0;
-    if (sm > kWm){
+    if (sm > Global::Wm){
         // Bucket is too full:
         //   allocate excess water to runoff
         //   set soil moisture to capacity
-        ro = (sm - kWm);
-        sm = kWm;
+        ro = (sm - Global::Wm);
+        sm = Global::Wm;
     } else if (sm < 0){
         // Bucket is too empty:
         //   reduce actual ET by discrepany amout
@@ -176,7 +172,7 @@ void SPLASH::run_one_day(int n, int y, double wn, double sf, double tc,
         ro = 0.0;
         sm = 0.0;
     }
-    
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 5. Update soil moisture & runoff
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -194,12 +190,12 @@ void SPLASH::spin_up(DATA &d){
     *********************************************************************** */
     double wn;  // previous day's soil moisture, mm
     smr dsm;    // daily soil moisture and runoff
-    
+
     // Create daily soil moisture vector
     int n = d.nlines();
     int y = d.get_year();
     vector<double> wn_vec(n, 0.0);
-    
+
     // Run one year:
     for (int i=0; i<n; i++){
         // Get preceeding soil moisture status:
@@ -208,24 +204,24 @@ void SPLASH::spin_up(DATA &d){
         } else {
             wn = wn_vec[(i-1)];
         }
-        
+
         // Calculate soil moisture and runoff
-        quick_run((i+1), y, wn, d.get_one_sf(i), d.get_one_tair(i), 
+        quick_run((i+1), y, wn, d.get_one_sf(i), d.get_one_tair(i),
                   d.get_one_pn(i), dsm);
-        
+
         wn_vec[i] = dsm.sm;
     }
-    
+
     // Calculate change in starting soil moisture:
     double start_sm = wn_vec[0];
-    quick_run(1, y, wn_vec[n-1], d.get_one_sf(0), d.get_one_tair(0), 
+    quick_run(1, y, wn_vec[n-1], d.get_one_sf(0), d.get_one_tair(0),
               d.get_one_pn(0), dsm);
     double end_sm = dsm.sm;
     double diff_sm = (end_sm - start_sm);
     if (diff_sm < 0){
         diff_sm = (start_sm - end_sm);
     }
-    
+
     // Equilibrate
     int spin_count = 1;
     while (diff_sm > 1.0){
@@ -236,27 +232,27 @@ void SPLASH::spin_up(DATA &d){
             } else {
                 wn = wn_vec[(i-1)];
             }
-            
+
             // Calculate soil moisture and runoff
-            quick_run((i+1), y, wn, d.get_one_sf(i), d.get_one_tair(i), 
+            quick_run((i+1), y, wn, d.get_one_sf(i), d.get_one_tair(i),
                       d.get_one_pn(i), dsm);
-            
+
             wn_vec[i] = dsm.sm;
         }
-        
+
         // Calculate difference
         start_sm = wn_vec[0];
-        quick_run(1, y, wn_vec[n-1], d.get_one_sf(0), d.get_one_tair(0), 
+        quick_run(1, y, wn_vec[n-1], d.get_one_sf(0), d.get_one_tair(0),
               d.get_one_pn(0), dsm);
         end_sm = dsm.sm;
         diff_sm = (end_sm - start_sm);
         if (diff_sm < 0){
             diff_sm = (start_sm - end_sm);
         }
-        
+
         spin_count++;
     }
-    
+
     // Save initial soil moisture condition:
     dsoil.sm = wn_vec[n-1];
 }
@@ -288,10 +284,8 @@ void SPLASH::print_vals(){
     Output:   None
     Features: Prints the current dvap values.
     *********************************************************************** */
-    cout<<"Daily values:" << endl;
-    cout<<"  Ho: " << (1.0e-6)*dvap.ho << " MJ/m^2" << endl;
-    cout<<"  HN: " << (1.0e-6)*dvap.hn << " MJ/m^2" << endl;
-    cout<<"  PAR: " << dvap.ppfd << " mol/m^2" << endl;
+    evap.display();
+    cout<<"Daily SPLASH values:" << endl;
     cout<<"  Cn: " << dvap.cond << " mm" << endl;
     cout<<"  EET: " << dvap.eet << " mm" << endl;
     cout<<"  PET: " << dvap.pet << " mm" << endl;

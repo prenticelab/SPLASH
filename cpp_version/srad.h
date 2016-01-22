@@ -1,7 +1,7 @@
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
- * etr.h
+ * srad.h
  *
- * 2015-02-19 -- created
+ * 2016-01-22 -- created
  * 2016-01-22 -- last updated
  *
  * ~~~~~~~~~
@@ -16,15 +16,18 @@
  * ~~~~~~~~~~~~
  * description:
  * ~~~~~~~~~~~~
- * Header file for the etr ('e'vapo't'ranspiration and 'r'adiation) struct.
+ * Header file for the radiation struct, srad.
  *
  * //////////////////////////////////////////////////////////////////////// */
-#ifndef ETR_H
-#define ETR_H
-struct etr {
-    double cond;    // condensation, mm
-    double eet;     // equilibrium evapotranspiration, mm
-    double pet;     // potential evapotranspiration, mm
-    double aet;     // actual evapotranspiration, mm
+#ifndef SRAD_H
+#define SRAD_H
+struct srad {
+    double ru;      // variable substitute
+    double rv;      // variable substitute
+    double rw;      // variable substitute
+    double rnl;     // net longwave radiation, W/m^2
+    double hn;      // cross-over hour angle, degrees
+    double rn_d;    // daytime net radiation, J/m^2
+    double rnn_d;   // nighttime net radiation, J/m^2
 };
 #endif
