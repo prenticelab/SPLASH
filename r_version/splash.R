@@ -110,7 +110,7 @@ quick_run <- function(lat, elv, n, y, wn, sf, tc, pn) {
     sw <- kCw*wn/kWm
 
     # Compute daily radiation and evaporations values:
-    ET <- evap(lat, n, elv, y, sf, tc, sw)
+    ET <- calc_daily_evap(lat, n, elv, y, sf, tc, sw)
 
     # Update daily soil moisture:
     sm <- wn + pn + ET$cond_mm - ET$aet_mm
@@ -168,7 +168,7 @@ run_one_day <- function(lat, elv, n, y, wn, sf, tc, pn) {
     sw <- kCw*wn/kWm
 
     # Compute daily radiation and evaporations values:
-    ET <- evap(lat, n, elv, y, sf, tc, sw)
+    ET <- calc_daily_evap(lat, n, elv, y, sf, tc, sw)
     rvals$ho <- ET$ra_j.m2
     rvals$hn <- ET$rn_j.m2
     rvals$ppfd <- ET$ppfd_mol.m2
