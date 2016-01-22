@@ -1,8 +1,8 @@
-# R version 3.2.2 (2015-08-14) -- "Fire Safety"
+# R version 3.2.3 (2015-12-10) -- "Wooden Christmas-Tree"
 #
 # main.R
 #
-# last updated: 2015-12-06
+# last updated: 2016-01-22
 #
 # ~~~~~~~~~
 # citation:
@@ -11,7 +11,7 @@
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
 # algorithms for simulating habitats (SPLASH): Robust indices of radiation
 # evapo-transpiration and plant-available moisture, Geoscientific Model
-# Development, 2015 (in progress)
+# Development, 2016 (in progress)
 #
 # ~~~~~~~~~~~~
 # description:
@@ -26,6 +26,7 @@
 source("const.R")
 source("data.R")
 source("evap.R")
+source("solar.R")
 source("splash.R")
 
 
@@ -213,184 +214,40 @@ plot_fig4 <- function(monthly_totals, export_fig=FALSE, out_file="fig4.tiff") {
 }
 
 
-#### TEST 1: EVAP ############################################################
-# Inputs:   - double, latitude, degrees (lat)
-#           - double, day of year (n)
-#           - double, elevation (elv)  *optional
-#           - double, year (y)         *optional
-#           - double, fraction of sunshine hours (sf)        *optional
-#           - double, mean daily air temperature, deg C (tc) *optional
-#           - double, evaporative supply rate, mm/hr (sw)    *optional
-my_evap <- evap(51.4, 172, 74, 2001, 0.43, 17.3, 0.5)
-cat(paste("TEST 1---Evap values:\n",
-          "  true anomaly:", my_evap$nu_deg, "degrees\n",
-          "  true longitude:", my_evap$lambda_deg, "degrees\n",
-          "  distance fact:", my_evap$dr, "\n",
-          "  declination:", my_evap$delta_deg, "degrees\n",
-          "  hs:", my_evap$hs_deg, "degrees\n",
-          "  hn:", my_evap$hn_deg, "degrees\n",
-          "  hi:", my_evap$hi_deg, "degrees\n",
-          "  tau:", my_evap$tau, "\n",
-          "  Io:", (1.0e-6)*my_evap$ra_j.m2, "MJ/m^2\n",
-          "  Q:", my_evap$ppfd_mol.m2, "mol/m^2\n",
-          "  Hn day:", (1.0e-6)*my_evap$rn_j.m2, "MJ/m^2\n",
-          "  Hn night:", (1.0e-6)*my_evap$rnn_j.m2, "MJ/m^2\n",
-          "  Econ:", my_evap$econ_m3.j, "m^3/J\n",
-          "  C:", my_evap$cond_mm, "mm\n",
-          "  Eq:", my_evap$eet_mm, "mm/d\n",
-          "  Ep:", my_evap$pet_mm, "mm/d\n",
-          "  Ea:", my_evap$aet_mm, "mm/d\n"
-          )
-    )
+# TEST 1: SOLAR ############################################################
+solar <- calc_daily_solar(lat=37.7, n=172, elv=142, y=2000, sf=1, tc=23.0)
+cat(sprintf("TEST 1---Solar values:\n"))
+cat(sprintf("  kn: %d\n", solar$kN))
+cat(sprintf("  nu: %0.6f degrees\n", solar$nu_deg))
+cat(sprintf("  lambda: %0.6f degrees\n", solar$lambda_deg))
+cat(sprintf("  rho: %0.6f\n", solar$rho))
+cat(sprintf("  dr: %0.6f\n", solar$dr))
+cat(sprintf("  delta: %0.6f degrees\n", solar$delta_deg))
+cat(sprintf("  ru: %0.6f\n", solar$ru))
+cat(sprintf("  rv: %0.6f\n", solar$rv))
+cat(sprintf("  rw: %0.6f\n", solar$rw))
+cat(sprintf("  hs: %0.6f degrees\n", solar$hs_deg))
+cat(sprintf("  hn: %0.6f degrees\n", solar$hn_deg))
+cat(sprintf("  tau_o: %0.6f\n", solar$tau_o))
+cat(sprintf("  tau: %0.6f\n", solar$tau))
+cat(sprintf("  Qn: %0.6f mol/m^2\n", solar$ppfd_mol.m2))
+cat(sprintf("  Rnl: %0.6f w/m^2\n", solar$rnl_w.m2))
+cat(sprintf("  Ho: %0.6f MJ/m^2\n", (1.0e-6)*solar$ra_j.m2))
+cat(sprintf("  Hn: %0.6f MJ/m^2\n", (1.0e-6)*solar$rn_j.m2))
+cat(sprintf("  Hnn: %0.6f MJ/m^2\n", (1.0e-6)*solar$rnn_j.m2))
 
-
-#### TEST 2: SPIN UP #########################################################
-# Initialize daily results:
-daily_totals <- matrix(data=rep(0, 3294), nrow=366, ncol=9)
-daily_totals <- as.data.frame(daily_totals)
-names(daily_totals) <- c("ho",   # daily solar irradiation, J/m2
-                         "hn",   # daily net radiation, J/m2
-                         "qn",   # daily PPFD, mol/m2
-                         "cn",   # daily condensation, mm
-                         "wn",   # daily soil moisture, mm
-                         "ro",   # daily runoff, mm
-                         "eq_n", # daily equilibrium ET, mm
-                         "ep_n", # daily potential ET, mm
-                         "ea_n") # daily actual ET, mm
-
-# Initialize monthly results:
-monthly_totals <- matrix(data=rep(0, 72), nrow=12, ncol=6)
-monthly_totals <- as.data.frame(monthly_totals)
-names(monthly_totals) <- c("eq_m",  # monthly equilibrium ET, mm
-                           "ep_m",  # monthly potential ET, mm
-                           "ea_m",  # monthly actual ET, mm
-                           "cpa",   # Cramer-Prentice alpha, unitless
-                           "cwd",   # climatic water deficit, mm
-                           "q_m")   # monthly PPFD, mol/m2
-
-# Location constants:
-my_lat <- 37.7
-my_elv <- 142
-
-# Calculate days in the year
-y <- 2000
-ny <- julian_day(y + 1, 1, 1) - julian_day(y, 1, 1)
-
-# Example data (San Francisco, 2000 CE)
-#   $file_name, file name
-#   $sf, fractional sunshine hours, unitless
-#   $tair, air temperature, deg C
-#   $pn, daily precipitation, mm
-#   $num_lines, number of lines of data
-#   $year, year (Gregorian calendar)
-my_file <- "../data/example_data.csv"
-my_data <- read_csv(my_file, 2000)
-my_data$lat_deg <- my_lat
-my_data$elv_m <- my_elv
-
-# Spin up the soil moisture content
-daily_totals <- spin_up(my_data, daily_totals)
-
-# Run one day:
-daily_vals <- run_one_day(my_data$lat_deg,
-                          my_data$elv_m,
-                          172,
-                          my_data$year,
-                          145.0,
-                          0.5,
-                          17.3,
-                          10.0)
-
-cat(paste("TEST 2---Spin-up values:\n",
-          "  Ho:", (1.0e-6)*daily_vals$ho, "MJ/m^2\n",
-          "  HN:", (1.0e-6)*daily_vals$hn, "MJ/m^2\n",
-          "  PAR:", daily_vals$ppfd, "mol/m^2\n",
-          "  Cn:", daily_vals$cond, "mm\n",
-          "  EET:", daily_vals$eet, "mm\n",
-          "  PET:", daily_vals$pet, "mm\n",
-          "  AET:", daily_vals$aet, "mm\n",
-          "  Wn:", daily_vals$wn, "mm\n",
-          "  RO:", daily_vals$ro, "mm\n"
-          )
-    )
-
-
-#### TEST 3: Run SPLASH for a full year ######################################
-all_months <- seq(from=1, to=12, by=1)
-monthly_totals <- monthly_totals*0
-
-# monthly
-for (m in all_months) {
-    # Calculate days of current month:
-    nm <- julian_day(y, m + 1, 1) - julian_day(y, m, 1)
-
-    # daily:
-    for (i in seq(from=1, to=nm, by=1)) {
-        # Calculate day of year:
-        n <- julian_day(y, m, i) - julian_day(y, 1 , 1) + 1
-
-        idx <- (n - 1)
-        if (idx < 1) {
-            idx <- ny
-        }
-        daily_vals <- run_one_day(my_data$lat_deg,
-                                  my_data$elv_m,
-                                  n,
-                                  my_data$year,
-                                  daily_totals$wn[idx],
-                                  my_data$sf[n],
-                                  my_data$tair[n],
-                                  my_data$pn[n])
-
-        # Update daily values:
-        daily_totals$wn[n] <- daily_vals$wn
-        daily_totals$ro[n] <- daily_vals$ro
-
-        if ( (ny == 365) & (n == 365) ) {
-            daily_totals$wn[n + 1] <- daily_totals$wn[n]
-        }
-
-        # Save daily results:
-        daily_totals$ho[n] <- daily_vals$ho
-        daily_totals$hn[n] <- daily_vals$hn
-        daily_totals$qn[n] <- daily_vals$ppfd
-        daily_totals$cn[n] <- daily_vals$cond
-        daily_totals$eq_n[n] <- daily_vals$eet
-        daily_totals$ep_n[n] <- daily_vals$pet
-        daily_totals$ea_n[n] <- daily_vals$aet
-
-        # Update monthly totals:
-        monthly_totals$eq_m[m] <- monthly_totals$eq_m[m] + daily_vals$eet
-        monthly_totals$ep_m[m] <- monthly_totals$ep_m[m] + daily_vals$pet
-        monthly_totals$ea_m[m] <- monthly_totals$ea_m[m] + daily_vals$aet
-        monthly_totals$q_m[m] <- monthly_totals$q_m[m] + daily_vals$ppfd
-    } # end daily
-
-    monthly_totals$cpa[m] <- monthly_totals$ea_m[m]/monthly_totals$eq_m[m]
-    monthly_totals$cwd[m] <- monthly_totals$ep_m[m] - monthly_totals$ea_m[m]
-} # end monthly
-
-# Save results
-write_out <- FALSE
-if (write_out) {
-    daily_outfile <- "../out/stash_results_daily.csv"
-    write.csv(daily_totals, file=daily_outfile)
-
-    monthly_outfile <- "../out/stash_results_monthly.csv"
-    write.csv(monthly_totals, file=monthly_outfile)
-}
-
-# View results
-to_plot <- FALSE
-export_fig <- FALSE
-if (to_plot) {
-    plot_fig3(my_data, daily_totals, export_fig)
-    plot_fig4(monthly_totals, export_fig)
-}
-
-
-#### TEST 4: Monthly and annual indicies ######################################
-# Example Yearly Loop
-if (FALSE) {
-    # @TODO
-}
+# TEST 2: EVAP ############################################################
+evap <- calc_daily_evap(lat=37.7, n=172, elv=142, y=2000, sf=1, tc=23.0, sw=0.9)
+cat(sprintf("TEST 2---Evap values:\n"))
+cat(sprintf("  s: %0.6f Pa/K\n", evap$s_pa.k))
+cat(sprintf("  Lv: %0.6f MJ/kg\n", (1e-6)*evap$lv_j.kg))
+cat(sprintf("  Patm: %0.6f bar\n", (1e-5)*evap$patm_pa))
+cat(sprintf("  pw: %0.6f kg/m^3\n", evap$pw_kg.m3))
+cat(sprintf("  gamma: %0.6f Pa/K\n", evap$gam_pa.k))
+cat(sprintf("  Econ: %0.6f mm^3/J\n", (1e9)*evap$econ_m3.j))
+cat(sprintf("  Cn: %0.6f mm\n", evap$cond_mm))
+cat(sprintf("  rx: %0.6f\n", evap$rx))
+cat(sprintf("  hi: %0.6f degrees\n", evap$hi_deg))
+cat(sprintf("  EET: %0.6f mm\n", evap$eet_mm))
+cat(sprintf("  PET: %0.6f mm\n", evap$pet_mm))
+cat(sprintf("  AET: %0.6f mm\n", evap$aet_mm))

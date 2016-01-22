@@ -1,8 +1,8 @@
-# R version 3.2.2 (2015-08-14) -- "Fire Safety"
+# R version 3.2.3 (2015-12-10) -- "Wooden Christmas-Tree"
 #
 # const.R
 #
-# last updated: 2015-12-04
+# last updated: 2016-01-22
 #
 # ~~~~~~~~~
 # citation:
@@ -11,7 +11,7 @@
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-led
 # algorithms for simulating habitats (SPLASH): Robust indices of radiation
 # evapo-transpiration and plant-available moisture, Geoscientific Model
-# Development, 2015 (in progress)
+# Development, 2016 (in progress)
 #
 # ~~~~~~~~~~~~
 # description:
