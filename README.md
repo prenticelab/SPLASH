@@ -5,7 +5,7 @@
 # Repository Details
 ---------------
 
-* LAST UPDATED: 2015-12-06
+* LAST UPDATED: 2016-01-22
 * TEAM: labprentice
 * REPO: splash (private)
 
@@ -15,139 +15,200 @@
 This directory holds example data files (CSV and TXT). Note that the __py_verion__ directory contains a script for producing additional input data for SPLASH.
 
 * __example_data.csv__
+
     * Example comma separated daily data for San Francisco, United States (37.7 N, 122.4 W, 142 m, 2000 CE)
+
 * __daily_pn_2000_wfdei.txt__
+
     * Example daily precipitation data from the WATCH Forcing Data ERA Interim for San Francisco, United States (37.7 N, 122.4 W, 142 m, 2000 CE)
+
 * __daily_sf_2000_cruts.txt__
+
     * Example daily fraction of bright sunshine hours based on CRU Time Series cloudiness for San Francisco, United States (37.7 N, 122.4 W, 142 m, 2000 CE)
+
 * __daily_tair_2000_wfdei.txt__
+
     * Example daily air temperature from the WATCH Forcing Data ERA Interim for San Francisco, United States (37.7 N, 122.4 W, 142 m, 2000 CE)
 
 ## doc/
 This directory holds the current documentation for the SPLASH code.
 
 * __splash_doc.pdf__
+
     * The current PDF build of the documentation
+
 * __splash_doc.tex__
+
     * The main LaTeX document file
+
 * __splash.bib__
+
     * The BibLatex file for documentation references
+
 * __img/__
+
     * Contains the EPS figures for the documentation
+
 * __tex/__
+
     * Contains the modular LaTeX chapter files and appendix
 
 ## cpp_version/
 This directory holds the C++ version of the SPLASH code.
 
-* __DATA.cpp__
+* __DATA.cpp / DATA.h__
+
     * C++ class definition file. This class handles reading input data.
 
-* __DATA.h__
-    * C++ header file for DATA class.
-
 * __etr.h__
+
     * C++ header file for the __e__vapo__t__ranspiration and __r__adiation structure.
 
-* __EVAP.cpp__
+* __EVAP.cpp / EVAP.h__
+
     * C++ class definition file. This class calculates daily quantities of radiation, evaporation, and condensation.
 
-* __EVAP.h__
-    * C++ header file for EVAP class.
+* __global.cpp / global.h__
+
+    * Script defining global constants.
 
 * __main.cpp__
+
     * Main function for running the SPLASH code.
 
 * __Makefile__
+
     * Makefile for C++ SPLASH code.
 
 * __smr.h__
+
     * C++ header file for the __s__oil __m__oisture and __r__unoff structure.
 
-* __SPLASH.cpp__
+* __SOLAR.cpp / SOLAR.h__
+
+    * C++ class definition file. This class calculates daily radiation fluxes.
+
+* __SPLASH.cpp / SPLASH.h__
+
     * C++ class definition file. This class updates daily quantities of radiation, evapotranspiration, soil moisture and runoff based on the SPLASH methodology.
 
-* __SPLASH.h__
-    * C++ header file for SPLASH class.
+* __srad.h__
+
+    * C++ header file for solar radiation fluxes structure.
+
 
 ## f90_version/
 This directory holds the FORTRAN90 version of the SPLASH code.
 
 * __Makefile__
+
     * Use to compile the splash.F script.
 
-* __splash.F__
+* __splash.f90__
+
     * Runs SPLASH for one year, following a spin-up of soil moisture, based on example monthly meteorological data (hard-coded).
 
 ## py_version/
 This directory holds the Python version of the SPLASH code.
 
 * __const.py__
+
     * Contains definitions for SPLASH global constants.
 
 * __data.py__
+
     * DATA class definition for reading input data.
 
 * __evap.py__
-    * EVAP class definition for calculating daily radiation and evapotranspiration quantities:
-        * Photosynthetic Photon Flux Density, mol/m^2/day
+
+    * EVAP class definition for calculating daily evapotranspiration quantities:
+
         * Equilibrium ET, mm/day
+
         * Potential ET, mm/day
+
         * Actual ET, mm/day
+
         * Condensation, mm/day
 
 * __main.py__
+
     * Main function for running the SPLASH code.
 
+* __solar.py__
+
+    * SOLAR class definition for calculating daily radiation fluxes.
+
 * __splash.py__
+
     * SPLASH class definition for updating daily quantities of radiation, evapotranspiration, soil moisture and runoff.
 
 * __splash_data.py__
+
     * SPLASH_DATA class and script to produce a CSV file with daily input data (i.e., sunshine fraction, air temperature, and precipitation)
 
 * __splash_grid.py__
+
     * __NOT FULLY TESTED!__
+
     * Implements the EVAP_G class for grid-based processing
+
     * Inputs include:
+
         * day of year
+
         * elevation (360x720 array), meters
+
         * sunshine fraction (360x720 array), decimal
+
         * mean daily air temperature (360x720 array), °C
+
         * evaporative supply rate (360x720 array), mm/h
+
         * year (optional)
+
     * CRU-based input data is used (user must have a copy of data files and specify their location)
 
 ## r_version/
 This directory holds the R version of the SPLASH code.
 
 * __const.R__
-    * This script contains the global constants defined in SPLASH.
-* __data.R__
-    * This script contains functions to handle the file IO for reading and writing data, i.e.:
-        * read_csv(character fname, double y=-1)
-        * read_txt(list my_data, character fname, character var, double y=-1)
-* __evap.R__
-    * This script contains functions to calculate daily radiation, condensation, and evapotranspiration, i.e.:
-        * berger_tls(double n, double N)
-        * density_h2o(double tc, double pa)
-        * dcos(double d)
-        * dsin(double d)
-        * elv2pres(double z)
-        * enthalpy_vap(double tc)
-        * evap(double lat, double n, double elv=0, double y=0, double sf=1, double tc=23.0, double sw=1.0)
-        * julian_day(double y, double m, double i)
-        * psychro(double tc, double pa)
-        * sat_slope(double tc)
-* __main.R__
-    * This script runs the SPLASH model for one year.
-* __splash.R__
-    * This script contains functions for running SPLASH for point-based data, i.e.:
-        * spin_up(list mdat, list dtot)
-        * quick_run(double lat, double elv, double n, double y, double wn, double sf, double tc, double pn)
-        * run_one_day(double lat, double elv, double n, double y, double wn, double sf, double tc, double pn)
-* __test.R__
-    * This script performs SPLASH consistency tests.
 
+    * This script contains the global constants defined in SPLASH.
+
+* __data.R__
+
+    * This script contains functions to handle the file IO for reading and writing data, i.e.:
+
+        * read_csv(character fname, double y=-1)
+
+        * read_txt(list my_data, character fname, character var, double y=-1)
+
+* __evap.R__
+
+    * This script contains functions to calculate daily condensation, and evapotranspiration.
+
+* __main.R__
+
+    * This script runs the SPLASH model for one year.
+
+* __solar.R__
+
+    * This script contains functions to calculate daily radiation fluxes.
+
+* __splash.R__
+
+    * This script contains functions for running SPLASH for point-based data, i.e.:
+
+        * spin_up(list mdat, list dtot)
+
+        * quick_run(double lat, double elv, double n, double y, double wn, double sf, double tc, double pn)
+
+        * run_one_day(double lat, double elv, double n, double y, double wn, double sf, double tc, double pn)
+
+* __test.R__
+
+    * This script performs SPLASH consistency tests.
 
 # Simple Process-Led Algorithms for Simulating Habitats (SPLASH): Modelling Radiation, Evapotranspiration and Plant-Available Moisture
 ----------------------------------------------------------------------------
