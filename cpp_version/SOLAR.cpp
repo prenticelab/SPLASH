@@ -1,5 +1,5 @@
 #include <cmath>
-#include <iostream>
+#include <stdio.h>
 #include <vector>
 
 #include "global.h"
@@ -308,23 +308,23 @@ void SOLAR::display(){
     Output:   None
     Features: Prints the current set of daily SOLAR variables
     *********************************************************************** */
-    cout<<"SOLAR variable list:"<<endl;
-    cout<<"  kN: " << kN << endl;
-    cout<<"  nu: " << nu << " degrees" << endl;
-    cout<<"  lambda: " << lam << " degrees" << endl;
-    cout<<"  rho: " << rho << endl;
-    cout<<"  dr: " << dr << endl;
-    cout<<"  delta: " << delta << " degrees" << endl;
-    cout<<"  ru: " << ru << endl;
-    cout<<"  rv: " << rv << endl;
-    cout<<"  rw: " << rw << endl;
-    cout<<"  hs: " << hs << " degrees" << endl;
-    cout<<"  hn: " << hn << " degrees" << endl;
-    cout<<"  tau_o: " << tau_o << endl;
-    cout<<"  tau: " << tau << endl;
-    cout<<"  PPFD: " << ppfd_d << " mol/m^2" << endl;
-    cout<<"  Rnl: " << rnl << " W/m^2" << endl;
-    cout<<"  Ho: " << (1.0e-6)*ra_d << " MJ/m^2" << endl;
-    cout<<"  Hn: " << (1.0e-6)*rn_d << " MJ/m^2" << endl;
-    cout<<"  Hnn: " << (1.0e-6)*rnn_d << " MJ/m^2" << endl;
+    printf("SOLAR variable list:\n");
+    printf("  kN: %d\n", kN);
+    printf("  nu: %0.6f degrees\n", nu);
+    printf("  lambda: %0.6f degrees\n", lam);
+    printf("  rho: %0.6f\n", rho);
+    printf("  dr: %0.6f\n", dr);
+    printf("  delta: %0.6f degrees\n", delta);
+    printf("  ru: %0.6f\n", ru);
+    printf("  rv: %0.6f\n", rv);
+    printf("  rw: %0.6f\n", rw);
+    printf("  hs: %0.6f degrees\n", hs);
+    printf("  hn: %0.6f degrees\n", hn);
+    printf("  tau_o: %0.6f\n", tau_o);
+    printf("  tau: %0.6f \n", tau);
+    printf("  PPFD: %0.6f mol/m^2\n", ppfd_d);
+    printf("  Rnl: %0.6f W/m^2\n", rnl);
+    printf("  Ho: %0.6f MJ/m^2\n", (1.0e-6)*ra_d);
+    printf("  Hn: %0.6f MJ/m^2\n", (1.0e-6)*rn_d);
+    printf("  Hnn: %0.6f MJ/m^2\n", (1.0e-6)*rnn_d);
 }

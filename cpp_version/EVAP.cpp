@@ -1,5 +1,5 @@
 #include <cmath>
-#include <iostream>
+#include <stdio.h>
 
 #include "global.h"
 #include "EVAP.h"
@@ -307,17 +307,17 @@ void EVAP::display(){
     *********************************************************************** */
     solar.display();
 
-    cout<<"EVAP variable list:"<<endl;
-    cout<<"  s: " << s << " Pa/K" << endl;
-    cout<<"  lv: " << (1.0e-6)*lv << " MJ/kg" << endl;
-    cout<<"  Patm: " << (1.0e-5)*patm << " bar" << endl;
-    cout<<"  pw: " << pw << " kg/m^3" << endl;
-    cout<<"  g: " << g << " Pa/K" << endl;
-    cout<<"  Econ: " << (1.0e9)*econ << " mm^3/J" << endl;
-    cout<<"  Cn: " << cn << " mm" << endl;
-    cout<<"  rx: " << rx << endl;
-    cout<<"  hi: " << hi << " degrees" << endl;
-    cout<<"  EET: " << eet_d << " mm" << endl;
-    cout<<"  PET: " << pet_d << " mm" << endl;
-    cout<<"  AET: " << aet_d << " mm" << endl;
+    printf("EVAP variable list:\n");
+    printf("  s: %0.6f Pa/K\n", s);
+    printf("  lv: %0.6f MJ/kg\n", (1.0e-6)*lv);
+    printf("  Patm: %0.6f bar\n", (1.0e-5)*patm);
+    printf("  pw: %0.6f kg/m^3\n", pw);
+    printf("  gamma: %0.6f Pa/K\n", g);
+    printf("  Econ: %0.6f mm^3/J\n", (1.0e9)*econ);
+    printf("  Cn: %0.6f mm\n", cn);
+    printf("  rx: %0.6f\n", rx);
+    printf("  hi: %0.6f degrees\n", hi);
+    printf("  EET: %0.6f mm\n", eet_d);
+    printf("  PET: %0.6f mm\n", pet_d);
+    printf("  AET: %0.6f mm\n", aet_d);
 }

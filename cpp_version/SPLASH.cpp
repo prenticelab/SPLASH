@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include <iostream>
+#include <stdio.h>
 #include <vector>
 
 #include "global.h"
@@ -285,11 +285,11 @@ void SPLASH::print_vals(){
     Features: Prints the current dvap values.
     *********************************************************************** */
     evap.display();
-    cout<<"Daily SPLASH values:" << endl;
-    cout<<"  Cn: " << dvap.cond << " mm" << endl;
-    cout<<"  EET: " << dvap.eet << " mm" << endl;
-    cout<<"  PET: " << dvap.pet << " mm" << endl;
-    cout<<"  AET: " << dvap.aet << " mm" << endl;
-    cout<<"  Wn: " << dsoil.sm << " mm" << endl;
-    cout<<"  RO: " << dsoil.ro << " mm" << endl;
+    printf("Daily SPLASH values:\n");
+    printf("  Cn: %0.6f mm\n", dvap.cond);
+    printf("  EET: %0.6f mm\n", dvap.eet);
+    printf("  PET: %0.6f mm\n", dvap.pet);
+    printf("  AET: %0.6f mm\n", dvap.aet);
+    printf("  Wn: %0.6f mm\n", dsoil.sm);
+    printf("  RO: %0.6f mm\n", dsoil.ro);
 }
