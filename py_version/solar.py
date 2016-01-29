@@ -2,7 +2,7 @@
 #
 # solar.py
 #
-# 2015-12-29 -- last updated
+# LAST UPDATED: 2016-01-29
 #
 # ~~~~~~~~~
 # citation:
@@ -11,13 +11,12 @@
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
 # led algorithms for simulating habitats (SPLASH): Robust indices of radiation,
 # evapotranspiration and plant-available moisture, Geoscientific Model
-# Development, 2015 (in progress)
+# Development, 2016 (in progress)
 
 ###############################################################################
 # IMPORT MODULES:
 ###############################################################################
 import logging
-import logging.handlers
 
 import numpy
 
@@ -34,6 +33,7 @@ class SOLAR:
     Features: This class calculates the daily radiation fluxes.
     Version:  1.0.0-dev
               - separated daily flux calculation from init [15.12.29]
+              - created print vals function [16.01.29]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -66,6 +66,67 @@ class SOLAR:
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
+    def berger_tls(self, n):
+        """
+        Name:     SOLAR.berger_tls
+        Input:    int, day of year
+        Output:   tuple,
+                  - true anomaly, degrees
+                  - true longitude, degrees
+        Features: Returns true anomaly and true longitude for a given day
+        Depends:  - ke
+                  - komega
+        Ref:      Berger, A. L. (1978), Long term variations of daily
+                  insolation and quaternary climatic changes, J. Atmos. Sci.,
+                  35, 2362-2367.
+        """
+        self.logger.debug("calculating heliocentric longitudes for day %d", n)
+
+        # Variable substitutes:
+        xee = ke**2
+        xec = ke**3
+        xse = numpy.sqrt(1.0 - xee)
+
+        # Mean longitude for vernal equinox:
+        xlam = (ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega)
+        xlam -= xee/4.0*(0.5 + xse)*self.dsin(2.0*komega)
+        xlam += xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
+        xlam *= 2.0
+        xlam /= pir
+        self.logger.debug("mean longitude for vernal equinox set to %f", xlam)
+
+        # Mean longitude for day of year:
+        dlamm = xlam + (n - 80.0)*(360.0/self.kN)
+        self.logger.debug("mean longitude for day of year set to %f", dlamm)
+
+        # Mean anomaly:
+        anm = (dlamm - komega)
+        ranm = (anm*pir)
+        self.logger.debug("mean anomaly set to %f", ranm)
+
+        # True anomaly:
+        ranv = ranm
+        ranv += (2.0*ke - xec/4.0)*numpy.sin(ranm)
+        ranv += 5.0/4.0*xee*numpy.sin(2.0*ranm)
+        ranv += 13.0/12.0*xec*numpy.sin(3.0*ranm)
+        anv = ranv/pir
+
+        # True longitude:
+        my_tls = anv + komega
+        if my_tls < 0:
+            my_tls += 360.0
+        elif my_tls > 360:
+            my_tls -= 360.0
+        self.logger.debug("true longitude set to %f", my_tls)
+
+        # True anomaly:
+        my_nu = (my_tls - komega)
+        if my_nu < 0:
+            my_nu += 360.0
+        self.logger.debug("true anomaly set to %f", my_nu)
+
+        return(my_nu, my_tls)
+
     def calculate_daily_fluxes(self, n, y=0, sf=1.0, tc=23.0):
         """
         Name:     SOLAR.calculate_daily_fluxes
@@ -264,67 +325,6 @@ class SOLAR:
         self.logger.debug("calculating sine of %f degrees", x)
         return numpy.sin(x*pir)
 
-    def berger_tls(self, n):
-        """
-        Name:     SOLAR.berger_tls
-        Input:    int, day of year
-        Output:   tuple,
-                  - true anomaly, degrees
-                  - true longitude, degrees
-        Features: Returns true anomaly and true longitude for a given day
-        Depends:  - ke
-                  - komega
-        Ref:      Berger, A. L. (1978), Long term variations of daily
-                  insolation and quaternary climatic changes, J. Atmos. Sci.,
-                  35, 2362-2367.
-        """
-        self.logger.debug("calculating heliocentric longitudes for day %d", n)
-
-        # Variable substitutes:
-        xee = ke**2
-        xec = ke**3
-        xse = numpy.sqrt(1.0 - xee)
-
-        # Mean longitude for vernal equinox:
-        xlam = (ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega)
-        xlam -= xee/4.0*(0.5 + xse)*self.dsin(2.0*komega)
-        xlam += xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
-        xlam *= 2.0
-        xlam /= pir
-        self.logger.debug("mean longitude for vernal equinox set to %f", xlam)
-
-        # Mean longitude for day of year:
-        dlamm = xlam + (n - 80.0)*(360.0/self.kN)
-        self.logger.debug("mean longitude for day of year set to %f", dlamm)
-
-        # Mean anomaly:
-        anm = (dlamm - komega)
-        ranm = (anm*pir)
-        self.logger.debug("mean anomaly set to %f", ranm)
-
-        # True anomaly:
-        ranv = ranm
-        ranv += (2.0*ke - xec/4.0)*numpy.sin(ranm)
-        ranv += 5.0/4.0*xee*numpy.sin(2.0*ranm)
-        ranv += 13.0/12.0*xec*numpy.sin(3.0*ranm)
-        anv = ranv/pir
-
-        # True longitude:
-        my_tls = anv + komega
-        if my_tls < 0:
-            my_tls += 360.0
-        elif my_tls > 360:
-            my_tls -= 360.0
-        self.logger.debug("true longitude set to %f", my_tls)
-
-        # True anomaly:
-        my_nu = (my_tls - komega)
-        if my_nu < 0:
-            my_nu += 360.0
-        self.logger.debug("true anomaly set to %f", my_nu)
-
-        return(my_nu, my_tls)
-
     def julian_day(self, y, m, i):
         """
         Name:     SOLAR.julian_day
@@ -348,6 +348,32 @@ class SOLAR:
         jde = int(365.25*(y + 4716)) + int(30.6001*(m + 1)) + i + b - 1524.5
         return jde
 
+    def print_vals(self):
+        """
+        Name:     SOLAR.print_vals
+        Inputs:   None.
+        Outputs:  None.
+        Features: Prints daily radiation fluxes
+        """
+        print("year: %d" % (self.year))
+        print("day of year, n: %d" % (self.day))
+        print("days in year, kN: %d" % (self.kN))
+        print("true anomaly, nu: %0.6f degrees" % (self.my_nu))
+        print("true lon, lambda: %0.6f degrees" % (self.my_lambda))
+        print("distance factor, dr: %0.6f" % (self.dr))
+        print("declination, delta: %0.6f" % (self.delta))
+        print("variable substitute, ru: %0.6f" % (self.ru))
+        print("variable substitute, rv: %0.6f" % (self.rv))
+        print("sunset angle, hs: %0.6f degrees" % (self.hs))
+        print("daily ET radiation: %0.6f MJ/m^2" % ((1.0e-6)*self.ra_d))
+        print("transmittivity, tau: %0.6f" % (self.tau))
+        print("daily PPFD: %0.6f mol/m^2" % (self.ppfd_d))
+        print("net longwave radiation: %0.6f W/m^2" % (self.rnl))
+        print("variable substitute, rw: %0.6f" % (self.rw))
+        print("cross-over hour angle: %0.6f degrees" % (self.hn))
+        print("daytime net radiation: %0.6f MJ/m^2" % ((1.0e-6)*self.rn_d))
+        print("nighttime net radiation: %0.6f MJ/m^2" % ((1.0e-6)*self.rnn_d))
+
 ###############################################################################
 # MAIN PROGRAM
 ###############################################################################
@@ -357,13 +383,13 @@ if __name__ == '__main__':
     root_logger.setLevel(logging.INFO)
 
     # Instantiating logging handler and record format:
-    fh = logging.handlers.RotatingFileHandler("solar.log", backupCount=9)
+    root_handler = logging.StreamHandler()
     rec_format = "%(asctime)s:%(levelname)s:%(name)s:%(funcName)s:%(message)s"
     formatter = logging.Formatter(rec_format, datefmt="%Y-%m-%d %H:%M:%S")
-    fh.setFormatter(formatter)
+    root_handler.setFormatter(formatter)
 
     # Send logging handler to root logger:
-    root_logger.addHandler(fh)
+    root_logger.addHandler(root_handler)
 
     # Test one-year of SPLASH:
     my_lat = 37.7
@@ -375,4 +401,3 @@ if __name__ == '__main__':
 
     my_class = SOLAR(my_lat, my_elv)
     my_class.calculate_daily_fluxes(my_day, my_year, my_sf, my_temp)
-    fh.doRollover()
