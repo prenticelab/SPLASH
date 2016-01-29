@@ -12,7 +12,7 @@
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
 # led algorithms for simulating habitats (SPLASH): Robust indices of radiation,
 # evapotranspiration and plant-available moisture, Geoscientific Model
-# Development, 2015 (in progress)
+# Development, 2016 (in progress)
 
 ###############################################################################
 # IMPORT MODULES:
@@ -24,6 +24,8 @@ import os.path
 
 import numpy
 from scipy.io import netcdf
+
+from utilities import get_x_y
 
 
 ###############################################################################
@@ -37,7 +39,7 @@ class DATA_G:
 
     @TODO: finish class
     """
-    kerror = numpy.inf
+    error_val = numpy.inf
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -48,12 +50,15 @@ class DATA_G:
         Inputs:   None.
         Features: Initialize class variables.
         """
-        # Initialize date to None:
+        # Initialize data to None:
         self.date = None
         self.elv_file = None
         self.cld_file = None
         self.pre_file = None
         self.tmp_file = None
+        self.tair = None
+        self.pre = None
+        self.sf = None
 
         # Create a class logger
         self.logger = logging.getLogger(__name__)
@@ -94,6 +99,44 @@ class DATA_G:
         except ValueError:
             return dt0 + (datetime.date(dt0.year + 1, 1, 1) -
                           datetime.date(dt0.year, 1, 1))
+
+    def find_cru_files(self, path):
+        """
+        Features: Searches for the four CRU TS variable files (i.e., elv, cld,
+                  pre, tmp) within a single directory
+        Depends:  get_cru_file
+        """
+        cld_file = self.get_cru_file(path, 'cld')
+        if os.path.isfile(cld_file):
+            self.logger.info("found CRU TS cloudiness file %s", cld_file)
+            self.cld_file = cld_file
+        else:
+            self.logger.warning("failed to load CRU TS cloudiness file")
+            self.cld_file = None
+
+        elv_file = self.get_cru_file(path, 'elv')
+        if os.path.isfile(elv_file):
+            self.logger.info("found CRU TS elevation file %s", elv_file)
+            self.elv_file = elv_file
+        else:
+            self.logger.warning("failed to load CRU TS elevation file")
+            self.elv_file = None
+
+        pre_file = self.get_cru_file(path, 'pre')
+        if os.path.isfile(pre_file):
+            self.logger.info("found CRU TS precipitation file %s", pre_file)
+            self.pre_file = pre_file
+        else:
+            self.logger.warning("failed to load CRU TS precipitation file")
+            self.pre_file = None
+
+        tmp_file = self.get_cru_file(path, 'tmp')
+        if os.path.isfile(tmp_file):
+            self.logger.info("found CRU TS temperature file %s", tmp_file)
+            self.tmp_file = tmp_file
+        else:
+            self.logger.warning("failed to load CRU TS temperature file")
+            self.tmp_file = None
 
     def get_cru_file(self, path, voi):
         """
@@ -142,7 +185,7 @@ class DATA_G:
         Output:   numpy nd.array
         Features: Returns 360x720 monthly CRU TS dataset for a given month and
                   variable of interest (e.g., cld, pre, tmp)
-                  NODATA = kerror
+                  NODATA = error_val
         Depends:  - get_cru_file
                   - get_time_index
         """
@@ -191,7 +234,7 @@ class DATA_G:
 
             noval_idx = numpy.where(f_data == f_noval)
             f_data[noval_idx] *= 0.0
-            f_data[noval_idx] += self.kerror
+            f_data[noval_idx] += self.error_val
 
             return f_data
 
@@ -241,67 +284,54 @@ class DATA_G:
 
         return ryd
 
-    def load_cld(self, path):
+    def print_vals(self, lon, lat):
         """
-        Inputs:   str, CRU cloudiness file path (path)
+        Name:     DATA_G.print_vals
+        Inputs:   - float, longitude, degrees (lon)
+                  - float, latitude, degrees (lat)
+        Outputs:  None.
+        Features: Prints the four variables (i.e., elv, pre, tair, and sf) for
+                  a given location
+        Depends:  get_x_y
         """
-        # Find data files:
-        self.cld_file = self.get_cru_file(path, 'cld')
-
-    def load_elv(self, path):
-        """
-        Inputs:   str, CRU elevation file path (path)
-        Depends:  - get_cru_file
-                  - read_elv
-        """
-        # Find data files:
-        self.elv_file = self.get_cru_file(path, 'elv')
-
-        # Read in elevation data:
-        self.read_elv()
-
-        # Define good & no data indexes:
-        if self.elv is not None:
-            self.noval_idx = numpy.where(self.elv == self.kerror)
-            self.good_idx = numpy.where(self.elv != self.kerror)
-
-    def load_pre(self, path):
-        """
-        Inputs:   str, CRU precipitation file path (path)
-        """
-        # Find data files:
-        self.pre_file = self.get_cru_file(path, 'pre')
-
-    def load_tmp(self, path):
-        """
-        Inputs:   str, CRU air temperature file path (path)
-        """
-        # Find data files:
-        self.tmp_file = self.get_cru_file(path, 'tmp')
+        x, y = get_x_y(lon, lat)
+        print("Date: %s" % (self.date))
+        print("Longitude: %0.4f degrees (%d)" % (lon, x))
+        print("Latitude: %0.4f degrees (%d)" % (lat, y))
+        print("Elevation: %0.4f m" % (self.elv[y, x]))
+        print("Mean air temperature: %0.6f deg. C" % (self.tair[y, x]))
+        print("Precipitation: %0.6f mm/d" % (self.pre[y, x]))
+        print("Sunshine fraction: %0.6f" % (self.sf[y, x]))
 
     def read_elv(self):
         """
         Name:     DATA_G.read.elv
-        Features: Reads elevation data from file
+        Inputs:   None.
+        Outputs:  None.
+        Features: Reads elevation data from file and sets good and no value
+                  indexes
         """
         if self.elv_file:
             try:
-                self.logger.debug("loading elevation data")
+                self.logger.debug("reading elevation data")
                 f = numpy.loadtxt(self.elv_file)
             except:
-                self.logger.exception("failed to load elevation data")
-                f = numpy.array([])
+                self.logger.exception("failed to read elevation data")
+                self.elv = None
+                self.good_idx = (numpy.array([]), numpy.array([]))
+                self.noval_idx = (numpy.array([]), numpy.array([]))
             else:
-                self.logger.debug("load complete, setting error values")
-                noval_idx = numpy.where(f == -999.0)
-                f[noval_idx] *= 0.0
-                f[noval_idx] += self.kerror
-            finally:
-                self.logger.debug("saving %d points", f.size)
+                self.logger.debug("read %d values", f.size)
+                self.good_idx = numpy.where(f != -999.0)
+                self.noval_idx = numpy.where(f == -999.0)
+                f[self.noval_idx] *= 0.0
+                f[self.noval_idx] += self.error_val
                 self.elv = f
         else:
             self.logger.warnig("no elevation file found!")
             self.elv = None
+            self.good_idx = (numpy.array([]), numpy.array([]))
+            self.noval_idx = (numpy.array([]), numpy.array([]))
 
     def read_monthly_clim(self, m):
         """
@@ -343,11 +373,11 @@ class DATA_G:
             # Update good and noval indexes:
             self.logger.debug("updating good and no-value indexes")
             self.noval_idx = numpy.where(
-                (self.elv == self.kerror) | (tmp == self.kerror) |
-                (pre == self.kerror) | (cld == self.kerror))
+                (self.elv == self.error_val) | (tmp == self.error_val) |
+                (pre == self.error_val) | (cld == self.error_val))
             self.good_idx = numpy.where(
-                (self.elv != self.kerror) & (tmp != self.kerror) &
-                (pre != self.kerror) & (cld != self.kerror))
+                (self.elv != self.error_val) & (tmp != self.error_val) &
+                (pre != self.error_val) & (cld != self.error_val))
 
             # Convert cloudiness to fractional sunshine, sf
             self.logger.debug("converting cloudiness to sunshine fraction")
@@ -399,13 +429,10 @@ if __name__ == '__main__':
     # Send logging handler to root logger:
     root_logger.addHandler(root_handler)
 
-    #
     cru_dir = "/usr/local/share/data/cru"
     my_class = DATA_G()
-    my_class.load_cld(cru_dir)
-    my_class.load_elv(cru_dir)
-    my_class.load_pre(cru_dir)
-    my_class.load_tmp(cru_dir)
+    my_class.find_cru_files(cru_dir)
+    my_class.read_elv()
 
     my_day = 172
     my_year = 2000

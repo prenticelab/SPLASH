@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# data_grid.py
+# solr_grid.py
 #
 # LAST UPDATED: 2016-01-29
 #
@@ -12,7 +12,7 @@
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
 # led algorithms for simulating habitats (SPLASH): Robust indices of radiation,
 # evapotranspiration and plant-available moisture, Geoscientific Model
-# Development, 2015 (in progress)
+# Development, 2016 (in progress)
 
 ###############################################################################
 # IMPORT MODULES:
@@ -25,6 +25,7 @@ import numpy
 from const import (ke, keps, kGsc, kA, kb, kc, kd, kfFEC, kalb_vis, kalb_sw,
                    komega, pir)
 from data_grid import DATA_G
+from utilities import get_x_y
 
 
 ###############################################################################
@@ -35,7 +36,7 @@ class SOLAR_G:
     Name:     SOLAR_G
     Features: This class calculates the daily radiation fluxes.
     Version:  1.0.0-dev
-              - added print vals and get x & y functions [16.01.29]
+              - added print vals functions [16.01.29]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -70,10 +71,11 @@ class SOLAR_G:
     def calculate_daily_fluxes(self, n, y, sf, tc):
         """
         Name:     SOLAR_G.calculate_daily_fluxes
-        Input:    - int, day of the year (n)
+        Inputs:   - int, day of the year (n)
                   - int, year (y)
                   - nd.array, fraction of sunshine hours (sf)
                   - nd.array, mean daily air temperature, C (tc)
+        Features: Calculates the daily radiation fluxes
         Depends:  - julian_day
                   - berger_tls
                   - dcos
@@ -295,7 +297,7 @@ class SOLAR_G:
         # Offset lat to pixel centroid and calucate based on index:
         self.logger.debug("calculating latitude at %0.3f degrees", r)
         lat = -90.0 + (0.5*r)
-        lat = lat + (y*r)
+        lat += (y*r)
         return lat
 
     def dcos(self, x):
@@ -381,22 +383,6 @@ class SOLAR_G:
 
         return(my_nu, my_tls)
 
-    def get_x_y(self, lon, lat, r=0.5):
-        """
-        Name:     SOLAR_G.get_x_y
-        Input:    - float, longitude (lon)
-                  - float, latitude (lat)
-                  - [optional] float, resolution (r)
-        Output:   tuple, x-y indices
-        Features: Returns x and y indices for a given lon-lat pair and pixel
-                  resolution
-        """
-        # Solve x and y indices:
-        x = (lon + 180.0)/r - 0.5
-        y = (90.0 - lat)/r - 0.5
-        #
-        return (int(x), int(y))
-
     def julian_day(self, y, m, i):
         """
         Name:     SOLAR_G.julian_day
@@ -409,7 +395,7 @@ class SOLAR_G:
         Ref:      Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," Astronomical
                   Algorithms
         """
-        self.logger.debug("calculating Julian day")
+        self.logger.debug("calculating Julian day for %d-%d-%d" % (y, m, i))
         if m <= 2.0:
             y -= 1.0
             m += 12.0
@@ -429,7 +415,7 @@ class SOLAR_G:
         Features: Prints daily radiation fluxes
         Depends:  get_x_y
         """
-        x, y = self.get_x_y(lon, lat)
+        x, y = get_x_y(lon, lat)
 
         print("year: %d" % (self.year))
         print("day of year, n: %d" % (self.day))
@@ -459,7 +445,7 @@ class SOLAR_G:
 if __name__ == '__main__':
     # Create a root logger:
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(logging.WARNING)
 
     # Instantiating logging handler and record format:
     root_handler = logging.StreamHandler()
@@ -473,10 +459,8 @@ if __name__ == '__main__':
     cru_dir = "/usr/local/share/data/cru"
     root_logger.info("creating data class and loading data files")
     data = DATA_G()
-    data.load_elv(cru_dir)
-    data.load_cld(cru_dir)
-    data.load_pre(cru_dir)
-    data.load_tmp(cru_dir)
+    data.find_cru_files(cru_dir)
+    data.read_elv()
     root_logger.info("finished loading data files")
 
     n = 172
@@ -490,7 +474,15 @@ if __name__ == '__main__':
     root_logger.info("finished reading monthly data")
 
     root_logger.info("creating solar class")
-    my_class = SOLAR_G(data.elv, data.kerror)
+    my_class = SOLAR_G(data.elv, data.error_val)
 
     root_logger.info("calculating daily fluxes")
+    my_lon = -122.25
+    my_lat = 37.75
     my_class.calculate_daily_fluxes(172, 2000, data.sf, data.tair)
+
+    print("Data:")
+    data.print_vals(my_lon, my_lat)
+    print("")
+    print("Results:")
+    my_class.print_vals(my_lon, my_lat)
