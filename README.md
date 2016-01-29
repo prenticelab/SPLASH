@@ -108,6 +108,18 @@ This directory holds the FORTRAN90 version of the SPLASH code.
 
     * Runs SPLASH for one year, following a spin-up of soil moisture, based on example monthly meteorological data (hard-coded).
 
+## grid_version/
+This directory holds the grid-based SPLASH code.
+__UNDER DEVELOPMENT!__
+
+* __const.py__
+
+* __data_grid.py__
+
+* __solar_grid.py__
+
+* __splash_grid.py__
+
 ## py_version/
 This directory holds the Python version of the SPLASH code.
 
@@ -146,28 +158,6 @@ This directory holds the Python version of the SPLASH code.
 * __splash_data.py__
 
     * SPLASH_DATA class and script to produce a CSV file with daily input data (i.e., sunshine fraction, air temperature, and precipitation)
-
-* __splash_grid.py__
-
-    * __NOT FULLY TESTED!__
-
-    * Implements the EVAP_G class for grid-based processing
-
-    * Inputs include:
-
-        * day of year
-
-        * elevation (360x720 array), meters
-
-        * sunshine fraction (360x720 array), decimal
-
-        * mean daily air temperature (360x720 array), °C
-
-        * evaporative supply rate (360x720 array), mm/h
-
-        * year (optional)
-
-    * CRU-based input data is used (user must have a copy of data files and specify their location)
 
 ## r_version/
 This directory holds the R version of the SPLASH code.
