@@ -2,7 +2,7 @@
 #
 # main.R
 #
-# last updated: 2016-01-22
+# last updated: 2016-02-05
 #
 # ~~~~~~~~~
 # citation:
@@ -251,3 +251,16 @@ cat(sprintf("  hi: %0.6f degrees\n", evap$hi_deg))
 cat(sprintf("  EET: %0.6f mm\n", evap$eet_mm))
 cat(sprintf("  PET: %0.6f mm\n", evap$pet_mm))
 cat(sprintf("  AET: %0.6f mm\n", evap$aet_mm))
+
+# TEST 3: SOIL MOISTURE (run one day) #########################################
+t3 <- run_one_day(lat=37.7, elv=142, n=172, y=2000, wn=75, sf=1, tc=23, pn=5)
+cat(sprintf("TEST 3---Soil moisture (run one day):\n"))
+cat(sprintf("  Ho: %0.6f J/m2\n", t3$ho))
+cat(sprintf("  Hn: %0.6f J/m2\n", t3$hn))
+cat(sprintf("  PPFD: %0.6f mol/m2\n", t3$ppfd))
+cat(sprintf("  EET: %0.6f mm/d\n", t3$eet))
+cat(sprintf("  PET: %0.6f mm/d\n", t3$pet))
+cat(sprintf("  AET: %0.6f mm/d\n", t3$aet))
+cat(sprintf("  Cn: %0.6f mm/d\n", t3$cond))
+cat(sprintf("  Wn: %0.6f mm\n", t3$wn))
+cat(sprintf("  RO: %0.6f mm\n", t3$ro))

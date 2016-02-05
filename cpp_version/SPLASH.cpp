@@ -11,7 +11,7 @@ using namespace std;
  * SPLASH.cpp
  *
  * 2015-02-17 -- created
- * 2016-01-22 -- last updated
+ * 2016-02-05 -- last updated
  *
  * ~~~~~~~~~
  * citation:
@@ -286,10 +286,10 @@ void SPLASH::print_vals(){
     *********************************************************************** */
     evap.display();
     printf("Daily SPLASH values:\n");
-    printf("  Cn: %0.6f mm\n", dvap.cond);
     printf("  EET: %0.6f mm\n", dvap.eet);
     printf("  PET: %0.6f mm\n", dvap.pet);
     printf("  AET: %0.6f mm\n", dvap.aet);
+    printf("  Cn: %0.6f mm\n", dvap.cond);
     printf("  Wn: %0.6f mm\n", dsoil.sm);
     printf("  RO: %0.6f mm\n", dsoil.ro);
 }

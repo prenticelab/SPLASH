@@ -3,8 +3,7 @@
 #
 # const.py
 #
-# 2014-01-30 -- created
-# 2015-11-11 -- last updated
+# LAST UPDATED: 2016-02-05
 #
 # ~~~~~~~~~
 # citation:
@@ -13,7 +12,7 @@
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
 # led algorithms for simulating habitats (SPLASH): Robust indices of radiation,
 # evapotranspiration and plant-available moisture, Geoscientific Model
-# Development, 2015 (in progress)
+# Development, 2016 (in progress)
 
 ###############################################################################
 # IMPORT MODULES:
@@ -23,7 +22,7 @@ import numpy
 ###############################################################################
 # GLOBAL CONSTANTS:
 ###############################################################################
-kA = 107         # constant for Rnl (Monteith & Unsworth, 1990)
+kA = 107.        # constant for Rnl (Monteith & Unsworth, 1990)
 kalb_sw = 0.17   # shortwave albedo (Federer, 1968)
 kalb_vis = 0.03  # visible light albedo (Sellers, 1985)
 kb = 0.20        # constant for Rnl (Linacre, 1968)
@@ -41,7 +40,7 @@ kMv = 0.01802    # molecular weight of water vapor, kg/mol (Tsilingiris, 2008)
 kPo = 101325     # standard atmosphere, Pa (Allen, 1973)
 kR = 8.31447     # universal gas constant, J/mol/K (Moldover et al., 1988)
 kTo = 288.15     # base temperature, K (Berberan-Santos et al., 1997)
-kWm = 150        # soil moisture capacity, mm (Cramer & Prentice, 1988)
+kWm = 150.       # soil moisture capacity, mm (Cramer & Prentice, 1988)
 kw = 0.26        # entrainment factor (Lhomme, 1997; Priestley & Taylor, 1972)
 komega = 283.0   # longitude of perihelion for 2000 CE, degrees (Berger, 1978)
 pir = (numpy.pi/180.0)

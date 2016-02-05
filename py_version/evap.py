@@ -2,7 +2,7 @@
 #
 # evap.py
 #
-# 2015-12-29 -- last updated
+# LAST UPDATED: 2016-02-05
 #
 # ~~~~~~~~~
 # citation:
@@ -17,7 +17,6 @@
 # IMPORT MODULES:
 ###############################################################################
 import logging
-import logging.handlers
 
 import numpy
 
@@ -66,6 +65,19 @@ class EVAP:
             self.logger.exception("failed to initialize SOLAR class")
         else:
             self.logger.debug("initialized solar class")
+
+        # Initialize class variables:
+        self.sat = None    # slope of saturation vap press temp curve, Pa/K
+        self.lv = None     # enthalpy of vaporization, J/kg
+        self.pw = None     # density of water, kg/m^3
+        self.psy = None    # psychrometric constant, Pa/K
+        self.econ = None   # water-to-energy conversion factor
+        self.cond = None   # daily condensation, mm
+        self.eet_d = None  # daily EET, mm
+        self.pet_d = None  # daily PET, mm
+        self.rx = None     # variable substitute, (mm/hr)/(W/m^2)
+        self.hi = None     # intersection hour angle (hi), degrees
+        self.aet_d = None  # daily AET (aet_d), mm
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -360,13 +372,13 @@ if __name__ == '__main__':
     root_logger.setLevel(logging.INFO)
 
     # Instantiating logging handler and record format:
-    fh = logging.handlers.RotatingFileHandler("evap.log", backupCount=9)
+    root_handler = logging.StreamHandler()
     rec_format = "%(asctime)s:%(levelname)s:%(name)s:%(funcName)s:%(message)s"
     formatter = logging.Formatter(rec_format, datefmt="%Y-%m-%d %H:%M:%S")
-    fh.setFormatter(formatter)
+    root_handler.setFormatter(formatter)
 
     # Send logging handler to root logger:
-    root_logger.addHandler(fh)
+    root_logger.addHandler(root_handler)
 
     # Test one-year of SPLASH:
     my_lat = 37.7
@@ -379,4 +391,3 @@ if __name__ == '__main__':
 
     my_class = EVAP(my_lat, my_elv)
     my_class.calculate_daily_fluxes(my_sw, my_day, my_year, my_sf, my_temp)
-    fh.doRollover()

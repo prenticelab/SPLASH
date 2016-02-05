@@ -3,8 +3,7 @@
 #
 # splash.py
 #
-# 2014-01-30 -- created
-# 2015-11-11 -- last updated
+# LAST UPDATED: 2016-02-05
 #
 # ~~~~~~~~~
 # citation:
@@ -13,11 +12,13 @@
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
 # led algorithms for simulating habitats (SPLASH): Robust indices of radiation,
 # evapotranspiration and plant-available moisture, Geoscientific Model
-# Development, 2015 (in progress)
+# Development, 2016 (in progress)
 
 ###############################################################################
 ## IMPORT MODULES:
 ###############################################################################
+import logging
+
 import numpy
 
 from const import kCw, kWm
@@ -42,15 +43,31 @@ class SPLASH:
         Input:    - float, latitude, degrees (lat)
                   - float, elevation, meters (elv)
         """
+        # Create a class logger
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("SPLASH class called")
+
         # Error handle and assign required public variables:
         self.elv = elv
-        #
+        self.logger.info("elevation set to %f m", elv)
+
         if lat > 90.0 or lat < -90.0:
-            print "Latitude outside range of validity (-90 to 90)!"
-            exit(1)
+            self.logger.error(
+                "Latitude outside range of validity, (-90 to 90)!")
+            raise ValueError(
+                "Latitude outside range of validity, (-90 to 90)!")
         else:
+            self.logger.info("latitude set to %0.3f degrees", lat)
             self.lat = lat
-        #
+
+        # Create EVAP class:
+        try:
+            self.evap = EVAP(lat, elv)
+        except:
+            self.logger.exception("failed to Initialize EVAP class")
+        else:
+            self.logger.debug("initialized EVAP class")
+
         # Initialize daily status variables:
         self.ho = 0.      # daily solar irradiation, J/m2
         self.hn = 0.      # daily net radiation, J/m2
@@ -83,22 +100,27 @@ class SPLASH:
             if (numpy.array(d.num_lines) == n).all():
                 wn_vec = numpy.zeros((n,))
             else:
-                print "Invalid number of lines read from DATA class!"
+                self.logger.error(
+                    "Invalid number of lines read from DATA class!")
+                raise IndexError(
+                    "Invalid number of lines read from DATA class!")
         else:
             n = d.num_lines
             wn_vec = numpy.zeros((n,))
-        print "Created soil moisture array of length", len(wn_vec)
-        #
+        self.logger.info(
+            "Created soil moisture array of length %d", len(wn_vec))
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Run one year:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        self.logger.info("running first year of spin-up")
         for i in xrange(n):
             # Get preceding soil moisture status:
             if i == 0:
                 wn = wn_vec[-1]
             else:
                 wn = wn_vec[i-1]
-            #
+
             # Calculate soil moisture and runoff:
             sm, ro = self.quick_run(n=i+1,
                                     y=d.year,
@@ -107,7 +129,8 @@ class SPLASH:
                                     tc=d.tair_vec[i],
                                     pn=d.pn_vec[i])
             wn_vec[i] = sm
-        #
+        self.logger.info("completed first year")
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate change in starting soil moisture:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,19 +142,21 @@ class SPLASH:
                                     tc=d.tair_vec[0],
                                     pn=d.pn_vec[0])
         diff_sm = numpy.abs(end_sm - start_sm)
-        #
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Equilibrate:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        self.logger.info("equilibrating daily soil moisture")
         spin_count = 1
         while diff_sm > 1.0:
+            self.logger.info("iteration: %d", spin_count)
             for i in xrange(n):
                 # Get preceding soil moisture status:
                 if i == 0:
                     wn = wn_vec[-1]
                 else:
                     wn = wn_vec[i-1]
-                #
+
                 # Calculate soil moisture and runoff:
                 sm, ro = self.quick_run(n=i+1,
                                         y=d.year,
@@ -140,7 +165,7 @@ class SPLASH:
                                         tc=d.tair_vec[i],
                                         pn=d.pn_vec[i])
                 wn_vec[i] = sm
-            #
+
             start_sm = wn_vec[0]
             end_sm, ro = self.quick_run(n=1,
                                         y=d.year,
@@ -149,9 +174,9 @@ class SPLASH:
                                         tc=d.tair_vec[0],
                                         pn=d.pn_vec[0])
             diff_sm = numpy.abs(end_sm - start_sm)
+            self.logger.info("soil moisture differential: %f", diff_sm)
             spin_count += 1
-        #
-        print "Spun", spin_count, "years"
+        self.logger.info("equilibrated after %d iterations", spin_count)
         self.wn_vec = wn_vec
         self.wn = wn_vec[-1]
 
@@ -169,40 +194,56 @@ class SPLASH:
         Features: Returns daily soil moisture and runoff.
         Depends:  - kCw
                   - kWm
-                  - EVAP
         """
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Calculate evaporative supply rate, mm/h
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         sw = kCw*(wn/kWm)
-        #
+        self.logger.debug("evaporative supply rate: %f mm/h", sw)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Calculate radiation and evaporation quantities
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        my_evap = EVAP(self.lat, n, self.elv, y, sf, tc, sw)
-        #
+        try:
+            self.evap.calculate_daily_fluxes(sw, n, y, sf, tc)
+        except:
+            self.logger.exception(
+                "failed to calculate daily evaporation fluxes")
+            raise
+        else:
+            cond = self.evap.cond
+            aet = self.evap.aet_d
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate today's soil moisture, mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        sm = wn + pn + my_evap.cond - my_evap.aet_d
-        #
+        sm = wn + pn + cond - aet
+        self.logger.debug("calculated soil moisture as %f mm", sm)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate runoff, mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if sm > kWm:
+            self.logger.debug("bucket is too full")
             # Bucket is too full
             #   allocate excess water to runoff
             #   set soil moisture to capacity (i.e., kWm)
             ro = sm - kWm
             sm = kWm
+            self.logger.debug("soil moisture: %f mm", sm)
+            self.logger.debug("excess runoff: %f mm", ro)
         elif sm < 0:
+            self.logger.debug("bucket is too empty")
             # Bucket is too empty
             #   set soil moisture and runoff to zero
             sm = 0
             ro = 0
+            self.logger.debug("soil moisture: %d mm", sm)
+            self.logger.debug("excess runoff: %d mm", ro)
         else:
             ro = 0
-        #
+            self.logger.debug("excess runoff: %d mm", ro)
+
         return(sm, ro)
 
     def run_one_day(self, n, y, wn, sf, tc, pn):
@@ -224,39 +265,50 @@ class SPLASH:
         # 0. Set meteorological variables:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         self.precip = pn    # daily precipitation, mm
-        #
+        self.logger.debug("daily precipitation: %f mm", pn)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Calculate evaporative supply rate (sw), mm/h
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        sw = kCw*(wn/kWm)
-        #
+        sw = kCw*float(wn)/kWm
+        self.logger.debug("evaporative supply rate: %f mm/h", sw)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Calculate radiation and evaporation quantities
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        my_evap = EVAP(self.lat, n, self.elv, y, sf, tc, sw)
-        self.ho = my_evap.ra_d      # daily solar irradiation, J/m2
-        self.hn = my_evap.rn_d      # daily net radiation, J/m2
-        self.ppfd = my_evap.ppfd_d  # daily PPFD, mol/m2
-        self.cond = my_evap.cond    # daily condensation water, mm
-        self.eet = my_evap.eet_d    # daily equilibrium ET, mm
-        self.pet = my_evap.pet_d    # daily potential ET, mm
-        self.aet = my_evap.aet_d    # daily actual ET, mm
-        #
+        try:
+            self.evap.calculate_daily_fluxes(sw, n, y, sf, tc)
+        except:
+            self.logger.exception(
+                "failed to calculate daily evaporation fluxes")
+            raise
+        else:
+            self.cond = self.evap.cond    # daily condensation, mm
+            self.aet = self.evap.aet_d    # daily actual ET, mm
+            self.eet = self.evap.eet_d    # daily equilibrium ET, mm
+            self.pet = self.evap.pet_d    # daily potential ET, mm
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate today's soil moisture (sm), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        sm = wn + pn + my_evap.cond - my_evap.aet_d
-        #
+        sm = wn + pn + self.cond - self.aet
+        self.logger.debug("calculated soil moisture as %f mm", sm)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate runoff (ro), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if sm > kWm:
+            self.logger.debug("bucket is too full")
+            self.logger.debug("setting soil moisture to saturation")
+            self.logger.debug("calculating runoff")
             # Bucket is too full
             #   allocate excess water to runoff
             #   set soil moisture to capacity (i.e., kWm)
             ro = sm - kWm
             sm = kWm
         elif sm < 0:
+            self.logger.debug("bucket is too empty")
+            self.logger.debug("correcting actual ET")
             # Bucket is too empty
             #   reduce actual ET by discrepancy amount
             #   set soil moisture and runoff to zero
@@ -265,7 +317,9 @@ class SPLASH:
             ro = 0
         else:
             ro = 0
-        #
+        self.logger.debug("soil moisture: %f mm", sm)
+        self.logger.debug("excess runoff: %f mm", ro)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Update soil moisture & runoff
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -279,13 +333,42 @@ class SPLASH:
         Outputs:  None
         Features: Prints all daily values
         """
-        print "Daily values:"
-        print "  Ho: %0.6f  MJ/m^2" % ((1.0e-6)*self.ho)
-        print "  HN: %0.6f MJ/m^2" % ((1.0e-6)*self.hn)
-        print "  PAR: %0.6f mol/m^2" % (self.ppfd)
-        print "  Cn: %0.6f mm" % (self.cond)
-        print "  EET: %0.6f mm" % (self.eet)
-        print "  PET: %0.6f mm" % (self.pet)
-        print "  AET: %0.6f mm" % (self.aet)
-        print "  Wn: %0.6f mm" % (self.wn)
-        print "  RO: %0.6f mm" % (self.ro)
+        print("Daily values:")
+        print("  Pn: %0.6f mm" % (self.precip))
+        print("  Cn: %0.6f mm" % (self.cond))
+        print("  EET: %0.6f mm" % (self.eet))
+        print("  PET: %0.6f mm" % (self.pet))
+        print("  AET: %0.6f mm" % (self.aet))
+        print("  Wn: %0.6f mm" % (self.wn))
+        print("  RO: %0.6f mm" % (self.ro))
+
+###############################################################################
+# MAIN PROGRAM
+###############################################################################
+if __name__ == '__main__':
+    # Create a root logger:
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+
+    # Instantiating logging handler and record format:
+    root_handler = logging.StreamHandler()
+    rec_format = "%(asctime)s:%(levelname)s:%(name)s:%(funcName)s:%(message)s"
+    formatter = logging.Formatter(rec_format, datefmt="%Y-%m-%d %H:%M:%S")
+    root_handler.setFormatter(formatter)
+
+    # Send logging handler to root logger:
+    root_logger.addHandler(root_handler)
+
+    # Test one-year of SPLASH:
+    my_lat = 37.7
+    my_elv = 142.
+    my_day = 172
+    my_year = 2000
+    my_sf = 1.0
+    my_temp = 23.0
+    my_sm = 75
+    my_precip = 5
+
+    my_class = SPLASH(my_lat, my_elv)
+    my_class.run_one_day(my_day, my_year, my_sm, my_sf, my_temp, my_precip)
+    my_class.print_vals()
