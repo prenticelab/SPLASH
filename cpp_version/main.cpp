@@ -51,6 +51,16 @@ int main() {
     cout << "Test 3: " << endl;
     my_splash.print_vals();
 
+    // Test 4: SPIN-UP
+    DATA my_data;
+    string fname = "../data/example_data.csv";
+    my_data.read_csv(fname);
+    double lat = 37.7;
+    double elv = 142.0;
+    SPLASH my_class(lat, elv);
+    my_class.spin_up(my_data);
+    my_class.print_daily_wn();
+
     /*
 
     // Example 1: read all data from CSV file:

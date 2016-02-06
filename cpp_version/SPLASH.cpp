@@ -11,7 +11,7 @@ using namespace std;
  * SPLASH.cpp
  *
  * 2015-02-17 -- created
- * 2016-02-05 -- last updated
+ * 2016-02-06 -- last updated
  *
  * ~~~~~~~~~
  * citation:
@@ -38,6 +38,7 @@ using namespace std;
  * 05. added vector to include list [15.02.19]
  * 06. created quick_run & spin_up functions [15.02.19]
  * 07. included global.h [16.01.22]
+ * 08. wn_vec is now a class variable [16.02.06]
  *
  * //////////////////////////////////////////////////////////////////////// */
 
@@ -191,10 +192,10 @@ void SPLASH::spin_up(DATA &d){
     double wn;  // previous day's soil moisture, mm
     smr dsm;    // daily soil moisture and runoff
 
-    // Create daily soil moisture vector
+    // Prepare daily soil moisture vector
     int n = d.nlines();
     int y = d.get_year();
-    vector<double> wn_vec(n, 0.0);
+    wn_vec.resize(n, 0.0);
 
     // Run one year:
     for (int i=0; i<n; i++){
@@ -243,7 +244,7 @@ void SPLASH::spin_up(DATA &d){
         // Calculate difference
         start_sm = wn_vec[0];
         quick_run(1, y, wn_vec[n-1], d.get_one_sf(0), d.get_one_tair(0),
-              d.get_one_pn(0), dsm);
+                  d.get_one_pn(0), dsm);
         end_sm = dsm.sm;
         diff_sm = (end_sm - start_sm);
         if (diff_sm < 0){
@@ -292,4 +293,17 @@ void SPLASH::print_vals(){
     printf("  Cn: %0.6f mm\n", dvap.cond);
     printf("  Wn: %0.6f mm\n", dsoil.sm);
     printf("  RO: %0.6f mm\n", dsoil.ro);
+}
+
+void SPLASH::print_daily_wn(){
+    /* ***********************************************************************
+    Name:     SPLASH.print_daily_wn
+    Input:    None
+    Output:   None
+    Features: Prints the current wn_vec values.
+    *********************************************************************** */
+    printf("%s\n", "Day,Wn (mm)");
+    for (unsigned int i=0; i<wn_vec.size(); i++){
+        printf("%d,%0.6f\n", i, wn_vec[i]);
+    }
 }
