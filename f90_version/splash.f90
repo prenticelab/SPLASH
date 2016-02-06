@@ -121,6 +121,9 @@ contains
     ! allocate lengt of vector
     allocate( dval(ndayyear) )
 
+    ! xxx test
+    print*,'hoi'
+
     open( 20, file='../data/'//filename, status='old', form='formatted', action='read', err=888 )
     read( 20, *) dval
     close( 20 )
