@@ -33,6 +33,8 @@ class SPLASH:
     Name:     SPLASH
     Features: This class updates daily quantities of radiation,
               evapotranspiration, soil moisture and runoff based on SPLASH.
+    History:  Version 1.0.0-dev
+              - changed xrange to range for Python 2/3 compatability [16.02.05]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -79,6 +81,7 @@ class SPLASH:
         self.eet = 0.     # daily equilibrium ET, mm
         self.pet = 0.     # daily potential ET, mm
         self.aet = 0.     # daily actual ET, mm
+        self.wn_vec = numpy.array([])  # daily soil moisture array
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -89,7 +92,9 @@ class SPLASH:
         Input:    - DATA class, (d)
                   - bool, (to_write)
         Output:   None.
-        Features: Spins up the daily soil moisture.
+        Features: Spins up the daily soil moisture, creating a daily soil
+                  moisture vector (wn_vec) and previous day's soil moisture
+                  value (wn).
         Depends:  quick_run
         """
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -101,9 +106,9 @@ class SPLASH:
                 wn_vec = numpy.zeros((n,))
             else:
                 self.logger.error(
-                    "Invalid number of lines read from DATA class!")
+                    "Inconsistent number of lines read from DATA class!")
                 raise IndexError(
-                    "Invalid number of lines read from DATA class!")
+                    "Inconsistent number of lines read from DATA class!")
         else:
             n = d.num_lines
             wn_vec = numpy.zeros((n,))
@@ -114,7 +119,7 @@ class SPLASH:
         # 2. Run one year:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         self.logger.info("running first year of spin-up")
-        for i in xrange(n):
+        for i in range(n):
             # Get preceding soil moisture status:
             if i == 0:
                 wn = wn_vec[-1]
@@ -150,7 +155,7 @@ class SPLASH:
         spin_count = 1
         while diff_sm > 1.0:
             self.logger.info("iteration: %d", spin_count)
-            for i in xrange(n):
+            for i in range(n):
                 # Get preceding soil moisture status:
                 if i == 0:
                     wn = wn_vec[-1]
@@ -342,6 +347,17 @@ class SPLASH:
         print("  Wn: %0.6f mm" % (self.wn))
         print("  RO: %0.6f mm" % (self.ro))
 
+    def print_daily_sm(self):
+        """
+        Name:     SPLASH.print_daily_sm
+        Inputs:   None.
+        Outputs:  None.
+        Features: Prints the daily soil moisture values
+        """
+        print("Day,Wn (mm)")
+        for i in range(len(self.wn_vec)):
+            print("%d,%0.6f" % (i, self.wn_vec[i]))
+
 ###############################################################################
 # MAIN PROGRAM
 ###############################################################################
@@ -351,7 +367,7 @@ if __name__ == '__main__':
     root_logger.setLevel(logging.DEBUG)
 
     # Instantiating logging handler and record format:
-    root_handler = logging.StreamHandler()
+    root_handler = logging.FileHandler("splash.log")
     rec_format = "%(asctime)s:%(levelname)s:%(name)s:%(funcName)s:%(message)s"
     formatter = logging.Formatter(rec_format, datefmt="%Y-%m-%d %H:%M:%S")
     root_handler.setFormatter(formatter)

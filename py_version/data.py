@@ -3,8 +3,7 @@
 #
 # data.py
 #
-# 2014-01-30 -- created
-# 2015-11-11 -- last updated
+# LAST UPDATED: 2016-02-05
 #
 # ~~~~~~~~~
 # citation:
@@ -13,11 +12,13 @@
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
 # led algorithms for simulating habitats (SPLASH): Robust indices of radiation,
 # evapotranspiration and plant-available moisture, Geoscientific Model
-# Development, 2015 (in progress)
+# Development, 2016 (in progress)
 
 ###############################################################################
 ## IMPORT MODULES:
 ###############################################################################
+import logging
+
 import numpy
 
 
@@ -28,6 +29,8 @@ class DATA:
     """
     Name:     DATA
     Features: This class handles the file IO for reading and writing data.
+    History:  Version 1.0.0-dev
+              - added logging statements [16.02.05]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -38,6 +41,10 @@ class DATA:
         Input:    str, input file name (fname)
         Features: Initialize empty class variables
         """
+        # Create a class logger
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("DATA class called")
+
         self.file_name = ""
         self.year = 0
         self.num_lines = 0.
@@ -58,7 +65,7 @@ class DATA:
                   a single year from a CSV file that includes a headerline.
         """
         self.file_name = fname
-        #
+
         try:
             data = numpy.loadtxt(fname,
                                  dtype={'names': ('sf', 'tair', 'pn'),
@@ -66,13 +73,14 @@ class DATA:
                                  delimiter=',',
                                  skiprows=1)
         except IOError:
-            print "Could not read input file", fname
+            self.logger.exception("could not read input file %s", fname)
+            raise
         else:
             self.sf_vec = data['sf']
             self.tair_vec = data['tair']
             self.pn_vec = data['pn']
             self.num_lines = data.shape[0]
-            #
+
             if y == -1:
                 if data.shape[0] == 366:
                     self.year = 2000
@@ -95,11 +103,12 @@ class DATA:
         if not isinstance(self.file_name, list):
             self.file_name = []
         self.file_name.append(fname)
-        #
+
         try:
             data = numpy.loadtxt(fname, dtype='f4')
         except IOError:
-            print "Could not read input file", fname
+            self.logger.exception("could not read input file %s", fname)
+            raise
         else:
             if var == 'sf':
                 self.sf_vec = data
@@ -108,13 +117,14 @@ class DATA:
             elif var == 'tair':
                 self.tair_vec = data
             else:
-                print 'Variable type not recognized!'
-            #
+                self.logger.error("variable %s undefined!", var)
+                raise ValueError("Unrecognized variable in read_txt")
+
             # Add line numbers to list:
             if not isinstance(self.num_lines, list):
                 self.num_lines = []
             self.num_lines.append(data.shape[0])
-            #
+
             if y == -1:
                 if data.shape[0] == 366:
                     self.year = 2000
