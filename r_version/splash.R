@@ -188,6 +188,8 @@ run_one_day <- function(lat, elv, n, y, wn, sf, tc, pn) {
     # Update daily soil moisture:
     sm <- wn + pn + ET$cond_mm - ET$aet_mm
 
+    print( paste( "in run_one_day: pn =", pn))
+
     if (sm > kWm) {
         # Bucket is full:
         # - set soil moisture to capacity

@@ -683,7 +683,7 @@ contains
     out_berger = berger_tls( doy )
     
     ! consistency check
-    if (doy==172) print*,'out_berger', out_berger
+    if (do_consistency_check.and.doy==172) print*,'out_berger', out_berger
 
     ! xxx my_nu is not perfectly identical to Python version
     my_nu      = out_berger(1)
@@ -696,12 +696,12 @@ contains
     my_rho = (1.0 - ke**2)/(1.0 + ke * dgcos( my_nu ))
 
     ! consistency check
-    if (doy==172) print*,'my_rho', my_rho
+    if (do_consistency_check.and.doy==172) print*,'my_rho', my_rho
 
     dr = (1.0/my_rho)**2
 
     ! consistency check
-    if (doy==172) print*,'dr', dr
+    if (do_consistency_check.and.doy==172) print*,'dr', dr
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 4. Calculate declination angle (delta), degrees
@@ -711,7 +711,7 @@ contains
     delta = degrees( delta )
 
     ! consistency check
-    if (doy==172) print*,'delta', delta
+    if (do_consistency_check.and.doy==172) print*,'delta', delta
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 5. Calculate variable substitutes (u and v), unitless
@@ -720,7 +720,7 @@ contains
     rv = dgcos(delta) * dgcos(lat)
 
     ! consistency check
-    if (doy==172) print*,'ru, rv ',ru,rv
+    if (do_consistency_check.and.doy==172) print*,'ru, rv ',ru,rv
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 6. Calculate the sunset hour angle (hs), degrees
@@ -734,12 +734,11 @@ contains
       ! Polar night (no sunrise)
       hs = 0.0
     else
-      hs = dacos(-1.0*ru/rv)
-      hs = degrees(hs)
+      hs = degrees(acos(-1.0*ru/rv))
     endif
 
     ! consistency check
-    if (doy==172) print*,'hs',hs
+    if (do_consistency_check.and.doy==172) print*,'hs',hs
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 7. Calculate daily extraterrestrial solar radiation / irradiation (ra_d), J/m^2
@@ -748,7 +747,7 @@ contains
     ra_d = (86400.0/pi)*kGsc*dr*(ru*radians(hs) + rv * dgsin(hs))
 
     ! consistency check
-    if (doy==172) print*,'daily extraterrestrial solar radiation / irradiation (ra_d), J/m^2', ra_d
+    if (do_consistency_check.and.doy==172) print*,'daily extraterrestrial solar radiation / irradiation (ra_d), J/m^2', ra_d
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 8. Calculate transmittivity (tau), unitless
@@ -760,8 +759,8 @@ contains
     tau = tau_o*(1.0 + (2.67e-5)*my_elv)
 
     ! consistency check
-    if (doy==172) print*,'tau_o ',tau_o
-    if (doy==172) print*,'tau   ',tau
+    if (do_consistency_check.and.doy==172) print*,'tau_o ',tau_o
+    if (do_consistency_check.and.doy==172) print*,'tau   ',tau
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 9. Calculate daily PPFD (ppfd_d), mol/m^2
@@ -770,7 +769,7 @@ contains
     ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*ra_d
 
     ! consistency check
-    if (doy==172) print*,'ppfd_d',ppfd_d
+    if (do_consistency_check.and.doy==172) print*,'ppfd_d',ppfd_d
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 10. Estimate net longwave radiation (rnl), W/m^2
@@ -779,12 +778,15 @@ contains
     rnl = (kb + (1.0 - kb)*my_sf)*(kA - my_tc)
 
     ! consistency check
-    if (doy==172) print*,'rnl',rnl
+    if (do_consistency_check.and.doy==172) print*,'net longwave radiation, rnl',rnl
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 11. Calculate variable substitute (rw), W/m^2
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     rw = (1.0-kalb_sw)*tau*kGsc*dr
+
+    ! consistency check
+    if (do_consistency_check.and.doy==172) print*,'rw ', rw
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 12. Calculate net radiation cross-over hour angle (hn), degrees
@@ -796,11 +798,11 @@ contains
       ! Net radiation positive all day
       hn = 180.0
     else
-      hn = degrees( dacos((rnl - rw*ru)/(rw*rv)) )
+      hn = degrees( acos((rnl - rw*ru)/(rw*rv)) )
     endif
 
     ! consistency check
-    if (doy==172) print*,'cross-over hour angle, hn ',hn
+    if (do_consistency_check.and.doy==172) print*,'cross-over hour angle, hn ',hn
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 13. Calculate daytime net radiation (rn_d), J/m^2
@@ -809,7 +811,7 @@ contains
     rn_d = (86400.0/pi) * (hn*(pi/180.0)*(rw*ru - rnl) + rw*rv*dgsin(hn))
 
     ! consistency check
-    if (doy==172) print*,'daytime net radiation, rn_d',rn_d
+    if (do_consistency_check.and.doy==172) print*,'daytime net radiation, rn_d', rn_d
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 14. Calculate nighttime net radiation (rnn_d), J/m^2
@@ -818,7 +820,7 @@ contains
     rnn_d = (86400.0/pi)*(radians(rw*ru*(hs-hn)) + rw*rv*(dgsin(hs)-dgsin(hn)) + rnl*(pi - 2.0*radians(hs) + radians(hn)))
 
     ! consistency check
-    if (doy==172) print*,'nighttime net radiation, rnn_d ',rnn_d
+    if (do_consistency_check.and.doy==172) print*,'nighttime net radiation, rnn_d ',rnn_d
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 15. Calculate water-to-energy conversion (econ), m^3/J
@@ -827,31 +829,31 @@ contains
     s = sat_slope(my_tc)
 
     ! consistency check
-    if (doy==172) print*,'Slope of saturation vap press temp curve, Pa/K, hn ', s
+    if (do_consistency_check.and.doy==172) print*,'Slope of saturation vap press temp curve, Pa/K, hn ', s
 
     ! Enthalpy of vaporization, J/kg
     lv = enthalpy_vap(my_tc)
 
     ! consistency check
-    if (doy==172) print*,'Enthalpy of vaporization, J/kg, lv ', lv
+    if (do_consistency_check.and.doy==172) print*,'Enthalpy of vaporization, J/kg, lv ', lv
 
     ! Density of water, kg/m^3
     pw = density_h2o(my_tc, elv2pres(my_elv))
 
     ! consistency check
-    if (doy==172) print*,'Density of water, kg/m^3, pw ', pw
+    if (do_consistency_check.and.doy==172) print*,'Density of water, kg/m^3, pw ', pw
 
     ! Psychrometric constant, Pa/K
     g = psychro(my_tc, elv2pres(my_elv))
 
     ! consistency check
-    if (doy==172) print*,'Psychrometric constant, Pa/K ', g
+    if (do_consistency_check.and.doy==172) print*,'Psychrometric constant, Pa/K ', g
 
     ! Eq. 58, Documentation
     econ = s/(lv*pw*(s + g))
 
     ! consistency check
-    if (doy==172) print*,'Econ ',econ
+    if (do_consistency_check.and.doy==172) print*,'Econ ',econ
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 16. Calculate daily condensation (wc), mm
@@ -860,7 +862,7 @@ contains
     wc = 1000.0 * econ * abs(rnn_d)
 
     ! consistency check
-    if (doy==172) print*,'daily condensation (mm) ',wc
+    if (do_consistency_check.and.doy==172) print*,'daily condensation (mm) ',wc
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 17. Estimate daily EET (eet_d), mm
@@ -878,7 +880,7 @@ contains
     pet_d = (1.0+kw)*eet_d
 
     ! consistency check
-    if (doy==172) print*,'daily PET (mm) ',pet_d
+    if (do_consistency_check.and.doy==172) print*,'daily PET (mm) ',pet_d
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 19. Calculate variable substitute (rx), (mm/hr)/(W/m^2)
@@ -886,12 +888,23 @@ contains
     rx = 1000.0*3600.0*(1.0+kw)*econ
 
     ! consistency check
-    if (doy==172) print*,'variable substitute rx ',rx
+    if (do_consistency_check.and.doy==172) print*,'variable substitute rx ',rx
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 20. Calculate the intersection hour angle (hi), degrees
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     cos_hi = my_sw/(rw*rv*rx) + rnl/(rw*rv) - ru/rv
+
+    ! xxx problem: my_sw xxx
+
+    print*,'my_sw ', my_sw
+    print*,'ru ', ru
+    print*,'rv ', rv
+    print*,'rw ', rw
+    print*,'rx ', rx
+    print*,'rnl ', rnl
+    stop
+
     if (cos_hi >= 1.0) then
       ! Supply exceeds demand:
       hi = 0.0
@@ -899,21 +912,21 @@ contains
       ! Supply limits demand everywhere:
       hi = 180.0
     else
-      hi = degrees(acos(cos_hi))
+      hi = degrees( acos(cos_hi) )
     endif
 
-    ! consistency check
-    if (doy==172) print*,'intersection hour angle ',hi
+    ! consistency check - XXX PROBLEM: THIS LEADS TO DIFFERENCE WITH OTHER VERSIONS XXX
+    if (do_consistency_check.and.doy==172) print*,'intersection hour angle ', hi
 
 
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
     ! 21. Estimate daily AET (aet_d), mm
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Eq. 81, Documentation
     aet_d = (24.0/pi)*(radians(my_sw*hi) + rx*rw*rv*(dgsin(hn) - dgsin(hi)) + radians((rx*rw*ru - rx*rnl)*(hn - hi)))
 
     ! consistency check
-    if (doy==172) print*,'daily AET (mm) ', aet_d
+    if (do_consistency_check.and.doy==172) print*,'daily AET (mm) ', aet_d
 
 
     !-------------------------------------------------------------   
@@ -1261,7 +1274,7 @@ contains
     pbar = (1.0e-5)*press
     
     ! ! consistency check
-    ! if (doy==172) print*,'atmospheric pressure, bar', pbar
+    ! if (do_consistency_check.and.doy==172) print*,'atmospheric pressure, bar', pbar
 
     density_h2o = 1000.0*po*(ko + ca*pbar + cb*pbar**2.0)/(ko + ca*pbar + cb*pbar**2.0 - pbar)
 

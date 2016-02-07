@@ -265,19 +265,19 @@ cat(sprintf("  Cn: %0.6f mm/d\n", t3$cond))
 cat(sprintf("  Wn: %0.6f mm\n", t3$wn))
 cat(sprintf("  RO: %0.6f mm\n", t3$ro))
 
-# TEST 4:
-daily_totals <- matrix(data=rep(0, 366), nrow=366, ncol=1)
-daily_totals <- as.data.frame(daily_totals)
-names(daily_totals) <- c("wn")
-my_lat <- 37.7
-my_elv <- 142
-my_file <- "../data/example_data.csv"
-my_data <- read_csv(my_file, 2000)
-my_data$lat_deg <- my_lat
-my_data$elv_m <- my_elv
-daily_totals <- spin_up(my_data, daily_totals)
-cat(sprintf("TEST 4---Spin-Up:\n"))
-cat(sprintf("Day,Wn (mm)\n"))
-for (i in seq(from=1, to=my_data$num_lines, by=1)) {
-    cat(sprintf("%d,%0.6f\n", i, daily_totals$wn[i]))
-}
+# # TEST 4:
+# daily_totals <- matrix(data=rep(0, 366), nrow=366, ncol=1)
+# daily_totals <- as.data.frame(daily_totals)
+# names(daily_totals) <- c("wn")
+# my_lat <- 37.7
+# my_elv <- 142
+# my_file <- "../data/example_data.csv"
+# my_data <- read_csv(my_file, 2000)
+# my_data$lat_deg <- my_lat
+# my_data$elv_m <- my_elv
+# daily_totals <- spin_up(my_data, daily_totals)
+# cat(sprintf("TEST 4---Spin-Up:\n"))
+# cat(sprintf("Day,Wn (mm)\n"))
+# for (i in seq(from=1, to=my_data$num_lines, by=1)) {
+#     cat(sprintf("%d,%0.6f\n", i, daily_totals$wn[i]))
+# }
