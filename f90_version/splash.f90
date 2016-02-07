@@ -32,6 +32,9 @@ module modelparams
   ! Chose whether to use monthly or daily input data
   logical, parameter :: use_daily_input = .true.
 
+  ! Chose whether to do the standard consistency check (see Wiki). This overrides 'use_daily_input'.
+  logical, parameter :: do_consistency_check = .true.
+
 end module modelparams
 
 
@@ -170,8 +173,23 @@ program splash
   ! Set current year (at which spinup is executed), and calculate number of days in year
   yr = 2000 ! year 2000 data is read in => leap year!
   ndayyear = julian_day(yr+1, 1, 1) - julian_day(yr, 1, 1)
+
+  if (do_consistency_check) then
+
+    inlen = ndayyear
+
+    ! allocate size of array
+    allocate( insf(ndayyear) )
+    allocate( intc(ndayyear) )
+    allocate( inppt(ndayyear) )
+
+    ! Do consistency check with fixed daily temperature, sunshine fraction and precipitation
+    print*, 'consistency check with fixed daily temperature, sunshine fraction and precipitation ...'
+    insf(:) =  1.0
+    intc(:) = 23.0
+    inppt(:) = 0.9
   
-  if (use_daily_input) then
+  else if (use_daily_input) then
 
     inlen = ndayyear
 
@@ -181,9 +199,18 @@ program splash
     allocate( inppt(ndayyear) )
 
     ! Reading daily input data from file
-    insf  = read1year_daily( "../data/daily_sf_2000_cruts.txt", ndayyear )
-    intc  = read1year_daily( "../data/daily_tair_2000_wfdei.txt", ndayyear )
-    inppt = read1year_daily( "../data/daily_pn_2000_wfdei.txt", ndayyear )
+    print*, 'reading daily climate input from files ...'
+
+    print*, '   ../data/daily_sf_2000_cruts.txt'
+    insf(:)  = read1year_daily( "../data/daily_sf_2000_cruts.txt", ndayyear )
+    
+    print*, '   ../data/daily_tair_2000_wfdei.txt'
+    intc(:)  = read1year_daily( "../data/daily_tair_2000_wfdei.txt", ndayyear )
+    
+    print*, '   ../data/daily_pn_2000_wfdei.txt'
+    inppt(:) = read1year_daily( "../data/daily_pn_2000_wfdei.txt", ndayyear )
+
+    print*, '... done.'
 
   else
 
@@ -202,9 +229,14 @@ program splash
   end if
 
   ! Define input variables
-  my_lon = -0.641 ! longitude, degrees
-  my_lat = 51.4   ! latitude, degrees
-  my_elv = 74.0   ! elevation, m
+  my_lon = -0.00 ! longitude, degrees
+  my_lat = 37.7   ! latitude, degrees
+  my_elv = 142.0  ! elevation, m
+
+  print*,'point scale simulation for ...'
+  print*,'    longitude =', my_lon
+  print*,'    latitude  =', my_lat
+  print*,'    elevation =', my_elv
 
   print*,'Running SPLASH ...'
 
@@ -245,26 +277,21 @@ contains
     ! Spins up the daily soil moisture
     !----------------------------------------------------------------   
     ! arguments
-    integer, intent(in)                         :: yr    ! year AD  
-    real, intent(in)                            :: lon   ! longitude (degrees)
-    real, intent(in)                            :: lat   ! latitude (degrees)
-    real, intent(in)                            :: elv   ! altitude (m)
-    real, allocatable, dimension(:), intent(in) :: ppt   ! monthly precip (mm) 
-    real, allocatable, dimension(:), intent(in) :: tc    ! mean monthly temperature (deg C)
-    real, allocatable, dimension(:), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
-    integer, intent(in)                         :: inlen ! =12 if monthly input data, =ndayyear if daily input data
-    integer, intent(in)                         :: ndayyear ! number of days in this year
+    integer, intent(in)                :: yr    ! year AD  
+    real, intent(in)                   :: lon   ! longitude (degrees)
+    real, intent(in)                   :: lat   ! latitude (degrees)
+    real, intent(in)                   :: elv   ! altitude (m)
+    real, dimension(inlen), intent(in) :: ppt   ! monthly precip (mm) 
+    real, dimension(inlen), intent(in) :: tc    ! mean monthly temperature (deg C)
+    real, dimension(inlen), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
+    integer, intent(in)                :: inlen ! =12 if monthly input data, =ndayyear if daily input data
+    integer, intent(in)                :: ndayyear ! number of days in this year
 
     ! local variables
     integer :: spin_count                            ! counter variable
     real :: start_sm                                 ! soil moisture in first day of year
     real :: end_sm                                   ! soil moisture in last day of year
     real :: diff_sm                                  ! difference in soil moisture between first and last day of year
-
-    ! allocate memory
-    allocate( ppt(inlen) )
-    allocate( tc(inlen) )
-    allocate( sf(inlen) )
 
     ! control variables
     spin_count = 1
@@ -414,13 +441,13 @@ contains
     ! Calculates daily and monthly quantities for one year
     !----------------------------------------------------------------   
     ! arguments
-    real, intent(in) :: lon                              ! longitude (degrees)
-    real, intent(in) :: lat                              ! latitude (degrees)
-    real, intent(in) :: elv                              ! altitude (m)
-    integer, intent(in) :: yr                            ! year AD
-    real, allocatable, dimension(:), intent(in) :: ppt   ! monthly precip (mm) 
-    real, allocatable, dimension(:), intent(in) :: tc    ! mean monthly temperature (deg C)
-    real, allocatable, dimension(:), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
+    real, intent(in)                   :: lon   ! longitude (degrees)
+    real, intent(in)                   :: lat   ! latitude (degrees)
+    real, intent(in)                   :: elv   ! altitude (m)
+    integer, intent(in)                :: yr    ! year AD
+    real, dimension(inlen), intent(in) :: ppt   ! monthly precip (mm) 
+    real, dimension(inlen), intent(in) :: tc    ! mean monthly temperature (deg C)
+    real, dimension(inlen), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
 
     integer, intent(in) :: inlen                         ! =12 if monthly input data, =ndayyear if daily input data
     integer, intent(in) :: ndayyear                      ! number of days in this year
@@ -442,11 +469,6 @@ contains
     integer :: idx                       ! day of year corresponding to yesterday
     integer :: dm                        ! day of month
 
-    ! allocate memory
-    allocate( ppt(inlen) )
-    allocate( tc(inlen) )
-    allocate( sf(inlen) )
-
     ! Reset monthly totals
     call initmonthly
 
@@ -454,9 +476,6 @@ contains
     do moy=1,nmonth
 
       ndaymonth = julian_day(yr, moy+1, 1) - julian_day(yr, moy, 1)
-
-      ! xxx debug
-      print*,'moy, ndaymonth', moy, ndaymonth
 
       ! Iterate through days in this month
       do dm=1,ndaymonth
@@ -480,9 +499,6 @@ contains
         idx = int(doy-1)
         if (idx==0) idx = int(ndayyear)
 
-        ! xxx debug
-        !print*,'doy, moy, dm', doy, moy, dm
-
         ! Calculate evaporative supply rate, mm/h
         sw = kCw * dwn(idx) / kWm
 
@@ -493,10 +509,6 @@ contains
 
         ! Update soil moisture
         dwn(doy) = dwn(idx) + dpn(doy) + wc - aet_d
-
-        ! xxx debug
-        !print*,'dwn',dwn(doy)
-        !print*,'dpn',dpn(doy)
 
         if (dwn(doy)>kWm) then
           ! Bucket is full 
@@ -517,17 +529,6 @@ contains
           dro(doy) = 0.0
 
         endif
-
-        ! xxx debug
-        !if (doy<=31) then
-        !  print*,'dpn',dpn(doy)
-        !  print*,'wc ',wc
-        !  print*,'aet',aet_d
-        !  print*,'dwn',dwn(doy)
-        !  print*,'dro',dro(doy)
-        !else
-          !stop
-        !endif
 
         ! Save the daily totals:
         dho(doy) = ra_d
@@ -681,8 +682,8 @@ contains
     ! Berger (1978)
     out_berger = berger_tls( doy )
     
-    ! xxx debug
-    !print*,'out_berger', out_berger
+    ! consistency check
+    if (doy==172) print*,'out_berger', out_berger
 
     ! xxx my_nu is not perfectly identical to Python version
     my_nu      = out_berger(1)
@@ -693,10 +694,14 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Berger et al. (1993)
     my_rho = (1.0 - ke**2)/(1.0 + ke * dgcos( my_nu ))
+
+    ! consistency check
+    if (doy==172) print*,'my_rho', my_rho
+
     dr = (1.0/my_rho)**2
 
-    ! xxx debug
-    !print*,'dr', dr
+    ! consistency check
+    if (doy==172) print*,'dr', dr
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 4. Calculate declination angle (delta), degrees
@@ -705,8 +710,8 @@ contains
     delta = dasin( dgsin( my_lambda ) * dgsin( keps ) )   ! xxx arcsin is asin in Fortran?
     delta = degrees( delta )
 
-    ! xxx debug
-    !print*,'delta', delta
+    ! consistency check
+    if (doy==172) print*,'delta', delta
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 5. Calculate variable substitutes (u and v), unitless
@@ -714,8 +719,8 @@ contains
     ru = dgsin(delta) * dgsin(lat)
     rv = dgcos(delta) * dgcos(lat)
 
-    ! xxx debug
-    !print*,'ru,rv',ru,rv
+    ! consistency check
+    if (doy==172) print*,'ru, rv ',ru,rv
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 6. Calculate the sunset hour angle (hs), degrees
@@ -733,17 +738,17 @@ contains
       hs = degrees(hs)
     endif
 
-    ! xxx debug
-    !print*,'hs',hs
+    ! consistency check
+    if (doy==172) print*,'hs',hs
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! 7. Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
+    ! 7. Calculate daily extraterrestrial solar radiation / irradiation (ra_d), J/m^2
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Eq. 1.10.3, Duffy & Beckman (1993)
     ra_d = (86400.0/pi)*kGsc*dr*(ru*radians(hs) + rv * dgsin(hs))
 
-    ! xxx debug
-    !print*,'ra_d', ra_d
+    ! consistency check
+    if (doy==172) print*,'daily extraterrestrial solar radiation / irradiation (ra_d), J/m^2', ra_d
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 8. Calculate transmittivity (tau), unitless
@@ -754,8 +759,9 @@ contains
     ! Eq. 2, Allen (1996)
     tau = tau_o*(1.0 + (2.67e-5)*my_elv)
 
-    ! xxx debug
-    !print*,'tau',tau
+    ! consistency check
+    if (doy==172) print*,'tau_o ',tau_o
+    if (doy==172) print*,'tau   ',tau
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 9. Calculate daily PPFD (ppfd_d), mol/m^2
@@ -763,8 +769,8 @@ contains
     ! Eq. 57, Documentation
     ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*ra_d
 
-    ! xxx debug
-    !print*,'ppfd_d',ppfd_d
+    ! consistency check
+    if (doy==172) print*,'ppfd_d',ppfd_d
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 10. Estimate net longwave radiation (rnl), W/m^2
@@ -772,8 +778,8 @@ contains
     ! Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
     rnl = (kb + (1.0 - kb)*my_sf)*(kA - my_tc)
 
-    ! xxx debug
-    !print*,'rnl',rnl
+    ! consistency check
+    if (doy==172) print*,'rnl',rnl
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 11. Calculate variable substitute (rw), W/m^2
@@ -793,8 +799,8 @@ contains
       hn = degrees( dacos((rnl - rw*ru)/(rw*rv)) )
     endif
 
-    ! xxx debug
-    !print*,'hn',hn
+    ! consistency check
+    if (doy==172) print*,'cross-over hour angle, hn ',hn
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 13. Calculate daytime net radiation (rn_d), J/m^2
@@ -802,8 +808,8 @@ contains
     ! Eq. 53, Documentation
     rn_d = (86400.0/pi) * (hn*(pi/180.0)*(rw*ru - rnl) + rw*rv*dgsin(hn))
 
-    ! xxx debug: slight deviation from python code (-6.156683e-05 %)
-    !print*,'rn_d',rn_d
+    ! consistency check
+    if (doy==172) print*,'daytime net radiation, rn_d',rn_d
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 14. Calculate nighttime net radiation (rnn_d), J/m^2
@@ -811,32 +817,50 @@ contains
     ! Eq. 56, Documentation
     rnn_d = (86400.0/pi)*(radians(rw*ru*(hs-hn)) + rw*rv*(dgsin(hs)-dgsin(hn)) + rnl*(pi - 2.0*radians(hs) + radians(hn)))
 
-    ! xxx debug
-    !print*,'rnn_d',rnn_d
+    ! consistency check
+    if (doy==172) print*,'nighttime net radiation, rnn_d ',rnn_d
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 15. Calculate water-to-energy conversion (econ), m^3/J
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Slope of saturation vap press temp curve, Pa/K
     s = sat_slope(my_tc)
+
+    ! consistency check
+    if (doy==172) print*,'Slope of saturation vap press temp curve, Pa/K, hn ', s
+
     ! Enthalpy of vaporization, J/kg
     lv = enthalpy_vap(my_tc)
+
+    ! consistency check
+    if (doy==172) print*,'Enthalpy of vaporization, J/kg, lv ', lv
+
     ! Density of water, kg/m^3
     pw = density_h2o(my_tc, elv2pres(my_elv))
+
+    ! consistency check
+    if (doy==172) print*,'Density of water, kg/m^3, pw ', pw
+
     ! Psychrometric constant, Pa/K
     g = psychro(my_tc, elv2pres(my_elv))
+
+    ! consistency check
+    if (doy==172) print*,'Psychrometric constant, Pa/K ', g
 
     ! Eq. 58, Documentation
     econ = s/(lv*pw*(s + g))
 
-    ! xxx debug
-    !print*,'econ',econ
+    ! consistency check
+    if (doy==172) print*,'Econ ',econ
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 16. Calculate daily condensation (wc), mm
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Eq. 68, Documentation
     wc = 1000.0 * econ * abs(rnn_d)
+
+    ! consistency check
+    if (doy==172) print*,'daily condensation (mm) ',wc
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 17. Estimate daily EET (eet_d), mm
@@ -853,13 +877,16 @@ contains
     ! Eq. 72, Documentation
     pet_d = (1.0+kw)*eet_d
 
-    ! xxx debug
-    !print*,'pet_d',pet_d
+    ! consistency check
+    if (doy==172) print*,'daily PET (mm) ',pet_d
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 19. Calculate variable substitute (rx), (mm/hr)/(W/m^2)
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     rx = 1000.0*3600.0*(1.0+kw)*econ
+
+    ! consistency check
+    if (doy==172) print*,'variable substitute rx ',rx
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 20. Calculate the intersection hour angle (hi), degrees
@@ -875,14 +902,18 @@ contains
       hi = degrees(acos(cos_hi))
     endif
 
+    ! consistency check
+    if (doy==172) print*,'intersection hour angle ',hi
+
+
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 21. Estimate daily AET (aet_d), mm
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Eq. 81, Documentation
     aet_d = (24.0/pi)*(radians(my_sw*hi) + rx*rw*rv*(dgsin(hn) - dgsin(hi)) + radians((rx*rw*ru - rx*rnl)*(hn - hi)))
 
-    ! xxx debug
-    !print*,'aet_d',aet_d
+    ! consistency check
+    if (doy==172) print*,'daily AET (mm) ', aet_d
 
 
     !-------------------------------------------------------------   
@@ -1228,6 +1259,9 @@ contains
 
     ! Convert atmospheric pressure to bar (1 bar = 100000 Pa)
     pbar = (1.0e-5)*press
+    
+    ! ! consistency check
+    ! if (doy==172) print*,'atmospheric pressure, bar', pbar
 
     density_h2o = 1000.0*po*(ko + ca*pbar + cb*pbar**2.0)/(ko + ca*pbar + cb*pbar**2.0 - pbar)
 

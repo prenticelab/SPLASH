@@ -5,7 +5,6 @@
 
 ## Use PGF95 compiler
 FCOM=pgf95 -r8 -Mextend -g -O0 -Mbounds -Minfo -Minform=inform -Kieee -Ktrap=fp -Mfreeform
-## debug compilation model with pgi
 
 export FCOM
 
