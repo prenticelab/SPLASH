@@ -3,8 +3,7 @@
 #
 # main.py
 #
-# 2014-01-30 -- created
-# 2015-11-11 -- last updated
+# LAST UPDATED: 2016-02-06
 #
 # ~~~~~~~~~
 # citation:
@@ -13,7 +12,7 @@
 # Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
 # led algorithms for simulating habitats (SPLASH): Robust indices of radiation,
 # evapotranspiration and plant-available moisture, Geoscientific Model
-# Development, 2015 (in progress)
+# Development, 2016 (in progress)
 #
 # ~~~~~~~~~~
 # changelog:
@@ -55,17 +54,20 @@
 # 28. updated R and To values and references [15.08.22]
 # 29. parsed classes into separate python files [15.08.22]
 # 30. created a global constant file, const.py [15.08.22]
+# 31. added logging [16.02.05]
 #
 # -----
 # todo:
 # -----
-# 1. create a function in DATA class to run STASH, saving daily, monthly, and
+# 1. create a function in DATA class to save daily, monthly, and
 #    annual quantities & write out
 # 2. upate plot commands
 
 ###############################################################################
 ## IMPORT MODULES
 ###############################################################################
+import logging
+
 import matplotlib.pyplot as plt
 
 from data import DATA
@@ -75,11 +77,24 @@ from splash import SPLASH
 ## MAIN PROGRAM
 ###############################################################################
 if __name__ == '__main__':
+    # Create a root logger:
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    # Instantiating logging handler and record format:
+    root_handler = logging.FileHandler("main.log")
+    rec_format = "%(asctime)s:%(levelname)s:%(name)s:%(funcName)s:%(message)s"
+    formatter = logging.Formatter(rec_format, datefmt="%Y-%m-%d %H:%M:%S")
+    root_handler.setFormatter(formatter)
+
+    # Send logging handler to root logger:
+    root_logger.addHandler(root_handler)
+
     example = 1
     my_data = DATA()
     if example == 1:
         # Example 1: read CSV file:
-        my_file = 'example_data.csv'
+        my_file = '../data/example_data.csv'
         my_data.read_csv(my_file)
     elif example == 2:
         # Example 2: read TXT files:
@@ -89,20 +104,13 @@ if __name__ == '__main__':
         my_data.read_txt(my_sf_file, 'sf')
         my_data.read_txt(my_pn_file, 'pn')
         my_data.read_txt(my_tair_file, 'tair')
-    #
-    # Test one-year of SPLASH:
+
+    # Consistency Test #4: Spin-Up
     my_lat = 37.7
     my_elv = 142.
     my_class = SPLASH(my_lat, my_elv)
     my_class.spin_up(my_data)
-    my_class.run_one_day(n=172,
-                         y=my_data.year,
-                         wn=145.0,
-                         sf=0.5,
-                         tc=17.3,
-                         pn=10.0)
-    my_class.print_vals()
-
+    my_class.print_daily_sm()
 
 if 0:
     ########################## NEEDS UPDATED ##########################

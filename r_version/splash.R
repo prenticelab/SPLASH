@@ -2,7 +2,7 @@
 #
 # splash.R
 #
-# last updated: 2016-01-22
+# last updated: 2016-02-06
 #
 # ~~~~~~~~~
 # citation:
@@ -37,8 +37,16 @@ source("evap.R")
 # ************************************************************************
 # Name:     spin_up
 # Inputs:   - list, meteorological data (mdat)
+#               $num_lines ..... double, length of meteorol. variable lists
+#               $lat_deg ....... double latitude (degrees)
+#               $elv_m ......... double, elevation (m)
+#               $year .......... double, year
+#               $sf ............ list, fraction of sunshine hours
+#               $tair .......... list, mean daily air temperature (deg. C)
+#               $pn ............ list, precipitation (mm/d)
 #           - list, daily totals (dtot)
-# Returns:  list, meteorological data
+#               $wm ............ list, daily soil moisture (mm)
+# Returns:  list, daily totals
 # Features: Updates the soil moisture in daily totals until equilibrium
 # Depends:  quick_run
 # ************************************************************************

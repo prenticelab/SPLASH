@@ -12,7 +12,7 @@ using namespace std;
  * main.cpp
  *
  * 2015-02-07 -- created
- * 2016-01-22 -- last updated
+ * 2016-02-05 -- last updated
  *
  * ~~~~~~~~~
  * citation:
@@ -34,6 +34,7 @@ using namespace std;
  * 01. added DATA class [15.02.08]
  * 02. updated DATA class for csv and txt data input [15.02.17]
  * 03. added SPLASH class [15.02.17]
+ * 04. added test 3 [16.02.05]
  *
  * //////////////////////////////////////////////////////////////////////// */
 
@@ -43,6 +44,22 @@ int main() {
     my_evap.calculate_daily_fluxes(0.9, 172, 2000, 1.0, 23.0);
     cout << "Test 1 & 2: " << endl;
     my_evap.display();
+
+    // Test 3: SPLASH run_one_day
+    SPLASH my_splash = SPLASH(37.7, 142.0);
+    my_splash.run_one_day(172, 2000, 75, 1.0, 23.0, 5.0);
+    cout << "Test 3: " << endl;
+    my_splash.print_vals();
+
+    // Test 4: SPIN-UP
+    DATA my_data;
+    string fname = "../data/example_data.csv";
+    my_data.read_csv(fname);
+    double lat = 37.7;
+    double elv = 142.0;
+    SPLASH my_class(lat, elv);
+    my_class.spin_up(my_data);
+    my_class.print_daily_wn();
 
     /*
 

@@ -9,7 +9,7 @@
  * SPLASH.h
  *
  * 2015-02-17 -- created
- * 2016-01-22 -- last updated
+ * 2016-02-05 -- last updated
  *
  * ~~~~~~~~~
  * citation:
@@ -35,6 +35,8 @@
  * 05. added DATA header to include list [15.02.19]
  * 06. added quick_run & spin_up functions [15.02.19]
  * 07. removed constants; now in global.h [16.01.22]
+ * 08. made wn_vec a private variable [16.02.06]
+ * 09. added print daily wn function [16.02.06]
  *
  * //////////////////////////////////////////////////////////////////////// */
 #ifndef SPLASH_H
@@ -51,6 +53,9 @@ class SPLASH {
         smr dsoil;                        // daily smr struct
         double precip;                    // daily precipitation, mm
 
+        // Daily soil moisture
+        std::vector<double> wn_vec;
+
     public:
         // Constructors:
         SPLASH(double a, double b);
@@ -63,6 +68,7 @@ class SPLASH {
         void spin_up(DATA &d);
         double get_lat();
         double get_elv();
+        void print_daily_wn();
         void print_vals();
 };
 #endif
