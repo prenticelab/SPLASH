@@ -302,13 +302,13 @@ calc_daily_evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0) {
     # 7. Calculate the intersection hour angle (hi), degrees
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     cos_hi <- sw/(rw*rv*rx) + rnl/(rw*rv) - ru/rv
-    print( paste( "in evap: sw =", sw))
-    print( paste( "in evap: ru =", ru))
-    print( paste( "in evap: rv =", rv))
-    print( paste( "in evap: rw =", rw))
-    print( paste( "in evap: rx =", rx))
-    print( paste( "in evap: rnl =", rnl))
-    print( paste( "in evap: cos_hi =", cos_hi))
+#     print( paste( "in evap: sw =", sw))
+#     print( paste( "in evap: ru =", ru))
+#     print( paste( "in evap: rv =", rv))
+#     print( paste( "in evap: rw =", rw))
+#     print( paste( "in evap: rx =", rx))
+#     print( paste( "in evap: rnl =", rnl))
+#     print( paste( "in evap: cos_hi =", cos_hi))
     if (cos_hi >= 1.0) {
         hi <- 0.0       # supply exceeds demand
     } else if (cos_hi <= -1.0) {

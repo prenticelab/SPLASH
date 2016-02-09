@@ -185,8 +185,8 @@ program splash
 
     ! Do consistency check with fixed daily temperature, sunshine fraction and precipitation
     print*, 'consistency check with fixed daily temperature, sunshine fraction and precipitation ...'
-    insf(:) =  1.0
-    intc(:) = 23.0
+    insf(:)  = 1.0
+    intc(:)  = 23.0
     inppt(:) = 0.9
   
   else if (use_daily_input) then
@@ -324,118 +324,6 @@ contains
   end subroutine spin_up
 
 
-  subroutine write_to_file( )
-    !----------------------------------------------------------------   
-    ! Writes daily and monthly values to files
-    !----------------------------------------------------------------   
-    ! local variables
-    character(len=256) :: prefix
-    character(len=256) :: filnam
-
-    !////////////////////////////////////////////////////////////////
-    ! OPEN ASCII OUTPUT FILES FOR DAILY OUTPUT
-    !----------------------------------------------------------------
-    prefix = "./output/"
-
-    !----------------------------------------------------------------
-    ! WRTIING DAILY TOTALS
-    !----------------------------------------------------------------
-    print*,"writing daily totals to files"
-
-    ! HO: daily solar irradiation, J/m2
-    filnam=trim(prefix)//'ho.d.out'
-    open(101,file=filnam,err=888,status='unknown')
-    write(101,999) dho
-
-    ! HN: daily net radiation, J/m2
-    filnam=trim(prefix)//'hn.d.out'
-    open(102,file=filnam,err=888,status='unknown')
-    write(102,999) dhn
-
-    ! QN: daily PPFD, mol/m2
-    filnam=trim(prefix)//'qn.d.out'
-    open(103,file=filnam,err=888,status='unknown')
-    write(103,999) dqn
-
-    ! CN: daily condensation water, mm
-    filnam=trim(prefix)//'cn.d.out'
-    open(104,file=filnam,err=888,status='unknown')
-    write(104,999) dcn
-
-    ! WN: daily soil moisture, mm
-    filnam=trim(prefix)//'wn.d.out'
-    open(105,file=filnam,err=888,status='unknown')
-    write(105,999) dwn
-
-    ! PN: daily precipitation, mm
-    filnam=trim(prefix)//'pn.d.out'
-    open(106,file=filnam,err=888,status='unknown')
-    write(106,999) dpn
-
-    ! RO: daily runoff, mm
-    filnam=trim(prefix)//'ro.d.out'
-    open(107,file=filnam,err=888,status='unknown')
-    write(107,999) dro
-
-    ! EQ_N: daily equilibrium ET, mm
-    filnam=trim(prefix)//'eq_n.d.out'
-    open(108,file=filnam,err=888,status='unknown')
-    write(108,999) deq_n
-
-    ! EP_N: daily potential ET, mm
-    filnam=trim(prefix)//'ep_n.d.out'
-    open(109,file=filnam,err=888,status='unknown')
-    write(109,999) dep_n
-
-    ! EA_N: daily actual ET, mm
-    filnam=trim(prefix)//'ea_n.d.out'
-    open(110,file=filnam,err=888,status='unknown')
-    write(110,999) dea_n
-
-
-    !----------------------------------------------------------------
-    ! WRTIING MONTHLY TOTALS
-    !----------------------------------------------------------------
-    print*,"writing monthly totals to files"
-
-    ! eq_m
-    filnam=trim(prefix)//'eq_m.m.out'
-    open(111,file=filnam,err=888,status='unknown')
-    write(111,999) meq_m
-
-    ! ep_m
-    filnam=trim(prefix)//'ep_m.m.out'
-    open(112,file=filnam,err=888,status='unknown')
-    write(112,999) mep_m
-
-    ! ea_m
-    filnam=trim(prefix)//'ea_m.m.out'
-    open(113,file=filnam,err=888,status='unknown')
-    write(113,999) mea_m
-
-    ! cpa
-    filnam=trim(prefix)//'cpa.m.out'
-    open(114,file=filnam,err=888,status='unknown')
-    write(114,999) mcpa
-
-    ! cwd
-    filnam=trim(prefix)//'cwd.m.out'
-    open(115,file=filnam,err=888,status='unknown')
-    write(115,999) mcwd
-
-    ! qm
-    filnam=trim(prefix)//'qm.m.out'
-    open(116,file=filnam,err=888,status='unknown')
-    write(116,999) mqm
-
-    return
-
-  888    stop 'WRITE_TO_FILE: error opening output file'
-  999    format (F20.8)
-
-  end subroutine write_to_file
-
-
   subroutine run_one_year( lon, lat, elv, yr, ppt, tc, sf, inlen, ndayyear )
     !----------------------------------------------------------------   
     ! Calculates daily and monthly quantities for one year
@@ -499,8 +387,13 @@ contains
         idx = int(doy-1)
         if (idx==0) idx = int(ndayyear)
 
-        ! Calculate evaporative supply rate, mm/h
-        sw = kCw * dwn(idx) / kWm
+        if (do_consistency_check) then
+          ! use prescribed supply rate
+          sw = 0.9
+        else
+          ! Calculate evaporative supply rate, mm/h
+          sw = kCw * dwn(idx) / kWm
+        end if
 
         ! Calculate radiation and evaporation quantities
         !print*,'calling evap for doy', doy, '...'
@@ -870,8 +763,8 @@ contains
     ! Eq. 70, Documentation
     eet_d = 1000.0*econ*(rn_d)
 
-    ! xxx debug
-    !print*,'eet_d',eet_d
+    ! consistency check
+    if (do_consistency_check.and.doy==172) print*,'EET (mm) ', eet_d
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 18. Estimate daily PET (pet_d), mm
@@ -895,15 +788,14 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     cos_hi = my_sw/(rw*rv*rx) + rnl/(rw*rv) - ru/rv
 
-    ! xxx problem: my_sw xxx
-
-    print*,'my_sw ', my_sw
-    print*,'ru ', ru
-    print*,'rv ', rv
-    print*,'rw ', rw
-    print*,'rx ', rx
-    print*,'rnl ', rnl
-    stop
+    ! ! xxx problem: my_sw xxx
+    ! print*,'my_sw ', my_sw
+    ! print*,'ru ', ru
+    ! print*,'rv ', rv
+    ! print*,'rw ', rw
+    ! print*,'rx ', rx
+    ! print*,'rnl ', rnl
+    ! stop
 
     if (cos_hi >= 1.0) then
       ! Supply exceeds demand:
@@ -1318,5 +1210,119 @@ contains
     psychro = cp*kMa*press/(kMv*lv)
 
   end function psychro
+
+
+  subroutine write_to_file( )
+    !----------------------------------------------------------------   
+    ! Writes daily and monthly values to files
+    !----------------------------------------------------------------   
+    ! local variables
+    character(len=256) :: prefix
+    character(len=256) :: filnam
+
+    !////////////////////////////////////////////////////////////////
+    ! OPEN ASCII OUTPUT FILES FOR DAILY OUTPUT
+    !----------------------------------------------------------------
+    prefix = "./output/"
+
+    !----------------------------------------------------------------
+    ! WRTIING DAILY TOTALS
+    !----------------------------------------------------------------
+    print*,"writing daily totals to files"
+
+    ! HO: daily solar irradiation, J/m2
+    filnam=trim(prefix)//'ho.d.out'
+    open(101,file=filnam,err=888,status='unknown')
+    write(101,999) dho
+
+    ! HN: daily net radiation, J/m2
+    filnam=trim(prefix)//'hn.d.out'
+    open(102,file=filnam,err=888,status='unknown')
+    write(102,999) dhn
+
+    ! QN: daily PPFD, mol/m2
+    filnam=trim(prefix)//'qn.d.out'
+    open(103,file=filnam,err=888,status='unknown')
+    write(103,999) dqn
+
+    ! CN: daily condensation water, mm
+    filnam=trim(prefix)//'cn.d.out'
+    open(104,file=filnam,err=888,status='unknown')
+    write(104,999) dcn
+
+    ! WN: daily soil moisture, mm
+    filnam=trim(prefix)//'wn.d.out'
+    open(105,file=filnam,err=888,status='unknown')
+    write(105,999) dwn
+
+    ! PN: daily precipitation, mm
+    filnam=trim(prefix)//'pn.d.out'
+    open(106,file=filnam,err=888,status='unknown')
+    write(106,999) dpn
+
+    ! RO: daily runoff, mm
+    filnam=trim(prefix)//'ro.d.out'
+    open(107,file=filnam,err=888,status='unknown')
+    write(107,999) dro
+
+    ! EQ_N: daily equilibrium ET, mm
+    filnam=trim(prefix)//'eq_n.d.out'
+    open(108,file=filnam,err=888,status='unknown')
+    write(108,999) deq_n
+
+    ! EP_N: daily potential ET, mm
+    filnam=trim(prefix)//'ep_n.d.out'
+    open(109,file=filnam,err=888,status='unknown')
+    write(109,999) dep_n
+
+    ! EA_N: daily actual ET, mm
+    filnam=trim(prefix)//'ea_n.d.out'
+    open(110,file=filnam,err=888,status='unknown')
+    write(110,999) dea_n
+
+
+    !----------------------------------------------------------------
+    ! WRTIING MONTHLY TOTALS
+    !----------------------------------------------------------------
+    print*,"writing monthly totals to files"
+
+    ! eq_m
+    filnam=trim(prefix)//'eq_m.m.out'
+    open(111,file=filnam,err=888,status='unknown')
+    write(111,999) meq_m
+
+    ! ep_m
+    filnam=trim(prefix)//'ep_m.m.out'
+    open(112,file=filnam,err=888,status='unknown')
+    write(112,999) mep_m
+
+    ! ea_m
+    filnam=trim(prefix)//'ea_m.m.out'
+    open(113,file=filnam,err=888,status='unknown')
+    write(113,999) mea_m
+
+    ! cpa
+    filnam=trim(prefix)//'cpa.m.out'
+    open(114,file=filnam,err=888,status='unknown')
+    write(114,999) mcpa
+
+    ! cwd
+    filnam=trim(prefix)//'cwd.m.out'
+    open(115,file=filnam,err=888,status='unknown')
+    write(115,999) mcwd
+
+    ! qm
+    filnam=trim(prefix)//'qm.m.out'
+    open(116,file=filnam,err=888,status='unknown')
+    write(116,999) mqm
+
+    return
+
+  888    stop 'WRITE_TO_FILE: error opening output file'
+  999    format (F20.8)
+
+  end subroutine write_to_file
+
+
 
 end program
