@@ -36,7 +36,7 @@ module _splash
     real :: eet        ! daily out_evap%EET (mm)
     real :: pet        ! daily PET (mm)
     real :: aet        ! daily AET (mm)
-    real :: wc         ! daily condensation (mm)
+    real :: cn         ! daily condensation (mm)
   end type
 
   ! function return value of berger_tls() as derived type
@@ -52,8 +52,11 @@ module _splash
   ! verbose prints various state variables to screen
   logical :: verbose
 
+  ! Chose whether to use monthly or daily input data
+  logical :: use_daily_input
+
   !----------------------------------------------------------------   
-  ! Module contains model parameters
+  ! model parameters
   !----------------------------------------------------------------   
   real, parameter :: kA = 107             ! constant for Rnl (Monteith & Unsworth, 1990)
   real, parameter :: kalb_sw = 0.17       ! shortwave albedo (Federer, 1968)
@@ -80,14 +83,151 @@ module _splash
 
   integer, parameter :: nmonth = 12       ! number of months in year
 
+  !----------------------------------------------------------------     
+  ! output variables
+  !----------------------------------------------------------------   
+  ! daily totals
+  real, dimension(366) :: outdra            ! daily solar irradiation, J/m2
+  real, dimension(366) :: outdrn            ! daily net radiation, J/m2
+  real, dimension(366) :: outdppfd          ! daily PPFD, mol/m2
+  real, dimension(366) :: outdcn            ! daily condensation water, mm
+  real, dimension(366) :: outdsm            ! daily soil moisture, mm
+  real, dimension(366) :: outdro            ! daily runoff, mm
+  real, dimension(366) :: outdeet           ! daily equilibrium ET, mm
+  real, dimension(366) :: outdpet           ! daily potential ET, mm
+  real, dimension(366) :: outdaet           ! daily actual ET, mm
+
+  ! monthly totals
+  real, dimension(12) :: outmeet
+  real, dimension(12) :: outmpet
+  real, dimension(12) :: outmaet
+  real, dimension(12) :: outmcpa
+  real, dimension(12) :: outmcwd
+  real, dimension(12) :: outmppfd
+
+
 contains 
 
-  subroutine run_one_day( waterbal, lat, elv, doy, yr, pr, tc, sf )
+
+  subroutine spin_up_sm( yr, lat, elv, ppt, tc, sf, inlen )
+    !----------------------------------------------------------------   
+    ! Spins up the daily soil moisture
+    !----------------------------------------------------------------   
+    ! arguments
+    integer, intent(in)                :: yr    ! year AD  
+    real, intent(in)                   :: lat   ! latitude (degrees)
+    real, intent(in)                   :: elv   ! altitude (m)
+    real, dimension(inlen), intent(in) :: ppt   ! monthly precip (mm) 
+    real, dimension(inlen), intent(in) :: tc    ! mean monthly temperature (deg C)
+    real, dimension(inlen), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
+    integer, intent(in)                :: inlen ! =12 if monthly input data, =ndayyear if daily input data
+
+    ! local variables
+    integer :: spin_count                            ! counter variable
+    real :: start_sm                                 ! soil moisture in first day of year
+    real :: end_sm                                   ! soil moisture in last day of year
+    real :: diff_sm                                  ! difference in soil moisture between first and last day of year
+
+    ! control variables
+    spin_count = 1
+    diff_sm = 9999.0
+
+    do while (diff_sm>1.0e-4)
+
+      ! Run one year
+      print*,'********************************************'
+      print*,'spinup year', spin_count
+      print*,'--------------------------------------------'
+      start_sm = waterbal%sm
+      call run_one_year( lat, elv, yr, ppt, tc, sf, inlen )
+      end_sm   = waterbal%sm
+
+      ! Check to see if 1 Jan soil moisture matches 31 Dec:
+      diff_sm  = abs(end_sm - start_sm)
+
+      print*,'soil moisture in equil. when diff < 0.0001'
+      print*,'diff ',diff_sm
+
+      ! Increase counter
+      spin_count = spin_count + 1
+
+    enddo
+
+  end subroutine spin_up_sm
+
+
+  subroutine run_one_year( lat, elv, yr, ppt, tc, sf, inlen )
+    !----------------------------------------------------------------   
+    ! Calculates daily and monthly quantities for one year
+    !----------------------------------------------------------------  
+    ! arguments
+    real, intent(in)                   :: lat   ! latitude (degrees)
+    real, intent(in)                   :: elv   ! altitude (m)
+    integer, intent(in)                :: yr    ! year AD
+    real, dimension(inlen), intent(in) :: ppt   ! monthly precip (mm) 
+    real, dimension(inlen), intent(in) :: tc    ! mean monthly temperature (deg C)
+    real, dimension(inlen), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
+
+    integer, intent(in) :: inlen                         ! =12 if monthly input data, =ndayyear if daily input data
+
+    ! local variables
+    real :: use_tc                       ! mean monthly or daily temperature (deg C)
+    real :: use_sf                       ! mean monthly or daily sunshine fraction (unitless)
+    real :: use_pr                       ! monthly or daily precipitation (mm)
+
+    real :: sw                           ! evaporative supply rate (mm/h)
+
+    integer :: doy                       ! day of year
+    integer :: moy                       ! month of year
+    integer :: ndaymonth                 ! number of days in month (formerly 'nm')
+    integer :: idx                       ! day of year corresponding to yesterday
+    integer :: dm                        ! day of month
+
+    ! Reset monthly totals (output variables)
+    call initmonthly
+
+    ! Iterate through months
+    do moy=1,nmonth
+
+      ndaymonth = get_julian_day(yr, moy+1, 1) - get_julian_day(yr, moy, 1)
+
+      ! Iterate through days in this month
+      do dm=1,ndaymonth
+
+        ! Calculate the day of the year
+        ! xxx is this '+1' really necessary here?
+        doy = get_julian_day(yr, moy, dm) - get_julian_day(yr, 1, 1) + 1
+
+        ! Select daily or monthly input data
+        if (use_daily_input) then
+          use_tc   = tc(doy)
+          use_sf   = sf(doy)
+          use_pr   = ppt(doy)
+        else
+          use_tc   = tc(moy)
+          use_sf   = sf(moy)
+          use_pr   = ppt(moy)/ndaymonth
+        end if
+
+        call run_one_day( lat, elv, doy, yr, use_pr, use_tc, use_sf )
+
+        ! Collect daily output variables
+        call getout_daily( doy, moy ) 
+
+      enddo
+
+      call getout_monthly( moy )
+
+    enddo
+
+  end subroutine run_one_year
+
+
+  subroutine run_one_day( lat, elv, doy, yr, pr, tc, sf )
     !----------------------------------------------------------------   
     ! Calculates daily and monthly quantities for one year
     !----------------------------------------------------------------   
     ! arguments
-    type( waterbaltype), intent(inout) :: waterbal ! contains soil moisture (%sm) and runoff (%ro)
     real, intent(in)    :: lat   ! latitude (degrees)
     real, intent(in)    :: elv   ! altitude (m)
     integer, intent(in) :: doy   ! altitude (m)
@@ -106,7 +246,7 @@ contains
     out_evap = evap( lat, doy, elv, yr, sf, tc, sw )
 
     ! Update soil moisture
-    waterbal%sm = waterbal%sm + pr + out_evap%wc - out_evap%aet
+    waterbal%sm = waterbal%sm + pr + out_evap%cn - out_evap%aet
 
     if (waterbal%sm>kWm) then
       ! Bucket is full 
@@ -155,7 +295,7 @@ contains
     type( outtype_berger) :: out_berger
 
     integer :: ndayyear
-    
+
     real :: my_rho
     real :: dr                 ! distance factor
     real :: delta              ! declination angle 
@@ -371,10 +511,10 @@ contains
     ! 16. Calculate daily condensation (wc), mm
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Eq. 68, Documentation
-    out_evap%wc = 1000.0 * econ * abs(rnn_d)
+    out_evap%cn = 1000.0 * econ * abs(rnn_d)
 
     ! consistency check
-    if (verbose) print*,'daily condensation (mm) ',out_evap%wc
+    if (verbose) print*,'daily condensation (mm) ',out_evap%cn
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 17. Estimate daily EET (eet_d), mm
@@ -484,8 +624,6 @@ contains
     ! Calculates the cosine of an angle given in degrees. Equal to 
     ! 'dsin' in Python version.
     !----------------------------------------------------------------   
-    use modelparams, only: pi
-
     ! arguments
     real, intent(in) :: x  ! angle, degrees (0-360)
 
@@ -502,8 +640,6 @@ contains
     ! Calculates the sinus of an angle given in degrees. Equal to 
     ! 'dsin' in Python version.
     !----------------------------------------------------------------   
-    use modelparams, only: pi
-
     ! arguments
     real, intent(in) :: x  ! angle, degrees (0-360)
 
@@ -519,8 +655,6 @@ contains
     !----------------------------------------------------------------   
     ! Returns corresponding degrees if x is given in radians
     !----------------------------------------------------------------   
-    use modelparams, only: pi
-
     ! arguments
     real, intent(in) :: x  ! angle, radians
 
@@ -536,8 +670,6 @@ contains
     !----------------------------------------------------------------   
     ! Returns corresponding radians if x is given in degrees
     !----------------------------------------------------------------   
-    use modelparams, only: pi
-
     ! arguments
     real, intent(in) :: x  ! angle, radians
 
@@ -556,8 +688,6 @@ contains
     ! insolation and quaternary climatic changes, J. Atmos. Sci., 35, 
     ! 2362-2367.
     !----------------------------------------------------------------   
-    use modelparams, only: ke
-
     ! arguments
     integer, intent(in) :: day   ! day of the year
     integer, intent(in) :: ndayyear
@@ -669,7 +799,6 @@ contains
     ! Calculates the enthalpy of vaporization, J/kg
     ! Ref:      Eq. 8, Henderson-Sellers (1984)
     !----------------------------------------------------------------   
-
     ! arguments
     real, intent(in) :: tc ! air temperature, degrees C
 
@@ -686,8 +815,6 @@ contains
     ! Calculates atm. pressure for a given elevation
     ! Ref:      Allen et al. (1998)
     !----------------------------------------------------------------   
-    use modelparams, only: kPo, kTo, kL, kMa, kG, kR
-
     ! arguments
     real, intent(in) :: alt ! elevation above sea level, m
 
@@ -704,7 +831,6 @@ contains
     ! Calculates density of water at a given temperature and pressure
     ! Ref: Chen et al. (1977)
     !----------------------------------------------------------------   
-
     ! arguments
     real, intent(in) :: tc     ! air temperature (degrees C)
     real, intent(in) :: press  ! atmospheric pressure (Pa)
@@ -771,8 +897,6 @@ contains
     ! Calculates the psychrometric constant for a given temperature and pressure
     ! Ref: Allen et al. (1998); Tsilingiris (2008) 
     !----------------------------------------------------------------   
-    use modelparams, only: kMa, kMv
-
     ! arguments
     real, intent(in) :: tc ! air temperature, degrees C
     real, intent(in) :: press  ! atmospheric pressure, Pa
@@ -804,51 +928,20 @@ contains
 
   end function get_psychro
 
-end module _splash
-
-
-module outputvars
-  !////////////////////////////////////////////////////////////////
-  ! Module contains output variables
-  !----------------------------------------------------------------   
-  implicit none
-
-  ! daily totals
-  real, dimension(366) :: dho             ! daily solar irradiation, J/m2
-  real, dimension(366) :: dhn             ! daily net radiation, J/m2
-  real, dimension(366) :: dqn             ! daily PPFD, mol/m2
-  real, dimension(366) :: dcn             ! daily condensation water, mm
-  real, dimension(366) :: dwn             ! daily soil moisture, mm
-  real, dimension(366) :: dpn             ! daily precipitation, mm
-  real, dimension(366) :: dro             ! daily runoff, mm
-  real, dimension(366) :: deq_n           ! daily equilibrium ET, mm
-  real, dimension(366) :: dep_n           ! daily potential ET, mm
-  real, dimension(366) :: dea_n           ! daily actual ET, mm
-
-  ! monthly totals
-  real, dimension(12) :: meq_m
-  real, dimension(12) :: mep_m
-  real, dimension(12) :: mea_m
-  real, dimension(12) :: mcpa
-  real, dimension(12) :: mcwd
-  real, dimension(12) :: mqm
-
-contains
 
   subroutine initdaily
     !----------------------------------------------------------------   
     ! Initialises daily output variables
     !----------------------------------------------------------------   
-    dho(:) = 0.0
-    dhn(:) = 0.0
-    dqn(:) = 0.0
-    dcn(:) = 0.0
-    dwn(:) = 0.0
-    dpn(:) = 0.0
-    dro(:) = 0.0
-    deq_n(:) = 0.0
-    dep_n(:) = 0.0
-    dea_n(:) = 0.0
+    outdra(:)   = 0.0
+    outdrn(:)   = 0.0
+    outdppfd(:) = 0.0
+    outdcn(:)   = 0.0
+    outdsm(:)   = 0.0
+    outdro(:)   = 0.0
+    outdeet(:)  = 0.0
+    outdpet(:)  = 0.0
+    outdaet(:)  = 0.0
 
   end subroutine initdaily
 
@@ -857,14 +950,57 @@ contains
     !----------------------------------------------------------------   
     ! Initialises monthly output variables
     !----------------------------------------------------------------   
-    meq_m(:) = 0.0
-    mep_m(:) = 0.0
-    mea_m(:) = 0.0
-    mcpa(:) = 0.0
-    mcwd(:) = 0.0
-    mqm(:) = 0.0
+    outmeet(:) = 0.0
+    outmpet(:) = 0.0
+    outmaet(:) = 0.0
+    outmcpa(:) = 0.0
+    outmcwd(:) = 0.0
+    outmppfd(:)  = 0.0
 
   end subroutine initmonthly 
+
+
+  subroutine getout_daily( doy, moy )
+    !----------------------------------------------------------------   
+    ! Collects daily output variables and sums up monthly output vars
+    !----------------------------------------------------------------   
+    ! argument
+    integer, intent(in) :: doy 
+    integer, intent(in) :: moy 
+
+    ! Save the daily totals:
+    outdra(doy)   = out_evap%ra
+    outdrn(doy)   = out_evap%rn
+    outdppfd(doy) = out_evap%ppfd
+    outdcn(doy)   = out_evap%cn
+    outdeet(doy)  = out_evap%eet
+    outdpet(doy)  = out_evap%pet
+    outdaet(doy)  = out_evap%aet
+    
+    outdsm(doy)   = waterbal%sm
+    outdro(doy)   = waterbal%ro
+
+    ! Update monthly totals:
+    outmeet(moy) = outmeet(moy) + out_evap%eet
+    outmpet(moy) = outmpet(moy) + out_evap%pet
+    outmaet(moy) = outmaet(moy) + out_evap%aet
+    outmppfd(moy)= outmppfd(moy)+ out_evap%ppfd
+
+  end subroutine getout_daily
+
+
+  subroutine getout_monthly( moy )
+    !----------------------------------------------------------------   
+    ! Initialises monthly output variables
+    !----------------------------------------------------------------   
+    ! argument
+    integer, intent(in) :: moy
+
+    ! Calculate other monthly totals:
+    outmcpa(moy) = outmaet(moy) / outmpet(moy)
+    outmcwd(moy) = outmpet(moy) - outmaet(moy)
+
+  end subroutine getout_monthly
 
 
   subroutine write_to_file()
@@ -884,54 +1020,49 @@ contains
     print*,"writing daily totals to files"
 
     ! HO: daily solar irradiation, J/m2
-    filnam=trim(prefix)//'ho.d.out'
+    filnam=trim(prefix)//'ra.d.out'
     open(101,file=filnam,err=888,status='unknown')
-    write(101,999) dho
+    write(101,999) outdra
 
     ! HN: daily net radiation, J/m2
-    filnam=trim(prefix)//'hn.d.out'
+    filnam=trim(prefix)//'rn.d.out'
     open(102,file=filnam,err=888,status='unknown')
-    write(102,999) dhn
+    write(102,999) outdrn
 
     ! QN: daily PPFD, mol/m2
-    filnam=trim(prefix)//'qn.d.out'
+    filnam=trim(prefix)//'ppfd.d.out'
     open(103,file=filnam,err=888,status='unknown')
-    write(103,999) dqn
+    write(103,999) outdppfd
 
     ! CN: daily condensation water, mm
     filnam=trim(prefix)//'cn.d.out'
     open(104,file=filnam,err=888,status='unknown')
-    write(104,999) dcn
+    write(104,999) outdcn
 
     ! WN: daily soil moisture, mm
-    filnam=trim(prefix)//'wn.d.out'
+    filnam=trim(prefix)//'sm.d.out'
     open(105,file=filnam,err=888,status='unknown')
-    write(105,999) dwn
-
-    ! PN: daily precipitation, mm
-    filnam=trim(prefix)//'pn.d.out'
-    open(106,file=filnam,err=888,status='unknown')
-    write(106,999) dpn
+    write(105,999) outdsm
 
     ! RO: daily runoff, mm
     filnam=trim(prefix)//'ro.d.out'
     open(107,file=filnam,err=888,status='unknown')
-    write(107,999) dro
+    write(107,999) outdro
 
     ! EQ_N: daily equilibrium ET, mm
-    filnam=trim(prefix)//'eq_n.d.out'
+    filnam=trim(prefix)//'eet.d.out'
     open(108,file=filnam,err=888,status='unknown')
-    write(108,999) deq_n
+    write(108,999) outdeet
 
     ! EP_N: daily potential ET, mm
-    filnam=trim(prefix)//'ep_n.d.out'
+    filnam=trim(prefix)//'pet.d.out'
     open(109,file=filnam,err=888,status='unknown')
-    write(109,999) dep_n
+    write(109,999) outdpet
 
     ! EA_N: daily actual ET, mm
-    filnam=trim(prefix)//'ea_n.d.out'
+    filnam=trim(prefix)//'aet.d.out'
     open(110,file=filnam,err=888,status='unknown')
-    write(110,999) dea_n
+    write(110,999) outdaet
 
 
     ! WRTIING MONTHLY TOTALS
@@ -939,34 +1070,34 @@ contains
     print*,"writing monthly totals to files"
 
     ! eq_m
-    filnam=trim(prefix)//'eq_m.m.out'
+    filnam=trim(prefix)//'eet.m.out'
     open(111,file=filnam,err=888,status='unknown')
-    write(111,999) meq_m
+    write(111,999) outmeet
 
     ! ep_m
-    filnam=trim(prefix)//'ep_m.m.out'
+    filnam=trim(prefix)//'pet.m.out'
     open(112,file=filnam,err=888,status='unknown')
-    write(112,999) mep_m
+    write(112,999) outmpet
 
     ! ea_m
-    filnam=trim(prefix)//'ea_m.m.out'
+    filnam=trim(prefix)//'aet.m.out'
     open(113,file=filnam,err=888,status='unknown')
-    write(113,999) mea_m
+    write(113,999) outmaet
 
     ! cpa
     filnam=trim(prefix)//'cpa.m.out'
     open(114,file=filnam,err=888,status='unknown')
-    write(114,999) mcpa
+    write(114,999) outmcpa
 
     ! cwd
     filnam=trim(prefix)//'cwd.m.out'
     open(115,file=filnam,err=888,status='unknown')
-    write(115,999) mcwd
+    write(115,999) outmcwd
 
     ! qm
-    filnam=trim(prefix)//'qm.m.out'
+    filnam=trim(prefix)//'ppfd.m.out'
     open(116,file=filnam,err=888,status='unknown')
-    write(116,999) mqm
+    write(116,999) outmppfd
 
     return
 
@@ -975,522 +1106,4 @@ contains
 
   end subroutine write_to_file
 
-
-end module outputvars
-
-
-module daily_input
-  !////////////////////////////////////////////////////////////////
-  ! Module contains function to read daily values of one year 
-  ! (365/366) from a text file.
-  !----------------------------------------------------------------   
-  implicit none
-
-contains
-
-  function read1year_daily( filename, ndayyear ) result ( dval )
-    !////////////////////////////////////////////////////////////////
-    ! Function reads a file that contains 365 lines, each line for
-    ! a daily value. 
-    !----------------------------------------------------------------
-    ! arguments
-    character(len=*), intent(in) :: filename
-    integer, intent(in)          :: ndayyear   ! 366 in leap years, 365 otherwise
-
-    ! function return value
-    real, allocatable, dimension(:) :: dval    ! Daily value to be read in
-
-    ! allocate lengt of vector
-    allocate( dval(ndayyear) )
-
-    open( 20, file='../data/'//filename, status='old', form='formatted', action='read', err=888 )
-    read( 20, *) dval
-    close( 20 )
-
-    return
-
-    600 format (F9.7)
-    888 write(0,*) 'READ1YEAR_DAILY: error opening file '//trim(filename)//'. Abort. '
-    stop
-
-  end function read1year_daily
-
-end module daily_input
-
-
-program consistency_check
-  !////////////////////////////////////////////////////////////////
-  ! SPLASH MAIN PROGRAM 
-  ! This subroutine maintains daily, monthly and annual quantities of 
-  ! radiation, evapotranspiration, and soil moisture based on the 
-  ! SPLASH methods.
-  !----------------------------------------------------------------
-  use _splash
-
-  implicit none
-
-  ! initialise water balance
-  waterbal%sm = 75.0
-  waterbal%ro = 0.0
-
-  ! Test 3 (see https://bitbucket.org/labprentice/splash/wiki/Home)
-  print*,'Running evap(), TEST 2 ...'
-
-  ! print various splash variables from whithin functions
-  verbose = .true.
-
-  print*, 'TEST 1 and 2 results: '
-  print*, '--------------- '
-  out_evap = evap( lat=37.7, doy=172, elv=142.0, yr=2000, sf=1.0, tc=23.0, sw=0.9 )
-
-  print*, '--------------- '
-  print*, 'daily TOA solar irradiation (J/m2) ', out_evap%ra         
-  print*, 'daily net radiation (J/m2)         ', out_evap%rn          
-  print*, 'daily PPFD (mol/m^2)               ', out_evap%ppfd       
-  print*, 'daily EET (mm)                     ', out_evap%eet         
-  print*, 'daily PET (mm)                     ', out_evap%pet        
-  print*, 'daily AET (mm)                     ', out_evap%aet         
-  print*, 'daily condensation (mm)            ', out_evap%wc
-  print*, '--------------- '
-
-
-  ! Test 3 (see https://bitbucket.org/labprentice/splash/wiki/Home)
-  print*,'Running run_one_day(), TEST 3 ...'
-
-  ! don't print various splash variables from whithin functions
-  verbose = .false.
-
-  call run_one_day( waterbal, lat=37.7, elv=142.0, doy=172, yr=2000, pr=5.0, tc=23.0, sf=1.0 )
-
-  print*, 'TEST 3 results: '
-  print*, '--------------- '
-  print*, 'soil moisture (mm)                 ', waterbal%sm  
-  print*, 'runoff (mm)                        ', waterbal%ro    
-  print*, '--------------- '
-
-
-end program consistency_check
-
-
-! program spinup_at_site_year
-!   !////////////////////////////////////////////////////////////////
-!   ! SPLASH MAIN PROGRAM 
-!   ! This subroutine maintains daily, monthly and annual quantities of 
-!   ! radiation, evapotranspiration, and soil moisture based on the 
-!   ! SPLASH methods.
-!   !----------------------------------------------------------------
-!   use splash
-!   use outputvars
-!   use daily_input
-
-!   implicit none
-
-!   ! local variables
-!   real :: my_lon
-!   real :: my_lat
-!   real :: elv
-
-!   integer :: yr        ! year AD (CE)
-!   integer :: inlen     ! =12 if monthly input data, =ndayyear if daily input data
-!   integer :: ndayyear  ! 366 in leap years, 365 otherwise
-
-!   ! state variables of SPLASH (daily updated, used by different SRs)
-!   real :: out_evap%ra         ! daily extraterrestrial solar radiation (J/m^2)
-!   real :: out_evap%rn         ! daytime net radiation, J/m^2
-
-!   ! Climate input variables
-!   real, allocatable, dimension(:) :: insf
-!   real, allocatable, dimension(:) :: intc
-!   real, allocatable, dimension(:) :: inppt
-
-!   ! Chose whether to use monthly or daily input data
-!   logical, parameter :: use_daily_input = .true.
-
-!   ! Chose whether to do the standard consistency check (see Wiki). This overrides 'use_daily_input'.
-!   logical, parameter :: do_consistency_check = .true.
-
-!   ! Set current year (at which spinup is executed), and calculate number of days in year
-!   yr = 2000 ! year 2000 data is read in => leap year!
-!   ndayyear = get_julian_day(yr+1, 1, 1) - get_julian_day(yr, 1, 1)
-
-!   ! Define grid input variables
-!   my_lon = -0.00 ! longitude, degrees
-!   my_lat = 37.7   ! latitude, degrees
-!   elv = 142.0  ! elevation, m
-
-!   print*,'point scale simulation for ...'
-!   print*,'    longitude =', my_lon
-!   print*,'    latitude  =', my_lat
-!   print*,'    elevation =', elv
-
-!   ! sanity check
-!   if (my_lon>180.0 .or. my_lon<(-180.0)) then
-!     print*,"Longitude outside range of validity (-180 to 180)!"
-!     stop
-!   endif
-
-!   if (my_lat>90.0 .or. my_lat<(-90.0)) then
-!     print*,"Latitude outside range of validity (-90 to 90)!"
-!     stop
-!   endif
-
-!   ! Get climate input
-!   if (do_consistency_check) then
-!     call get_input_consistency_check()
-!   else if (use_daily_input) then
-!     call get_input_dail1year()
-!   else
-!     call get_input_monthly1year()
-!   end if
-
-!   print*,'Running SPLASH ...'
-
-!   ! Initialize daily totals (output variables)
-!   print*,'initilasing daily output variables ...'
-!   call initdaily
-!   print*,'... done'
-
-!   ! Initialize monthly totals (output variables)
-!   print*,'initialising monthly output variables ...'
-!   call initmonthly
-!   print*,'... done'
-
-!   ! soil moisture spinup
-!   ! output variables are over-written in each year of spinup
-!   ! hence, values at the end of the spinup represent equilibrium
-!   print*,'spinning up soil moisture ...'
-!   call spin_up( yr, my_lon, my_lat, elv, inppt, intc, insf, inlen, ndayyear )
-!   print*,'... done'
-
-!   print*,'SPLASH sucessfully completed.'
-
-! contains
-
-!   subroutine spin_up( yr, lat, elv, ppt, tc, sf, inlen, ndayyear )
-!     !----------------------------------------------------------------   
-!     ! Spins up the daily soil moisture
-!     !----------------------------------------------------------------   
-!     ! arguments
-!     integer, intent(in)                :: yr    ! year AD  
-!     real, intent(in)                   :: lat   ! latitude (degrees)
-!     real, intent(in)                   :: elv   ! altitude (m)
-!     real, dimension(inlen), intent(in) :: ppt   ! monthly precip (mm) 
-!     real, dimension(inlen), intent(in) :: tc    ! mean monthly temperature (deg C)
-!     real, dimension(inlen), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
-!     integer, intent(in)                :: inlen ! =12 if monthly input data, =ndayyear if daily input data
-!     integer, intent(in)                :: ndayyear ! number of days in this year
-
-!     ! local variables
-!     integer :: spin_count                            ! counter variable
-!     real :: start_sm                                 ! soil moisture in first day of year
-!     real :: end_sm                                   ! soil moisture in last day of year
-!     real :: diff_sm                                  ! difference in soil moisture between first and last day of year
-
-!     ! control variables
-!     spin_count = 1
-!     diff_sm = 9999.0
-
-!     do while (diff_sm>1.0e-4)
-
-!       ! Run one year
-!       print*,'********************************************'
-!       print*,'spinup year', spin_count
-!       print*,'--------------------------------------------'
-!       start_sm = dwn(365)
-!       call run_one_year( lat, elv, yr, ppt, tc, sf, inlen, ndayyear )
-!       end_sm   = dwn(365)
-
-!       ! Check to see if 1 Jan soil moisture matches 31 Dec:
-!       diff_sm  = abs(end_sm - start_sm)
-
-!       print*,'soil moisture in equil. when diff < 0.0001'
-!       print*,'diff ',diff_sm
-
-!       ! Increase counter
-!       spin_count = spin_count + 1
-
-!     enddo
-
-!     ! Once in equilibrium, write daily and monthly values of one year to file
-!     call write_to_file
-
-!   end subroutine spin_up
-
-
-!   subroutine run_one_year( lat, elv, yr, ppt, tc, sf, inlen, ndayyear )
-!     !----------------------------------------------------------------   
-!     ! Calculates daily and monthly quantities for one year
-!     !----------------------------------------------------------------   
-!     ! arguments
-!     real, intent(in)                   :: lat   ! latitude (degrees)
-!     real, intent(in)                   :: elv   ! altitude (m)
-!     integer, intent(in)                :: yr    ! year AD
-!     real, dimension(inlen), intent(in) :: ppt   ! monthly precip (mm) 
-!     real, dimension(inlen), intent(in) :: tc    ! mean monthly temperature (deg C)
-!     real, dimension(inlen), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
-
-!     integer, intent(in) :: inlen                         ! =12 if monthly input data, =ndayyear if daily input data
-!     integer, intent(in) :: ndayyear                      ! number of days in this year
-
-!     ! local variables
-!     real :: use_tc                       ! mean monthly or daily temperature (deg C)
-!     real :: use_sf                       ! mean monthly or daily sunshine fraction (unitless)
-
-!     real :: sw                           ! evaporative supply rate (mm/h)
-
-!     integer :: doy                       ! day of year
-!     integer :: moy                       ! month of year
-!     integer :: ndaymonth                 ! number of days in month (formerly 'nm')
-!     integer :: idx                       ! day of year corresponding to yesterday
-!     integer :: dm                        ! day of month
-
-!     ! Reset monthly totals
-!     call initmonthly
-
-!     ! Iterate through months
-!     do moy=1,nmonth
-
-!       ndaymonth = get_julian_day(yr, moy+1, 1) - get_julian_day(yr, moy, 1)
-
-!       ! Iterate through days in this month
-!       do dm=1,ndaymonth
-
-!         ! Calculate the day of the year
-!         ! xxx is this '+1' really necessary here?
-!         doy = get_julian_day(yr, moy, dm) - get_julian_day(yr, 1, 1) + 1
-
-!         ! Select daily or monthly input data
-!         if (use_daily_input) then
-!           use_tc   = tc(doy)
-!           use_sf   = sf(doy)
-!           dpn(doy) = ppt(doy)
-!         else
-!           use_tc   = tc(moy)
-!           use_sf   = sf(moy)
-!           dpn(doy) = ppt(moy)/ndaymonth
-!         end if
-
-!         ! Get index for yesterday (Note: zero indexing xxx)
-!         idx = int(doy-1)
-!         if (idx==0) idx = int(ndayyear)
-
-!         if (do_consistency_check) then
-!           ! use prescribed supply rate
-!           sw = 0.9
-!         else
-!           ! Calculate evaporative supply rate, mm/h
-!           sw = kCw * dwn(idx) / kWm
-!         end if
-
-!         ! Calculate radiation and evaporation quantities
-!         !print*,'calling evap for doy', doy, '...'
-!         call evap( lat, doy, out_evap%ppfd, out_evap%eet, out_evap%pet, out_evap%aet, out_evap%wc, elv=elv, yr=yr, sf=use_sf, tc=use_tc, sw=sw )
-!         !print*,'... done'
-
-!         ! Update soil moisture
-!         dwn(doy) = dwn(idx) + dpn(doy) + out_evap%wc - out_evap%aet
-
-!         if (dwn(doy)>kWm) then
-!           ! Bucket is full 
-!           ! * set soil moisture to capacity
-!           ! * add remaining water to monthly runoff total
-!           dro(doy) = dro(doy) - kWm
-!           dwn(doy) = kWm
-
-!         elseif (dwn(doy)<0) then
-!           ! Bucket is empty
-!           ! * set soil moisture to zero
-!           dwn(doy) = 0.0
-!           dro(doy) = 0.0
-
-!         else
-!           ! No runoff occurrs
-!           dro(doy) = 0.0
-
-!         endif
-
-!         ! Save the daily totals:
-!         dho(doy) = out_evap%ra
-!         dhn(doy) = out_evap%rn
-!         dqn(doy) = out_evap%ppfd
-!         dcn(doy) = out_evap%wc
-!         deq_n(doy) = out_evap%eet
-!         dep_n(doy) = out_evap%pet
-!         dea_n(doy) = out_evap%aet
-
-!         ! Update monthly totals:
-!         meq_m(moy) = meq_m(moy) + out_evap%eet
-!         mep_m(moy) = mep_m(moy) + out_evap%pet
-!         mea_m(moy) = mea_m(moy) + out_evap%aet
-!         mqm(moy)   =   mqm(moy) + out_evap%ppfd
-
-!       enddo
-
-!       ! Calculate other monthly totals:
-!       mcpa(moy) = mea_m(moy)
-!       mcpa(moy) = mcpa(moy) / mep_m(moy)
-!       mcwd(moy) = mep_m(moy)
-!       mcwd(moy) = mcwd(moy) - mea_m(moy)
-
-!     enddo
-
-!   end subroutine run_one_year
-
-
-!   subroutine get_input_monthly1year()
-!     !----------------------------------------------------------------   
-!     ! Populates monthly climate input vectors with values (obsolete)
-!     !----------------------------------------------------------------   
-!     inlen = nmonth
-
-!     ! allocate size of array
-!     allocate( insf(nmonth) )
-!     allocate( intc(nmonth) )
-!     allocate( inppt(nmonth) )
-  
-!     ! Example data (Met Office average climate for this gridcell)
-!     insf  = (/0.21, 0.27, 0.30, 0.40, 0.39, 0.39, 0.40, 0.43, 0.36, 0.32, 0.23, 0.19/)
-!     intc  = (/4.80, 4.85, 7.10, 9.10, 12.4, 15.3, 17.6, 17.3, 14.6, 11.2, 7.55, 5.05/)
-!     inppt = (/61.0, 41.2, 44.5, 48.0, 46.4, 44.6, 46.0, 52.3, 50.3, 71.8, 66.3, 62.9/)
-
-!   end subroutine get_input_monthly1year
-
-
-!   subroutine get_input_dail1year()
-!     !----------------------------------------------------------------   
-!     ! Reads daily climate input from files
-!     !----------------------------------------------------------------   
-!     inlen = ndayyear
-
-!     ! allocate size of array
-!     allocate( insf(ndayyear) )
-!     allocate( intc(ndayyear) )
-!     allocate( inppt(ndayyear) )
-
-!     ! Reading daily input data from file
-!     print*, 'reading daily climate input from files ...'
-
-!     print*, '   ../data/daily_sf_2000_cruts.txt'
-!     insf(:)  = read1year_daily( "../data/daily_sf_2000_cruts.txt", ndayyear )
-    
-!     print*, '   ../data/daily_tair_2000_wfdei.txt'
-!     intc(:)  = read1year_daily( "../data/daily_tair_2000_wfdei.txt", ndayyear )
-    
-!     print*, '   ../data/daily_pn_2000_wfdei.txt'
-!     inppt(:) = read1year_daily( "../data/daily_pn_2000_wfdei.txt", ndayyear )
-
-!     print*, '... done.'
-
-!   end subroutine get_input_dail1year
-
-
-!   subroutine write_to_file()
-!     !----------------------------------------------------------------   
-!     ! Writes daily and monthly values to files
-!     !----------------------------------------------------------------   
-!     ! local variables
-!     character(len=256) :: prefix
-!     character(len=256) :: filnam
-
-!     ! OPEN ASCII OUTPUT FILES FOR DAILY OUTPUT
-!     !----------------------------------------------------------------
-!     prefix = "./output/"
-
-!     ! WRTIING DAILY TOTALS
-!     !----------------------------------------------------------------
-!     print*,"writing daily totals to files"
-
-!     ! HO: daily solar irradiation, J/m2
-!     filnam=trim(prefix)//'ho.d.out'
-!     open(101,file=filnam,err=888,status='unknown')
-!     write(101,999) dho
-
-!     ! HN: daily net radiation, J/m2
-!     filnam=trim(prefix)//'hn.d.out'
-!     open(102,file=filnam,err=888,status='unknown')
-!     write(102,999) dhn
-
-!     ! QN: daily PPFD, mol/m2
-!     filnam=trim(prefix)//'qn.d.out'
-!     open(103,file=filnam,err=888,status='unknown')
-!     write(103,999) dqn
-
-!     ! CN: daily condensation water, mm
-!     filnam=trim(prefix)//'cn.d.out'
-!     open(104,file=filnam,err=888,status='unknown')
-!     write(104,999) dcn
-
-!     ! WN: daily soil moisture, mm
-!     filnam=trim(prefix)//'wn.d.out'
-!     open(105,file=filnam,err=888,status='unknown')
-!     write(105,999) dwn
-
-!     ! PN: daily precipitation, mm
-!     filnam=trim(prefix)//'pn.d.out'
-!     open(106,file=filnam,err=888,status='unknown')
-!     write(106,999) dpn
-
-!     ! RO: daily runoff, mm
-!     filnam=trim(prefix)//'ro.d.out'
-!     open(107,file=filnam,err=888,status='unknown')
-!     write(107,999) dro
-
-!     ! EQ_N: daily equilibrium ET, mm
-!     filnam=trim(prefix)//'eq_n.d.out'
-!     open(108,file=filnam,err=888,status='unknown')
-!     write(108,999) deq_n
-
-!     ! EP_N: daily potential ET, mm
-!     filnam=trim(prefix)//'ep_n.d.out'
-!     open(109,file=filnam,err=888,status='unknown')
-!     write(109,999) dep_n
-
-!     ! EA_N: daily actual ET, mm
-!     filnam=trim(prefix)//'ea_n.d.out'
-!     open(110,file=filnam,err=888,status='unknown')
-!     write(110,999) dea_n
-
-
-!     ! WRTIING MONTHLY TOTALS
-!     !----------------------------------------------------------------
-!     print*,"writing monthly totals to files"
-
-!     ! eq_m
-!     filnam=trim(prefix)//'eq_m.m.out'
-!     open(111,file=filnam,err=888,status='unknown')
-!     write(111,999) meq_m
-
-!     ! ep_m
-!     filnam=trim(prefix)//'ep_m.m.out'
-!     open(112,file=filnam,err=888,status='unknown')
-!     write(112,999) mep_m
-
-!     ! ea_m
-!     filnam=trim(prefix)//'ea_m.m.out'
-!     open(113,file=filnam,err=888,status='unknown')
-!     write(113,999) mea_m
-
-!     ! cpa
-!     filnam=trim(prefix)//'cpa.m.out'
-!     open(114,file=filnam,err=888,status='unknown')
-!     write(114,999) mcpa
-
-!     ! cwd
-!     filnam=trim(prefix)//'cwd.m.out'
-!     open(115,file=filnam,err=888,status='unknown')
-!     write(115,999) mcwd
-
-!     ! qm
-!     filnam=trim(prefix)//'qm.m.out'
-!     open(116,file=filnam,err=888,status='unknown')
-!     write(116,999) mqm
-
-!     return
-
-!   888    stop 'WRITE_TO_FILE: error opening output file'
-!   999    format (F20.8)
-
-!   end subroutine write_to_file
-
-! end program spinup_at_site_year
-
+end module _splash
