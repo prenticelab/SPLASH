@@ -1,4 +1,7 @@
-## Use gfortran compiler
+# Copyright (C) 2015, see LICENSE, Benjamin D. Stocker
+# contact: benjamin.stocker@gmail.com
+
+# Use gfortran compiler
 # FCOM=gfortran -ffixed-line-length-0
 ## debug compilation mode with gfortran
 # FCOM=gfortran -ffixed-line-length-0 -fdefault-real-8 -g -fbounds-check -Wall -fbacktrace -finit-real=nan -ffree-form

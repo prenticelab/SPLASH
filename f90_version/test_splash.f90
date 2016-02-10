@@ -2,6 +2,8 @@ program test_splash
   !////////////////////////////////////////////////////////////////
   ! EXECUTE TESTS 1, 2, AND 3 FOR SPLASH (without spinup)
   ! see https://bitbucket.org/labprentice/splash/wiki/Home
+  ! Copyright (C) 2015, see LICENSE, Benjamin D. Stocker
+  ! contact: benjamin.stocker@gmail.com
   !----------------------------------------------------------------
   use _splash
 

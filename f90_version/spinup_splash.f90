@@ -2,6 +2,8 @@ program test_spinup_splash
   !////////////////////////////////////////////////////////////////
   ! EXECUTE TEST 4 FOR SPLASH (spinup with daily input)
   ! see https://bitbucket.org/labprentice/splash/wiki/Home
+  ! Copyright (C) 2015, see LICENSE, Benjamin D. Stocker
+  ! contact: benjamin.stocker@gmail.com
   !----------------------------------------------------------------
   use _splash
 

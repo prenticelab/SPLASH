@@ -19,6 +19,8 @@ module _splash
   ! led algorithms for simulating habitats (SPLASH): Robust indices of radiation,
   ! evapotranspiration and plant-available moisture, Geoscientific Model
   ! Development, 2016 (in progress)
+  ! Copyright (C) 2015, see LICENSE, Benjamin D. Stocker
+  ! contact: benjamin.stocker@gmail.com
   !----------------------------------------------------------------   
   implicit none
 
