@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# solr_grid.py
+# solar_grid.py
 #
-# LAST UPDATED: 2016-01-29
+# LAST UPDATED: 2016-02-06
 #
 # ~~~~~~~~~
 # citation:
@@ -25,6 +25,9 @@ import numpy
 from const import (ke, keps, kGsc, kA, kb, kc, kd, kfFEC, kalb_vis, kalb_sw,
                    komega, pir)
 from data_grid import DATA_G
+from utilities import calculate_latitude
+from utilities import dcos
+from utilities import dsin
 from utilities import get_x_y
 
 
@@ -35,8 +38,9 @@ class SOLAR_G:
     """
     Name:     SOLAR_G
     Features: This class calculates the daily radiation fluxes.
-    Version:  1.0.0-dev
+    History:  Version 1.0.0-dev
               - added print vals functions [16.01.29]
+              - moved dcos and dsin to utilites [16.02.06]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -62,7 +66,7 @@ class SOLAR_G:
         # Calculate latitude array:
         self.logger.info("calculating latitude array")
         my_y = numpy.array([j for j in range(360)])
-        lat_array = self.calculate_latitude(my_y, 0.5)
+        lat_array = calculate_latitude(my_y, 0.5)
         self.lat = numpy.reshape(numpy.repeat(lat_array, 720), (360, 720), 'C')
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -127,7 +131,7 @@ class SOLAR_G:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Berger et al. (1993)
         kee = ke**2
-        my_rho = (1.0 - kee)/(1.0 + ke*self.dcos(my_nu))
+        my_rho = (1.0 - kee)/(1.0 + ke*dcos(my_nu))
         dr = (1.0/my_rho)**2
         self.dr = dr
         self.logger.info("relative Earth-Sun distance, rho, set to %f", my_rho)
@@ -137,7 +141,7 @@ class SOLAR_G:
         # 4. Calculate declination angle (delta), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Woolf (1968)
-        delta = numpy.arcsin(self.dsin(my_lambda)*self.dsin(keps))
+        delta = numpy.arcsin(dsin(my_lambda)*dsin(keps))
         delta /= pir
         self.delta = delta
         self.logger.info("declination, delta, set to %f", delta)
@@ -146,8 +150,10 @@ class SOLAR_G:
         # 5. Calculate variable substitutes (u and v), unitless
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         self.logger.debug("calculating variable substitutes ru and rv")
-        ru = self.dsin(delta)*self.dsin(self.lat)
-        rv = self.dcos(delta)*self.dcos(self.lat)
+        ru = dsin(self.lat)
+        ru *= dsin(delta)
+        rv = dcos(self.lat)
+        rv *= dcos(delta)
         self.ru = ru
         self.rv = rv
 
@@ -179,7 +185,7 @@ class SOLAR_G:
         # Eq. 1.10.3, Duffy & Beckman (1993)
         self.logger.debug("calculating daily ET radiation")
         ra_d = (ru*pir)*hs
-        ra_d += rv*self.dsin(hs)
+        ra_d += rv*dsin(hs)
         ra_d *= (86400.0/numpy.pi)*kGsc*dr
         self.ra_d = ra_d
 
@@ -261,7 +267,7 @@ class SOLAR_G:
         rn_d[self.good_idx] -= rnl[self.good_idx]
         rn_d[self.good_idx] *= hn[self.good_idx]*pir
         rn_d[self.good_idx] += (
-            rw[self.good_idx]*rv[self.good_idx]*self.dsin(hn[self.good_idx]))
+            rw[self.good_idx]*rv[self.good_idx]*dsin(hn[self.good_idx]))
         rn_d[self.good_idx] *= (86400.0/numpy.pi)
         self.rn_d = rn_d
 
@@ -276,51 +282,14 @@ class SOLAR_G:
         rnn_d[self.good_idx] *= rw[self.good_idx]
         rnn_d[self.good_idx] *= ru[self.good_idx]
         rnn_d[self.good_idx] += (
-            rw[self.good_idx]*rv[self.good_idx]*self.dsin(hs[self.good_idx]))
+            rw[self.good_idx]*rv[self.good_idx]*dsin(hs[self.good_idx]))
         rnn_d[self.good_idx] -= (
-            rw[self.good_idx]*rv[self.good_idx]*self.dsin(hn[self.good_idx]))
+            rw[self.good_idx]*rv[self.good_idx]*dsin(hn[self.good_idx]))
         rnn_d[self.good_idx] += rnl[self.good_idx]*numpy.pi
         rnn_d[self.good_idx] -= rnl[self.good_idx]*2.0*pir*hs[self.good_idx]
         rnn_d[self.good_idx] += rnl[self.good_idx]*hn[self.good_idx]*pir
         rnn_d[self.good_idx] *= (86400.0/numpy.pi)
         self.rnn_d = rnn_d
-
-    def calculate_latitude(self, y, r):
-        """
-        Name:     SOLAR_G.calculate_latitude
-        Input:    - nd.array, latitude index (y)
-                  - float, pixel resolution (r)
-        Output:   nd.array, latitude, degrees
-        Features: Returns latitude for an index array (numbered from the
-                  bottom-left corner) and pixel resolution
-        """
-        # Offset lat to pixel centroid and calucate based on index:
-        self.logger.debug("calculating latitude at %0.3f degrees", r)
-        lat = -90.0 + (0.5*r)
-        lat += (y*r)
-        return lat
-
-    def dcos(self, x):
-        """
-        Name:     SOLAR_G.dcos
-        Input:    float/nd.array, angle, degrees (x)
-        Output:   float/nd.array, cos(x*pi/180)
-        Features: Calculates the cosine of an array of angles in degrees
-        """
-        if isinstance(x, float):
-            self.logger.debug("calculating cosine of %f degrees", x)
-        return numpy.cos(x*pir)
-
-    def dsin(self, x):
-        """
-        Name:     SOLAR_G.dsin
-        Input:    float/nd.array, angle, degrees (x)
-        Output:   float/nd.array, sin(x*pi/180)
-        Features: Calculates the sine of an array of angles in degrees
-        """
-        if isinstance(x, float):
-            self.logger.debug("calculating sine of %f degrees", x)
-        return numpy.sin(x*pir)
 
     def berger_tls(self, n):
         """
@@ -344,9 +313,9 @@ class SOLAR_G:
         xse = numpy.sqrt(1.0 - xee)
 
         # Mean longitude for vernal equinox:
-        xlam = (ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega)
-        xlam -= xee/4.0*(0.5 + xse)*self.dsin(2.0*komega)
-        xlam += xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
+        xlam = (ke/2.0 + xec/8.0)*(1.0 + xse)*dsin(komega)
+        xlam -= xee/4.0*(0.5 + xse)*dsin(2.0*komega)
+        xlam += xec/8.0*(1.0/3.0 + xse)*dsin(3.0*komega)
         xlam *= 2.0
         xlam /= pir
         self.logger.debug("mean longitude for vernal equinox set to %f", xlam)
@@ -445,10 +414,10 @@ class SOLAR_G:
 if __name__ == '__main__':
     # Create a root logger:
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.WARNING)
+    root_logger.setLevel(logging.INFO)
 
     # Instantiating logging handler and record format:
-    root_handler = logging.StreamHandler()
+    root_handler = logging.FileHandler("solar_grid.log")
     rec_format = "%(asctime)s:%(levelname)s:%(name)s:%(funcName)s:%(message)s"
     formatter = logging.Formatter(rec_format, datefmt="%Y-%m-%d %H:%M:%S")
     root_handler.setFormatter(formatter)
