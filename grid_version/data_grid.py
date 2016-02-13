@@ -36,8 +36,7 @@ class DATA_G:
     Name:     DATA_G
     Features: This class handles the file IO for reading and writing gridded
               data.
-
-    @TODO: finish class
+    History   Version 1.0.0-dev
     """
     error_val = numpy.inf
 
