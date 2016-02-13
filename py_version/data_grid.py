@@ -59,6 +59,7 @@ class DATA_G:
         self.tair = None
         self.pre = None
         self.sf = None
+        self.elevation = None
         self.latitude = None
         self.longitude = None
 
@@ -303,7 +304,7 @@ class DATA_G:
         print("Date: %s" % (self.date))
         print("Longitude: %0.4f degrees (%d)" % (lon, x))
         print("Latitude: %0.4f degrees (%d)" % (lat, y))
-        print("Elevation: %0.4f m" % (self.elv[y, x]))
+        print("Elevation: %0.4f m" % (self.elevation[y, x]))
         print("Mean air temperature: %0.6f deg. C" % (self.tair[y, x]))
         print("Precipitation: %0.6f mm/d" % (self.pre[y, x]))
         print("Sunshine fraction: %0.6f" % (self.sf[y, x]))
@@ -322,7 +323,7 @@ class DATA_G:
                 f = numpy.loadtxt(self.elv_file)
             except:
                 self.logger.exception("failed to read elevation data")
-                self.elv = None
+                self.elevation = None
                 self.good_idx = (numpy.array([]), numpy.array([]))
                 self.noval_idx = (numpy.array([]), numpy.array([]))
             else:
@@ -331,10 +332,10 @@ class DATA_G:
                 self.noval_idx = numpy.where(f == -999.0)
                 f[self.noval_idx] *= 0.0
                 f[self.noval_idx] += self.error_val
-                self.elv = f
+                self.elevation = f
         else:
             self.logger.warnig("no elevation file found!")
-            self.elv = None
+            self.elevation = None
             self.good_idx = (numpy.array([]), numpy.array([]))
             self.noval_idx = (numpy.array([]), numpy.array([]))
 
@@ -345,7 +346,7 @@ class DATA_G:
         Outputs:  None.
         Features: Retrieves latitude array from CRU temperature netCDF file
         """
-        self.logger.debug("retrieving latitude array from CRU file")
+        self.logger.debug("retrieving lon and lat arrays from CRU file")
         my_file = self.tmp_file
         if my_file:
             f = netcdf.NetCDFFile(my_file, "r")
@@ -401,10 +402,10 @@ class DATA_G:
             # Update good and noval indexes:
             self.logger.debug("updating good and no-value indexes")
             self.noval_idx = numpy.where(
-                (self.elv == self.error_val) | (tmp == self.error_val) |
+                (self.elevation == self.error_val) | (tmp == self.error_val) |
                 (pre == self.error_val) | (cld == self.error_val))
             self.good_idx = numpy.where(
-                (self.elv != self.error_val) & (tmp != self.error_val) &
+                (self.elevation != self.error_val) & (tmp != self.error_val) &
                 (pre != self.error_val) & (cld != self.error_val))
 
             # Convert cloudiness to fractional sunshine, sf

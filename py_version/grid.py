@@ -21,6 +21,7 @@ import datetime
 import logging
 
 from data_grid import DATA_G
+from solar import SOLAR
 
 
 ###############################################################################
@@ -47,12 +48,24 @@ if __name__ == '__main__':
     data.read_elv()
     data.read_lon_lat()
 
-    my_day = 172
-    my_year = 2000
-    my_date = datetime.date(my_year, 1, 1)
-    my_date += datetime.timedelta(days=(my_day-1))
+    day = 172
+    year = 2000
+    my_date = datetime.date(year, 1, 1)
+    my_date += datetime.timedelta(days=(day-1))
 
     data.read_monthly_clim(my_date)
     root_logger.info("read %d precipitation", data.pre.size)
     root_logger.info("read %d sunshine fraction", data.sf.size)
     root_logger.info("read %d air temperature", data.tair.size)
+
+    for i in range(len(data.latitude)):
+        for j in range(len(data.longitude)):
+            lat = data.latitude[i]
+            lon = data.longitude[j]
+            elv = data.elevation[i, j]
+            sf = data.sf[i, j]
+            tc = data.tair[i, j]
+            if elv != data.error_val:
+                root_logger.info("lat: %f, lon: %f, elv: %f" % (lat, lon, elv))
+                my_solar = SOLAR(lat, elv)
+                my_solar.calculate_daily_fluxes(day, year, sf, tc)
