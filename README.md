@@ -108,18 +108,6 @@ This directory holds the FORTRAN90 version of the SPLASH code.
 
     * Runs SPLASH for one year, following a spin-up of soil moisture, based on example monthly meteorological data (hard-coded).
 
-## grid_version/
-This directory holds the grid-based SPLASH code.
-__UNDER DEVELOPMENT!__
-
-* __const.py__
-
-* __data_grid.py__
-
-* __solar_grid.py__
-
-* __splash_grid.py__
-
 ## py_version/
 This directory holds the Python version of the SPLASH code.
 
@@ -130,6 +118,10 @@ This directory holds the Python version of the SPLASH code.
 * __data.py__
 
     * DATA class definition for reading input data.
+
+* __data_grid.py__
+
+    * DATA_G class for reading CRU TS gridded data.
 
 * __evap.py__
 
@@ -158,6 +150,10 @@ This directory holds the Python version of the SPLASH code.
 * __splash_data.py__
 
     * SPLASH_DATA class and script to produce a CSV file with daily input data (i.e., sunshine fraction, air temperature, and precipitation)
+
+* __utilities.py__
+
+    * Contains utility functions that are shared amongst classes.
 
 ## r_version/
 This directory holds the R version of the SPLASH code.
@@ -200,7 +196,7 @@ This directory holds the R version of the SPLASH code.
 
     * This script performs SPLASH consistency tests.
 
-# Simple Process-Led Algorithms for Simulating Habitats (SPLASH): Modelling Radiation, Evapotranspiration and Plant-Available Moisture
+# SPLASH: Robust indices of radiation, evapotranspiration and plant-available moisture
 ----------------------------------------------------------------------------
 ## Theory
 There is a growing need of global ecophysiological datasets for the study of vegetation dynamics under changing climate scenarios; however, simulation of natural processes is often necessary due to the lack of observations.
