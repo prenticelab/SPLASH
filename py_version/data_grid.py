@@ -3,7 +3,7 @@
 #
 # data_grid.py
 #
-# LAST UPDATED: 2016-01-29
+# LAST UPDATED: 2016-02-13
 #
 # ~~~~~~~~~
 # citation:
@@ -34,9 +34,10 @@ from utilities import get_x_y
 class DATA_G:
     """
     Name:     DATA_G
-    Features: This class handles the file IO for reading and writing gridded
-              data.
+    Features: This class handles the file IO for reading gridded CRU TS data.
     History   Version 1.0.0-dev
+              - added longitude and latitude class variables [16.02.13]
+              - created get lon lat function [16.02.13]
     """
     error_val = numpy.inf
 
@@ -58,6 +59,8 @@ class DATA_G:
         self.tair = None
         self.pre = None
         self.sf = None
+        self.latitude = None
+        self.longitude = None
 
         # Create a class logger
         self.logger = logging.getLogger(__name__)
@@ -188,7 +191,8 @@ class DATA_G:
         Depends:  - get_cru_file
                   - get_time_index
         """
-        # Search directory for file:
+        self.logger.debug("reading %s for month %s" % (v, ct))
+
         if v == 'tmp':
             my_file = self.tmp_file
         elif v == 'pre':
@@ -198,6 +202,7 @@ class DATA_G:
 
         if my_file:
             # Open netCDF file for reading:
+            self.logger.debug("opening NetCDF file %s", my_file)
             f = netcdf.NetCDFFile(my_file, "r")
 
             # Save data for variables of interest:
@@ -231,10 +236,12 @@ class DATA_G:
             f_var = None
             f.close()
 
+            self.logger.debug("setting error value")
             noval_idx = numpy.where(f_data == f_noval)
             f_data[noval_idx] *= 0.0
             f_data[noval_idx] += self.error_val
 
+            self.logger.debug("finished reading %s for month %s" % (v, ct))
             return f_data
 
     def get_time_index(self, bt, ct, aot):
@@ -254,19 +261,18 @@ class DATA_G:
 
         # Calculate the time difference between ct and bt:
         dt = (ct - bt).days
-
-        # Find the first index of where dt would be in the sorted array:
-        try:
-            idx = numpy.where(aot > dt)[0][0]
-        except IndexError:
-            print("Month searched in CRU file is out of bounds!")
+        if dt < 0:
+            self.logger.warning("Month %s preceeds CRU base date!", ct)
             idx = None
         else:
-            if dt < 0:
-                print("Month searched in CRU file is out of bounds!")
+            try:
+                idx = numpy.where(aot > dt)[0][0]
+            except IndexError:
+                self.logger.warning("Month %s is out of bounds!", ct)
                 idx = None
-        finally:
-            return idx
+            else:
+                self.logger.debug("Found index %d for month %s" % (idx, ct))
+                return idx
 
     def get_year_days(self, ts):
         """
@@ -331,6 +337,29 @@ class DATA_G:
             self.elv = None
             self.good_idx = (numpy.array([]), numpy.array([]))
             self.noval_idx = (numpy.array([]), numpy.array([]))
+
+    def read_lon_lat(self):
+        """
+        Name:     DATA_G.read_lon_lat
+        Inputs:   None.
+        Outputs:  None.
+        Features: Retrieves latitude array from CRU temperature netCDF file
+        """
+        self.logger.debug("retrieving latitude array from CRU file")
+        my_file = self.tmp_file
+        if my_file:
+            f = netcdf.NetCDFFile(my_file, "r")
+            f_lat = f.variables['lat'].data.copy()
+            f_lon = f.variables['lon'].data.copy()
+            f.close()
+        else:
+            self.logger.debug("Please set CRU files before loading lon/lat")
+            f_lat = numpy.array([])
+            f_lon = numpy.array([])
+        self.logger.debug("Read %d latitude values", f_lat.size)
+        self.logger.debug("Read %d longitude values", f_lon.size)
+        self.latitude = f_lat
+        self.longitude = f_lon
 
     def read_monthly_clim(self, m):
         """
@@ -432,6 +461,7 @@ if __name__ == '__main__':
     my_class = DATA_G()
     my_class.find_cru_files(cru_dir)
     my_class.read_elv()
+    my_class.read_lon_lat()
 
     my_day = 172
     my_year = 2000

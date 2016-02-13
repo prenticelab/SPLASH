@@ -353,7 +353,7 @@ if __name__ == '__main__':
     root_logger.setLevel(logging.INFO)
 
     # Instantiating logging handler and record format:
-    root_handler = logging.StreamHandler()
+    root_handler = logging.FileHandler("evap.log")
     rec_format = "%(asctime)s:%(levelname)s:%(name)s:%(funcName)s:%(message)s"
     formatter = logging.Formatter(rec_format, datefmt="%Y-%m-%d %H:%M:%S")
     root_handler.setFormatter(formatter)
