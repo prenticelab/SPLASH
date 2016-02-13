@@ -2,7 +2,7 @@
 #
 # solar.py
 #
-# LAST UPDATED: 2016-02-05
+# LAST UPDATED: 2016-02-13
 #
 # ~~~~~~~~~
 # citation:
@@ -22,6 +22,8 @@ import numpy
 
 from const import (ke, keps, kGsc, kA, kb, kc, kd, kfFEC, kalb_vis, kalb_sw,
                    komega, pir)
+from utilities import dcos
+from utilities import dsin
 
 
 ###############################################################################
@@ -88,9 +90,9 @@ class SOLAR:
         xse = numpy.sqrt(1.0 - xee)
 
         # Mean longitude for vernal equinox:
-        xlam = (ke/2.0 + xec/8.0)*(1.0 + xse)*self.dsin(komega)
-        xlam -= xee/4.0*(0.5 + xse)*self.dsin(2.0*komega)
-        xlam += xec/8.0*(1.0/3.0 + xse)*self.dsin(3.0*komega)
+        xlam = (ke/2.0 + xec/8.0)*(1.0 + xse)*dsin(komega)
+        xlam -= xee/4.0*(0.5 + xse)*dsin(2.0*komega)
+        xlam += xec/8.0*(1.0/3.0 + xse)*dsin(3.0*komega)
         xlam *= 2.0
         xlam /= pir
         self.logger.debug("mean longitude for vernal equinox set to %f", xlam)
@@ -184,7 +186,7 @@ class SOLAR:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Berger et al. (1993)
         kee = ke**2
-        my_rho = (1.0 - kee)/(1.0 + ke*self.dcos(my_nu))
+        my_rho = (1.0 - kee)/(1.0 + ke*dcos(my_nu))
         dr = (1.0/my_rho)**2
         self.dr = dr
         self.logger.info("relative Earth-Sun distance, rho, set to %f", my_rho)
@@ -194,7 +196,7 @@ class SOLAR:
         # 4. Calculate declination angle (delta), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Woolf (1968)
-        delta = numpy.arcsin(self.dsin(my_lambda)*self.dsin(keps))
+        delta = numpy.arcsin(dsin(my_lambda)*dsin(keps))
         delta /= pir
         self.delta = delta
         self.logger.info("declination, delta, set to %f", delta)
@@ -202,8 +204,8 @@ class SOLAR:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Calculate variable substitutes (u and v), unitless
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ru = self.dsin(delta)*self.dsin(self.lat)
-        rv = self.dcos(delta)*self.dcos(self.lat)
+        ru = dsin(delta)*dsin(self.lat)
+        rv = dcos(delta)*dcos(self.lat)
         self.ru = ru
         self.rv = rv
         self.logger.info("variable substitute, ru, set to %f", ru)
@@ -232,7 +234,7 @@ class SOLAR:
         # 7. Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # Eq. 1.10.3, Duffy & Beckman (1993)
-        ra_d = (86400.0/numpy.pi)*kGsc*dr*(ru*pir*hs + rv*self.dsin(hs))
+        ra_d = (86400.0/numpy.pi)*kGsc*dr*(ru*pir*hs + rv*dsin(hs))
         self.ra_d = ra_d
         self.logger.info("daily ET radiation set to %f MJ/m^2", (1.0e-6)*ra_d)
 
@@ -289,7 +291,7 @@ class SOLAR:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 13. Calculate daytime net radiation (rn_d), J/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rn_d = (86400.0/numpy.pi)*(hn*pir*(rw*ru - rnl) + rw*rv*self.dsin(hn))
+        rn_d = (86400.0/numpy.pi)*(hn*pir*(rw*ru - rnl) + rw*rv*dsin(hn))
         self.rn_d = rn_d
         self.logger.info(
             "daytime net radiation set to %f MJ/m^2", (1.0e-6)*rn_d)
@@ -298,32 +300,12 @@ class SOLAR:
         # 14. Calculate nighttime net radiation (rnn_d), J/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         rnn_d = rw*ru*(hs - hn)*pir
-        rnn_d += rw*rv*(self.dsin(hs) - self.dsin(hn))
+        rnn_d += rw*rv*(dsin(hs) - dsin(hn))
         rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
         rnn_d *= (86400.0/numpy.pi)
         self.rnn_d = rnn_d
         self.logger.info(
             "nighttime net radiation set to %f MJ/m^2", (1.0e-6)*rnn_d)
-
-    def dcos(self, x):
-        """
-        Name:     SOLAR.dcos
-        Input:    float, angle, degrees (x)
-        Output:   float, cos(x*pi/180)
-        Features: Calculates the cosine of an angle given in degrees
-        """
-        self.logger.debug("calculating cosine of %f degrees", x)
-        return numpy.cos(x*pir)
-
-    def dsin(self, x):
-        """
-        Name:     SOLAR.dsin
-        Input:    float, angle, degrees (x)
-        Output:   float, sin(x*pi/180)
-        Features: Calculates the sine of an angle given in degrees
-        """
-        self.logger.debug("calculating sine of %f degrees", x)
-        return numpy.sin(x*pir)
 
     def julian_day(self, y, m, i):
         """

@@ -2,7 +2,7 @@
 #
 # evap.py
 #
-# LAST UPDATED: 2016-02-05
+# LAST UPDATED: 2016-02-13
 #
 # ~~~~~~~~~
 # citation:
@@ -22,6 +22,7 @@ import numpy
 
 from const import (kw, kG, kL, kR, kPo, kTo, kMa, kMv, pir)
 from solar import SOLAR
+from utilities import dsin
 
 
 ###############################################################################
@@ -195,31 +196,11 @@ class EVAP:
         # 8. Estimate daily AET (aet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         aet_d = sw*hi*pir
-        aet_d += rx*rw*rv*(self.dsin(hn) - self.dsin(hi))
+        aet_d += rx*rw*rv*(dsin(hn) - dsin(hi))
         aet_d += (rx*rw*ru - rx*rnl)*(hn - hi)*pir
         aet_d *= (24.0/numpy.pi)
         self.aet_d = aet_d
         self.logger.info("daily AET set to %f mm", aet_d)
-
-    def dcos(self, x):
-        """
-        Name:     EVAP.dcos
-        Input:    float, angle, degrees (x)
-        Output:   float, cos(x*pi/180)
-        Features: Calculates the cosine of an angle given in degrees
-        """
-        self.logger.debug("calculating cosine of %f degrees", x)
-        return numpy.cos(x*pir)
-
-    def dsin(self, x):
-        """
-        Name:     EVAP.dsin
-        Input:    float, angle, degrees (x)
-        Output:   float, sin(x*pi/180)
-        Features: Calculates the sine of an angle given in degrees
-        """
-        self.logger.debug("calculating sine of %f degrees", x)
-        return numpy.sin(x*pir)
 
     def sat_slope(self, tc):
         """
