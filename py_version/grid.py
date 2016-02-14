@@ -3,7 +3,7 @@
 #
 # grid.py
 #
-# LAST UPDATED: 2016-02-13
+# LAST UPDATED: 2016-02-14
 #
 # ~~~~~~~~~
 # citation:
@@ -21,7 +21,7 @@ import datetime
 import logging
 
 from data_grid import DATA_G
-from solar import SOLAR
+from splash import SPLASH
 
 
 ###############################################################################
@@ -58,6 +58,7 @@ if __name__ == '__main__':
     root_logger.info("read %d sunshine fraction", data.sf.size)
     root_logger.info("read %d air temperature", data.tair.size)
 
+    sm = 75
     for i in range(len(data.latitude)):
         for j in range(len(data.longitude)):
             lat = data.latitude[i]
@@ -65,7 +66,8 @@ if __name__ == '__main__':
             elv = data.elevation[i, j]
             sf = data.sf[i, j]
             tc = data.tair[i, j]
+            pn = data.pre[i, j]
             if elv != data.error_val:
                 root_logger.info("lat: %f, lon: %f, elv: %f" % (lat, lon, elv))
-                my_solar = SOLAR(lat, elv)
-                my_solar.calculate_daily_fluxes(day, year, sf, tc)
+                my_class = SPLASH(lat, elv)
+                my_class.run_one_day(day, year, sm, sf, tc, pn)
