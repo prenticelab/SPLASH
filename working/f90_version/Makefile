@@ -1,28 +1,40 @@
 # Copyright (C) 2015, see LICENSE, Benjamin D. Stocker
 # contact: benjamin.stocker@gmail.com
 
-# Use gfortran compiler
-# FCOM=gfortran -ffixed-line-length-0
-## debug compilation mode with gfortran
+# Debug compilation mode with gfortran
 # FCOM=gfortran -ffixed-line-length-0 -fdefault-real-8 -g -fbounds-check -Wall -fbacktrace -finit-real=nan -ffree-form
 
 ## Use PGF95 compiler
-FCOM=pgf95 -r8 -Mextend -g -O0 -Mextend -Mbounds -Minfo -Minform=inform -Kieee -Ktrap=fp -Mfreeform
+# FCOM=pgf95 -r8 -Mextend -g -O0 -Mextend -Mbounds -Minfo -Minform=inform -Kieee -Ktrap=fp -Mfreeform
 
-export FCOM
+# The compiler
+FC = gfortran
+# flags for debugging or for maximum performance, comment as necessary
+FCFLAGS = -g -fbounds-check
+#FCFLAGS = -O2
+# flags forall (e.g. look for system .mod files, required in gfortran)
+FCFLAGS += -I/usr/include
+
 
 # name of executable
-EXE = runsplash
+PROGRAMS = test_spinup_splash test_splash
 
-standard:
-	$(FCOM) -c splash.mod.f90
-	$(FCOM) splash.mod.o spinup_splash.f90 -o $(EXE)	
+all: $(PROGRAMS)
 
-test:
-	$(FCOM) -c splash.mod.f90
-	$(FCOM) splash.mod.o test_splash.f90 -o $(EXE)
+spinup_splash.o: splash.mod.o
+test_spinup_splash: splash.mod.o
+test_splash.o: splash.mod.o
+test_splash: splash.mod.o
+
+%: %.o
+	$(FC) $(FCFLAGS) -o $@ $^ $(LDFLAGS)
+
+%.o: %.f90
+	$(FC) $(FCFLAGS) -c $<
+
+%.o: %.F90
+	$(FC) $(FCFLAGS) -c $<
 
 .PHONY: clean
 clean:
-	rm $(EXE) *.o *.mod
-
+	rm -f $(PROGRAMS) *.o *.mod *.MOD
