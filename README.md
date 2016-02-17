@@ -5,9 +5,10 @@
 # Repository Details
 ---------------
 
-* LAST UPDATED: 2016-01-22
+* LATEST RELEASE: v1.0
+* LAST UPDATED: 2016-02-16
 * TEAM: labprentice
-* REPO: splash (private)
+* REPO: splash (public)
 
 # Repository Structure
 ----------------------
@@ -53,12 +54,16 @@ This directory holds the current documentation for the SPLASH code.
 
     * Contains the modular LaTeX chapter files and appendix
 
-## cpp_version/
+## releases/v1.0/
+
+### cpp_version/
 This directory holds the C++ version of the SPLASH code.
 
 * __DATA.cpp / DATA.h__
 
     * C++ class definition file. This class handles reading input data.
+
+    * Utilizes *cstdlib*, *fstream*, *iostream*, *string*, and *vector* libraries
 
 * __etr.h__
 
@@ -68,6 +73,8 @@ This directory holds the C++ version of the SPLASH code.
 
     * C++ class definition file. This class calculates daily quantities of radiation, evaporation, and condensation.
 
+    * Utilizes *cmath*, *stdio.h*, and *vector* libraries
+
 * __global.cpp / global.h__
 
     * Script defining global constants.
@@ -76,9 +83,11 @@ This directory holds the C++ version of the SPLASH code.
 
     * Main function for running the SPLASH code.
 
+    * Utilizes *iostream*, *string* and *vector* libraries
+
 * __Makefile__
 
-    * Makefile for C++ SPLASH code.
+    * Makefile for GNU C++ compiler.
 
 * __smr.h__
 
@@ -92,36 +101,45 @@ This directory holds the C++ version of the SPLASH code.
 
     * C++ class definition file. This class updates daily quantities of radiation, evapotranspiration, soil moisture and runoff based on the SPLASH methodology.
 
+    * Utilizes *cmath*, *stdio.h* and *vector* libraries
+
 * __srad.h__
 
     * C++ header file for solar radiation fluxes structure.
 
-
-## f90_version/
+### f90_version/
 This directory holds the FORTRAN90 version of the SPLASH code.
 
 * __Makefile__
 
-    * Use to compile the splash.F script.
+    * Makefile for gfortran compiler.
 
-* __splash.f90__
+* __spinup_splash.f90__
 
-    * Runs SPLASH for one year, following a spin-up of soil moisture, based on example monthly meteorological data (hard-coded).
+    * Source code for
 
-## py_version/
+* __splash.mod.f90__
+
+    * Source code for the SPLASH model to run for one year, following a spin-up of soil moisture, based on example meteorological data.
+
+* __test_splash.f90__
+
+    * Source code for consistency tests 1--3 (see Wiki).
+
+### py_version/
 This directory holds the Python version of the SPLASH code.
 
 * __const.py__
 
     * Contains definitions for SPLASH global constants.
 
+    * Utilizes *numpy* library
+
 * __data.py__
 
     * DATA class definition for reading input data.
 
-* __data_grid.py__
-
-    * DATA_G class for reading CRU TS gridded data.
+    * Utilizes *logging* and *numpy* libraries
 
 * __evap.py__
 
@@ -135,27 +153,39 @@ This directory holds the Python version of the SPLASH code.
 
         * Condensation, mm/day
 
+   * Utilizes *logging* and *numpy* libraries
+
 * __main.py__
 
     * Main function for running the SPLASH code.
+
+    * Utilizes *logging* library
 
 * __solar.py__
 
     * SOLAR class definition for calculating daily radiation fluxes.
 
+    * Utilizes *logging* and *numpy* libraries
+
 * __splash.py__
 
     * SPLASH class definition for updating daily quantities of radiation, evapotranspiration, soil moisture and runoff.
+
+    * Utilities *logging* and *numpy* libraries
 
 * __splash_data.py__
 
     * SPLASH_DATA class and script to produce a CSV file with daily input data (i.e., sunshine fraction, air temperature, and precipitation)
 
+    * Utilities *datetime*, *glob*, *numpy*, *os.path* and *scipy.io.netcdf* libraries
+
 * __utilities.py__
 
     * Contains utility functions that are shared amongst classes.
 
-## r_version/
+    * Utilizes *logging* and *numpy* libraries
+
+### r_version/
 This directory holds the R version of the SPLASH code.
 
 * __const.R__
@@ -195,6 +225,9 @@ This directory holds the R version of the SPLASH code.
 * __test.R__
 
     * This script performs SPLASH consistency tests.
+
+## working/
+This directory contains the source code currently under development.
 
 # SPLASH: Robust indices of radiation, evapotranspiration and plant-available moisture
 ----------------------------------------------------------------------------
