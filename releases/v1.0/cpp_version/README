@@ -17,50 +17,54 @@ Requires input file (../../../data/example_data.csv).
 Contents
 ========
 
-* __DATA.cpp / DATA.h__
+DATA.cpp / DATA.h
+    This class handles reading input data.
+    Libraries:
+        - cstdlib
+        - fstream
+        - iostream
+        - string
+        - vector
 
-    * C++ class definition file. This class handles reading input data.
+etr.h
+    C++ header file for the evapotranspiration and radiation structure.
 
-    * Utilizes *cstdlib*, *fstream*, *iostream*, *string*, and *vector* libraries
+EVAP.cpp / EVAP.h
+    This class calculates daily quantities of radiation, evaporation, and condensation.
+    Libraries:
+        - cmath
+        - stdio.h
+        - vector
 
-* __etr.h__
+global.cpp / global.h
+    Script defining global constants.
 
-    * C++ header file for the __e__vapo__t__ranspiration and __r__adiation structure.
+main.cpp
+    Main function for running the SPLASH code.
+    Libraries:
+        - iostream
+        - string
+        - vector
 
-* __EVAP.cpp / EVAP.h__
+Makefile
+    Makefile for GNU C++ compiler.
 
-    * C++ class definition file. This class calculates daily quantities of radiation, evaporation, and condensation.
+smr.h
+    C++ header file for the soil moisture and runoff structure.
 
-    * Utilizes *cmath*, *stdio.h*, and *vector* libraries
+SOLAR.cpp / SOLAR.h
+    This class calculates daily radiation fluxes.
+    Libraries:
+        - cmath
+        - stdio.h
+        - vector
 
-* __global.cpp / global.h__
+SPLASH.cpp / SPLASH.h
+    This class updates daily quantities of radiation, evapotranspiration, soil moisture and runoff based on the SPLASH methodology.
+    Libraries:
+        - cmath
+        - stdio.h
+        - vector
 
-    * Script defining global constants.
-
-* __main.cpp__
-
-    * Main function for running the SPLASH code.
-
-    * Utilizes *iostream*, *string* and *vector* libraries
-
-* __Makefile__
-
-    * Makefile for GNU C++ compiler.
-
-* __smr.h__
-
-    * C++ header file for the __s__oil __m__oisture and __r__unoff structure.
-
-* __SOLAR.cpp / SOLAR.h__
-
-    * C++ class definition file. This class calculates daily radiation fluxes.
-
-* __SPLASH.cpp / SPLASH.h__
-
-    * C++ class definition file. This class updates daily quantities of radiation, evapotranspiration, soil moisture and runoff based on the SPLASH methodology.
-
-    * Utilizes *cmath*, *stdio.h* and *vector* libraries
-
-* __srad.h__
-
-    * C++ header file for solar radiation fluxes structure.
+srad.h
+    C++ header file for solar radiation fluxes structure.
