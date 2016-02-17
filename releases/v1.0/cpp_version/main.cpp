@@ -58,7 +58,7 @@ int main() {
 
     // Test 4: SPIN-UP
     DATA my_data;
-    string fname = "../data/example_data.csv";
+    string fname = "../../../data/example_data.csv";
     my_data.read_csv(fname);
     double lat = 37.7;
     double elv = 142.0;
