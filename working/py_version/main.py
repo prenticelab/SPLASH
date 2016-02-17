@@ -3,7 +3,13 @@
 #
 # main.py
 #
-# LAST UPDATED: 2016-02-06
+# VERSION: 1.1-dev
+# LAST UPDATED: 2016-02-17
+#
+# ~~~~~~~~
+# license:
+# ~~~~~~~~
+# Copyright (C) 2015, see LICENSE
 #
 # ~~~~~~~~~
 # citation:
@@ -64,7 +70,7 @@
 # 2. upate plot commands
 
 ###############################################################################
-## IMPORT MODULES
+# IMPORT MODULES
 ###############################################################################
 import logging
 
@@ -74,7 +80,7 @@ from data import DATA
 from splash import SPLASH
 
 ###############################################################################
-## MAIN PROGRAM
+# MAIN PROGRAM
 ###############################################################################
 if __name__ == '__main__':
     # Create a root logger:
@@ -113,7 +119,7 @@ if __name__ == '__main__':
     my_class.print_daily_sm()
 
 if 0:
-    ########################## NEEDS UPDATED ##########################
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ NEEDS UPDATED ~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
     #
     # Plot monthly ET results
     #

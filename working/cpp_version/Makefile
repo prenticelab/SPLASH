@@ -1,3 +1,6 @@
+# Copyright (C) 2015, see LICENSE
+# Use GNU C++ compiler (g++ v.4.8.2)
+
 #---------- Variables ----------#
 CXX = g++
 CXXFLAGS = -g

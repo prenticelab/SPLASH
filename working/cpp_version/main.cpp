@@ -11,8 +11,13 @@ using namespace std;
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * main.cpp
  *
- * 2015-02-07 -- created
- * 2016-02-05 -- last updated
+ * VERSION 1.1-dev
+ * LAST UPDATED: 2016-02-17
+ *
+ * ~~~~~~~~
+ * license:
+ * ~~~~~~~~
+ * Copyright (C) 2015, see LICENSE
  *
  * ~~~~~~~~~
  * citation:
@@ -53,7 +58,7 @@ int main() {
 
     // Test 4: SPIN-UP
     DATA my_data;
-    string fname = "../data/example_data.csv";
+    string fname = "../../../data/example_data.csv";
     my_data.read_csv(fname);
     double lat = 37.7;
     double elv = 142.0;

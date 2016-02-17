@@ -2,7 +2,13 @@
 #
 # main.R
 #
-# last updated: 2016-02-05
+# VERSION: 1.1-dev
+# LAST UPDATED: 2016-02-17
+#
+# ~~~~~~~~
+# license:
+# ~~~~~~~~
+# Copyright (C) 2015, see LICENSE
 #
 # ~~~~~~~~~
 # citation:

@@ -3,8 +3,13 @@
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * global.cpp
  *
- * 2016-01-22 -- created
- * 2016-01-22 -- last updated
+ * VERSION 1.1-dev
+ * LAST UPDATED: 2016-02-17
+ *
+ * ~~~~~~~~
+ * license:
+ * ~~~~~~~~
+ * Copyright (C) 2015, see LICENSE
  *
  * ~~~~~~~~~
  * citation:

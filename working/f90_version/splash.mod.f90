@@ -1,17 +1,19 @@
 module _splash
   !////////////////////////////////////////////////////////////////
-  ! SPLASH 
+  ! SPLASH
   ! This module contains all functions and parameter values to run
-  ! the SPLASH model, given inputs 
+  ! the SPLASH model, given inputs
   ! - temperature (deg C, daily values)
   ! - precipitation (mm/day, daily values)
   ! - sunshine fraction (unitless, daily values)
   ! - latitude (deg N)
   ! - elevation (m.a.s.l.)
-  ! 
+  !
   ! author: T.W. Davis, Fortran version by B. Stocker
   !
-  ! last updated: 2016-02-05
+  ! version: 1.1-dev
+  !
+  ! last updated: 2016-02-17
   !
   ! citation:
   ! T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
@@ -21,7 +23,7 @@ module _splash
   ! Development, 2016 (in progress)
   ! Copyright (C) 2015, see LICENSE, Benjamin D. Stocker
   ! contact: benjamin.stocker@gmail.com
-  !----------------------------------------------------------------   
+  !----------------------------------------------------------------
   implicit none
 
   ! soil water balance variables as derived type
@@ -57,9 +59,9 @@ module _splash
   ! Chose whether to use monthly or daily input data
   logical :: use_daily_input
 
-  !----------------------------------------------------------------   
+  !----------------------------------------------------------------
   ! model parameters
-  !----------------------------------------------------------------   
+  !----------------------------------------------------------------
   real, parameter :: kA = 107             ! constant for Rnl (Monteith & Unsworth, 1990)
   real, parameter :: kalb_sw = 0.17       ! shortwave albedo (Federer, 1968)
   real, parameter :: kalb_vis = 0.03      ! visible light albedo (Sellers, 1985)
@@ -85,9 +87,9 @@ module _splash
 
   integer, parameter :: nmonth = 12       ! number of months in year
 
-  !----------------------------------------------------------------     
+  !----------------------------------------------------------------
   ! output variables
-  !----------------------------------------------------------------   
+  !----------------------------------------------------------------
   ! daily totals
   real, dimension(366) :: outdra            ! daily solar irradiation, J/m2
   real, dimension(366) :: outdrn            ! daily net radiation, J/m2
@@ -108,18 +110,18 @@ module _splash
   real, dimension(12) :: outmppfd
 
 
-contains 
+contains
 
 
   subroutine spin_up_sm( yr, lat, elv, ppt, tc, sf, inlen )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Spins up the daily soil moisture
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
-    integer, intent(in)                :: yr    ! year AD  
+    integer, intent(in)                :: yr    ! year AD
     real, intent(in)                   :: lat   ! latitude (degrees)
     real, intent(in)                   :: elv   ! altitude (m)
-    real, dimension(inlen), intent(in) :: ppt   ! monthly precip (mm) 
+    real, dimension(inlen), intent(in) :: ppt   ! monthly precip (mm)
     real, dimension(inlen), intent(in) :: tc    ! mean monthly temperature (deg C)
     real, dimension(inlen), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
     integer, intent(in)                :: inlen ! =12 if monthly input data, =ndayyear if daily input data
@@ -159,14 +161,14 @@ contains
 
 
   subroutine run_one_year( lat, elv, yr, ppt, tc, sf, inlen )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Calculates daily and monthly quantities for one year
-    !----------------------------------------------------------------  
+    !----------------------------------------------------------------
     ! arguments
     real, intent(in)                   :: lat   ! latitude (degrees)
     real, intent(in)                   :: elv   ! altitude (m)
     integer, intent(in)                :: yr    ! year AD
-    real, dimension(inlen), intent(in) :: ppt   ! monthly precip (mm) 
+    real, dimension(inlen), intent(in) :: ppt   ! monthly precip (mm)
     real, dimension(inlen), intent(in) :: tc    ! mean monthly temperature (deg C)
     real, dimension(inlen), intent(in) :: sf    ! mean monthly sunshine fraction (unitless)
 
@@ -214,7 +216,7 @@ contains
         call run_one_day( lat, elv, doy, yr, use_pr, use_tc, use_sf )
 
         ! Collect daily output variables
-        call getout_daily( doy, moy ) 
+        call getout_daily( doy, moy )
 
       enddo
 
@@ -226,15 +228,15 @@ contains
 
 
   subroutine run_one_day( lat, elv, doy, yr, pr, tc, sf )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Calculates daily and monthly quantities for one year
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
     real, intent(in)    :: lat   ! latitude (degrees)
     real, intent(in)    :: elv   ! altitude (m)
     integer, intent(in) :: doy   ! altitude (m)
     integer, intent(in) :: yr    ! year AD
-    real, intent(in)    :: pr    ! monthly or daily precip (mm) 
+    real, intent(in)    :: pr    ! monthly or daily precip (mm)
     real, intent(in)    :: tc    ! mean monthly or daily temperature (deg C)
     real, intent(in)    :: sf    ! mean monthly or daily sunshine fraction (unitless)
 
@@ -251,7 +253,7 @@ contains
     waterbal%sm = waterbal%sm + pr + out_evap%cn - out_evap%aet
 
     if (waterbal%sm>kWm) then
-      ! Bucket is full 
+      ! Bucket is full
       ! * set soil moisture to capacity
       ! * add remaining water to monthly runoff total
       waterbal%ro = waterbal%sm - kWm  ! xxx add in sofun
@@ -274,7 +276,7 @@ contains
 
 
   function evap( lat, doy, elv, yr, sf, tc, sw ) result( out_evap )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! This subroutine calculates daily radiation and evapotranspiration
     ! quantities
     ! - daily PPFD (ppfd), mol/m^2
@@ -282,13 +284,13 @@ contains
     ! - daily PET (pet), mm
     ! - daily AET (aet), mm
     ! - daily condensation (wc), mm
-    !-------------------------------------------------------------  
+    !-------------------------------------------------------------
     ! arguments
     real,    intent(in) :: lat           ! latitude, degrees
     integer, intent(in) :: doy           ! day of the year (formerly 'n')
     real,    intent(in) :: elv ! elevation, metres
     integer, intent(in) :: yr  ! year
-    real,    intent(in) :: sf  ! fraction of sunshine hours 
+    real,    intent(in) :: sf  ! fraction of sunshine hours
     real,    intent(in) :: tc  ! mean daily air temperature, C
     real,    intent(in) :: sw  ! evaporative supply rate, mm/hr
 
@@ -300,7 +302,7 @@ contains
 
     real :: my_rho
     real :: dr                 ! distance factor
-    real :: delta              ! declination angle 
+    real :: delta              ! declination angle
     real :: ru                 ! variable substitute for u
     real :: rv                 ! variable substitute for v
     real :: hs                 ! sunset hour angle
@@ -339,7 +341,7 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Berger (1978)
     out_berger = berger_tls( doy, ndayyear )
-    
+
     ! consistency check
     if (verbose) print*,'out_berger', out_berger
 
@@ -383,7 +385,7 @@ contains
     ! Eq. 3.22, Stine & Geyer (2001)
     if ((ru/rv) >= 1.0) then
       ! Polar day (no sunset)
-      hs = 180.0 
+      hs = 180.0
     elseif ((ru/rv) <= -1.0) then
       ! Polar night (no sunrise)
       hs = 0.0
@@ -571,61 +573,61 @@ contains
     ! consistency check
     if (verbose) print*,'daily out_evap%AET (mm) ', out_evap%aet
 
-    !-------------------------------------------------------------   
-    ! Refs: Allen, R.G. (1996), Assessing integrity of weather data for 
+    !-------------------------------------------------------------
+    ! Refs: Allen, R.G. (1996), Assessing integrity of weather data for
     !         reference evapotranspiration estimation, Journal of Irrigation
     !         and Drainage Engineering, vol. 122, pp. 97--106.
-    !       Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998), 
-    !         'Meteorological data,' Crop evapotranspiration - Guidelines for 
-    !         computing crop water requirements - FAO Irrigation and drainage 
-    !         paper 56, Food and Agriculture Organization of the United 
+    !       Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998),
+    !         'Meteorological data,' Crop evapotranspiration - Guidelines for
+    !         computing crop water requirements - FAO Irrigation and drainage
+    !         paper 56, Food and Agriculture Organization of the United
     !         Nations, online: http://www.fao.org/docrep/x0490e/x0490e07.htm
-    !       Berger, A.L. (1978), Long-term variations of daily insolation and 
-    !         quarternary climatic changes, Journal of Atmospheric Sciences, 
+    !       Berger, A.L. (1978), Long-term variations of daily insolation and
+    !         quarternary climatic changes, Journal of Atmospheric Sciences,
     !         vol. 35, pp. 2362--2367.
-    !       Berger, A.L., M.F. Loutre, and C. Tricot (1993), Insolation and 
+    !       Berger, A.L., M.F. Loutre, and C. Tricot (1993), Insolation and
     !         Earth's orbital periods, J. Geophys. Res., 98, 10341--10362.
-    !       Duffie, J. A. and W. A. Beckman (1991). Solar engineering of 
+    !       Duffie, J. A. and W. A. Beckman (1991). Solar engineering of
     !         thermal processes. 4th ed. New Jersey: John Wiley and Sons
-    !       Federer (1982), Transpirational supply and demand: plant, soil, 
-    !         and atmospheric effects evaluated by simulation, Water 
+    !       Federer (1982), Transpirational supply and demand: plant, soil,
+    !         and atmospheric effects evaluated by simulation, Water
     !         Resources Research, vol. 18, no. 2, pp. 355--362.
-    !       Ge, S., R.G. Smith, C.P. Jacovides, M.G. Kramer, R.I. Carruthers 
-    !         (2011), Dynamics of photosynthetic photon flux density (PPFD) 
-    !         and estimates in coastal northern California, Theoretical and 
+    !       Ge, S., R.G. Smith, C.P. Jacovides, M.G. Kramer, R.I. Carruthers
+    !         (2011), Dynamics of photosynthetic photon flux density (PPFD)
+    !         and estimates in coastal northern California, Theoretical and
     !         Applied Climatology, vol. 105, pp. 107--118.
-    !       Henderson-Sellers, B. (1984), A new formula for latent heat of 
-    !         vaporization of water as a function of temperature, Quarterly 
+    !       Henderson-Sellers, B. (1984), A new formula for latent heat of
+    !         vaporization of water as a function of temperature, Quarterly
     !         Journal of the Royal Meteorological Society 110, pp. 1186–1190
-    !       Linacre (1968), Estimating the net-radiation flux, Agricultural 
+    !       Linacre (1968), Estimating the net-radiation flux, Agricultural
     !         Meteorology, vol. 5, pp. 49--63.
-    !       Prentice, I.C., M.T. Sykes, W. Cramer (1993), A simulation model 
-    !         for the transient effects of climate change on forest 
+    !       Prentice, I.C., M.T. Sykes, W. Cramer (1993), A simulation model
+    !         for the transient effects of climate change on forest
     !         landscapes, Ecological Modelling, vol. 65, pp. 51--70.
-    !       Priestley, C.H.B. and R.J. Taylor (1972), On the assessment of 
-    !         surface heat flux and evaporation using large-scale parameters, 
+    !       Priestley, C.H.B. and R.J. Taylor (1972), On the assessment of
+    !         surface heat flux and evaporation using large-scale parameters,
     !         Monthly Weather Review, vol. 100 (2), pp. 81--92.
-    !       Spencer, J. W. (1971), Fourier series representation of the 
+    !       Spencer, J. W. (1971), Fourier series representation of the
     !         position of the sun, Search, vol. 2, p. 172.
-    !       Stine, W. B. and M. Geyer (2001). “Power from the Sun”. 
+    !       Stine, W. B. and M. Geyer (2001). “Power from the Sun”.
     !         online: http://www.powerfromthesun.net/Book/chapter03/chapter03
     !       Wetherald, R.T., S. Manabe (1972), Response to joint ocean-
-    !         atmosphere model to the seasonal variation of the solar 
+    !         atmosphere model to the seasonal variation of the solar
     !         radiation, Monthly Weather Review, vol. 100 (1), pp. 42--59.
-    !       Woolf, H. M. (1968). On the computation of solar evaluation 
-    !         angles and the determination of sunrise and sunset times. 
-    !         Tech. rep. NASA-TM-X-164. National Aeronautics and Space 
+    !       Woolf, H. M. (1968). On the computation of solar evaluation
+    !         angles and the determination of sunrise and sunset times.
+    !         Tech. rep. NASA-TM-X-164. National Aeronautics and Space
     !         Administration (NASA).
-    !-------------------------------------------------------------   
+    !-------------------------------------------------------------
 
   end function evap
 
 
   function dgcos( x )
-    !----------------------------------------------------------------   
-    ! Calculates the cosine of an angle given in degrees. Equal to 
+    !----------------------------------------------------------------
+    ! Calculates the cosine of an angle given in degrees. Equal to
     ! 'dsin' in Python version.
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: x  ! angle, degrees (0-360)
 
@@ -638,10 +640,10 @@ contains
 
 
   function dgsin( x )
-    !----------------------------------------------------------------   
-    ! Calculates the sinus of an angle given in degrees. Equal to 
+    !----------------------------------------------------------------
+    ! Calculates the sinus of an angle given in degrees. Equal to
     ! 'dsin' in Python version.
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: x  ! angle, degrees (0-360)
 
@@ -654,9 +656,9 @@ contains
 
 
   function degrees( x )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Returns corresponding degrees if x is given in radians
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: x  ! angle, radians
 
@@ -669,9 +671,9 @@ contains
 
 
   function radians( x )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Returns corresponding radians if x is given in degrees
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: x  ! angle, radians
 
@@ -684,12 +686,12 @@ contains
 
 
   function berger_tls( day, ndayyear ) result( out_berger )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Returns true anomaly and true longitude for a given day
-    ! Reference: Berger, A. L. (1978), Long term variations of daily 
-    ! insolation and quaternary climatic changes, J. Atmos. Sci., 35, 
+    ! Reference: Berger, A. L. (1978), Long term variations of daily
+    ! insolation and quaternary climatic changes, J. Atmos. Sci., 35,
     ! 2362-2367.
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
     integer, intent(in) :: day   ! day of the year
     integer, intent(in) :: ndayyear
@@ -705,7 +707,7 @@ contains
     real :: tmp1, tmp2, tmp3     ! variable substitutes
 
     ! Variable substitutes:
-    xee = ke**2 
+    xee = ke**2
     xec = ke**3
     xse = dsqrt(1.0 - xee)
 
@@ -745,13 +747,13 @@ contains
 
 
   function get_julian_day( yr, moy, dom ) result( out_julian_day )
-    !----------------------------------------------------------------   
-    ! Converts Gregorian date (year, month, day) to Julian 
+    !----------------------------------------------------------------
+    ! Converts Gregorian date (year, month, day) to Julian
     ! Ephemeris Day
-    ! Reference:  Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," 
+    ! Reference:  Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day,"
     ! Astronomical Algorithms
     ! xxx zero indexing in Python => usage of this function ok for Fortran? xxx
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
     integer, intent(in) :: yr      ! year
     integer, intent(in) :: moy     ! month of year
@@ -781,10 +783,10 @@ contains
 
 
   function get_sat_slope( tc ) result( out_sat_slope )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Calculates the slope of the sat pressure temp curve, Pa/K
     ! Ref:      Eq. 13, Allen et al. (1998)
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: tc ! air temperature, degrees C
 
@@ -797,10 +799,10 @@ contains
 
 
   function get_enthalpy_vap( tc ) result( out_enthalpy_vap )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Calculates the enthalpy of vaporization, J/kg
     ! Ref:      Eq. 8, Henderson-Sellers (1984)
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: tc ! air temperature, degrees C
 
@@ -813,10 +815,10 @@ contains
 
 
   function elv2pres( alt ) result( press )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Calculates atm. pressure for a given elevation
     ! Ref:      Allen et al. (1998)
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: alt ! elevation above sea level, m
 
@@ -829,10 +831,10 @@ contains
 
 
   function get_density_h2o( tc, press ) result( density_h2o )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Calculates density of water at a given temperature and pressure
     ! Ref: Chen et al. (1977)
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: tc     ! air temperature (degrees C)
     real, intent(in) :: press  ! atmospheric pressure (Pa)
@@ -885,7 +887,7 @@ contains
 
     ! Convert atmospheric pressure to bar (1 bar = 100000 Pa)
     pbar = (1.0e-5)*press
-    
+
     ! ! consistency check
     ! if (verbose) print*,'atmospheric pressure, bar', pbar
 
@@ -895,10 +897,10 @@ contains
 
 
   function get_psychro( tc, press ) result( psychro )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Calculates the psychrometric constant for a given temperature and pressure
-    ! Ref: Allen et al. (1998); Tsilingiris (2008) 
-    !----------------------------------------------------------------   
+    ! Ref: Allen et al. (1998); Tsilingiris (2008)
+    !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: tc ! air temperature, degrees C
     real, intent(in) :: press  ! atmospheric pressure, Pa
@@ -932,9 +934,9 @@ contains
 
 
   subroutine initdaily
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Initialises daily output variables
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     outdra(:)   = 0.0
     outdrn(:)   = 0.0
     outdppfd(:) = 0.0
@@ -949,9 +951,9 @@ contains
 
 
   subroutine initmonthly
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Initialises monthly output variables
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     outmeet(:) = 0.0
     outmpet(:) = 0.0
     outmaet(:) = 0.0
@@ -959,16 +961,16 @@ contains
     outmcwd(:) = 0.0
     outmppfd(:)  = 0.0
 
-  end subroutine initmonthly 
+  end subroutine initmonthly
 
 
   subroutine getout_daily( doy, moy )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Collects daily output variables and sums up monthly output vars
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! argument
-    integer, intent(in) :: doy 
-    integer, intent(in) :: moy 
+    integer, intent(in) :: doy
+    integer, intent(in) :: moy
 
     ! Save the daily totals:
     outdra(doy)   = out_evap%ra
@@ -978,7 +980,7 @@ contains
     outdeet(doy)  = out_evap%eet
     outdpet(doy)  = out_evap%pet
     outdaet(doy)  = out_evap%aet
-    
+
     outdsm(doy)   = waterbal%sm
     outdro(doy)   = waterbal%ro
 
@@ -992,9 +994,9 @@ contains
 
 
   subroutine getout_monthly( moy )
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Initialises monthly output variables
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! argument
     integer, intent(in) :: moy
 
@@ -1006,9 +1008,9 @@ contains
 
 
   subroutine write_to_file()
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Writes daily and monthly values to files
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! local variables
     character(len=256) :: prefix
     character(len=256) :: filnam

@@ -3,7 +3,13 @@
 #
 # splash.py
 #
-# LAST UPDATED: 2016-02-05
+# VERSION: 1.1-dev
+# LAST UPDATED: 2016-02-17
+#
+# ~~~~~~~~
+# license:
+# ~~~~~~~~
+# Copyright (C) 2015, see LICENSE
 #
 # ~~~~~~~~~
 # citation:
@@ -15,7 +21,7 @@
 # Development, 2016 (in progress)
 
 ###############################################################################
-## IMPORT MODULES:
+# IMPORT MODULES:
 ###############################################################################
 import logging
 
@@ -26,14 +32,14 @@ from evap import EVAP
 
 
 ###############################################################################
-## CLASSES
+# CLASSES
 ###############################################################################
 class SPLASH:
     """
     Name:     SPLASH
     Features: This class updates daily quantities of radiation,
               evapotranspiration, soil moisture and runoff based on SPLASH.
-    History:  Version 1.0.0-dev
+    History:  Version 1.0
               - changed xrange to range for Python 2/3 compatability [16.02.05]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

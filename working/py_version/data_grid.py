@@ -3,7 +3,13 @@
 #
 # data_grid.py
 #
-# LAST UPDATED: 2016-02-13
+# VERSION: 1.1-dev
+# LAST UPDATED: 2016-02-17
+#
+# ~~~~~~~~
+# license:
+# ~~~~~~~~
+# Copyright (C) 2015, see LICENSE
 #
 # ~~~~~~~~~
 # citation:
