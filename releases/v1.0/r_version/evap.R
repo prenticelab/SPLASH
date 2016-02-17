@@ -3,7 +3,7 @@
 # evap.R
 #
 # VERSION: 1.0
-# LAST UPDATED: 2016-02-16
+# LAST UPDATED: 2016-02-17
 #
 # ~~~~~~~~
 # license:
@@ -43,6 +43,7 @@
 # - replaced simplified_kepler with full_kepler method [14.11.25]
 # - added berger_tls function [15.01.13]
 # - updated evap function (similar to stash.py EVAP class) [15.01.13]
+# - added missing variables to evap list [16.02.17]
 #
 #### IMPORT SOURCES ##########################################################
 source("const.R")
@@ -200,7 +201,7 @@ sat_slope <- function(tc) {
 #           - double, fraction of sunshine hours (sf)        *optional
 #           - double, mean daily air temperature, deg C (tc) *optional
 #           - double, evaporative supply rate, mm/hr (sw)    *optional
-# Returns:  list object (et.srad)
+# Returns:  list object (evap)
 #             $nu_deg ............ true anomaly, degrees
 #             $lambda_deg ........ true longitude, degrees
 #             $dr ................ distance factor, unitless
@@ -218,7 +219,7 @@ sat_slope <- function(tc) {
 #             $pet_mm ............ daily potential ET, mm
 #             $hi_deg ............ intersection hour angle, degrees
 #             $aet_mm ............ daily actual ET, mm
-# Features: This function calculates daily radiation, condenstaion, and
+# Features: This function calculates daily radiation, condensation, and
 #           evaporation fluxes.
 # Depends:  - kw ............. entrainment factor for PET
 #           - calc_daily_solar daily radiation fluxes
@@ -253,6 +254,9 @@ calc_daily_evap <- function(lat, n, elv=0, y=0, sf=1, tc=23.0, sw=1.0) {
     hn <- solar$hn_deg;
     rn_d <- solar$rn_j.m2;
     rnn_d <- solar$rnn_j.m2;
+    evap$ra_j.m2  <- solar$ra_j.m2
+    evap$rn_j.m2 <- solar$rn_j.m2
+    evap$ppfd_mol.m2 <- solar$ppfd_mol.m2
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # 2. Calculate water-to-energy conversion (econ), m^3/J

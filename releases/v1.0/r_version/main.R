@@ -3,7 +3,7 @@
 # main.R
 #
 # VERSION: 1.0
-# LAST UPDATED: 2016-02-16
+# LAST UPDATED: 2016-02-17
 #
 # ~~~~~~~~
 # license:
@@ -36,6 +36,7 @@
 # - added example of yearly looping [15.01.27]
 # - updated year extraction from filename in yearly loop example [15.01.30]
 # - fixed plots for Figs. 3 & 4 of manuscript [15.11.23]
+# - fixed directory paths [16.02.17]
 #
 #### IMPORT SOURCES ##########################################################
 source("const.R")
@@ -169,14 +170,14 @@ for (m in all_months) {
 } # end monthly
 
 # Save results
-daily_outfile <- "../out/stash_results_daily.csv"
+daily_outfile <- "out/splash_results_daily.csv"
 write.csv(daily_totals, file=daily_outfile)
 
-monthly_outfile <- "../out/stash_results_monthly.csv"
+monthly_outfile <- "out/splash_results_monthly.csv"
 write.csv(monthly_totals, file=monthly_outfile)
 
 # View results
-to_plot <- TRUE
+to_plot <- FALSE
 if (to_plot) {
     export_fig <- FALSE
 
@@ -376,95 +377,4 @@ if (to_plot) {
     if (export_fig) {
         dev.off()
     }
-}
-
-# Example Yearly Loop
-to_loop <- FALSE
-if (to_loop) {
-    data_dir <- "~/Projects/STASH/"
-    my_files <- list.files(data_dir, pattern="^stash_data_.*csv$")
-    for (f in sort(my_files)){
-        my_file <- paste(data_dir, f, sep="")
-        DATA <- read.csv(my_file)
-
-        # Extract year from file name (the only numbers in the file name!)
-        y <- as.numeric(gsub("[^0-9]", "", f))
-        ny <- julian_day(y + 1, 1, 1) - julian_day(y, 1, 1)
-        monthly_totals <- monthly_totals*0
-
-        # monthly
-        for (m in all_months){
-            # Calculate days of current month:
-            nm <- julian_day(y, m + 1, 1) - julian_day(y, m, 1)
-
-            # daily:
-            for (i in seq(from=1, to=nm, by=1)) {
-                # Calculate day of year:
-                n <- julian_day(y, m, i) - julian_day(y, 1 , 1) + 1
-
-                # Calculate evaporative supply (mm/hr)
-                # * based on yesterday's available soil moisture
-                #   ref: Federer (1982); Eq. 4, Prentice et al. (1993)
-                idx <- (n - 1)
-                if (idx < 1) {
-                    idx <- ny
-                }
-                sw <- kCw*daily_totals$wn[idx]/kWm
-
-                # Compute daily radiation and evaporations values:
-                ET <- evap(my_lat, n, my_elv, y, DATA$sf[n], DATA$tair[n], sw)
-
-                # Update daily soil moisture:
-                daily_totals$wn[n] <- daily_totals$wn[idx] +
-                                      DATA$pn[n] + ET$cond_mm - ET$aet_mm
-
-                if (daily_totals$wn[n] > kWm) {
-                    # Bucket is full:
-                    # - set soil moisture to capacity
-                    # - add remaining water to runoff
-                    daily_totals$ro[n] <- daily_totals$wn[n] - kWm
-                    daily_totals$wn[n] <- kWm
-                } else if (daily_totals$wn[n] < 0) {
-                    # Bucket is empty:
-                    # - set runoff and soil moisture equal to zero
-                    daily_totals$ro[n] <- 0
-                    daily_totals$wn[n] <- 0
-                } else {
-                    daily_totals$ro[n] <- 0
-                }
-
-                if ( (ny == 365) & (n == 365)) {
-                    daily_totals$wn[n + 1] <- daily_totals$wn[n]
-                }
-
-                # Save daily results:
-                daily_totals$ho[n] <- ET$ra_j.m2
-                daily_totals$hn[n] <- ET$rn_j.m2
-                daily_totals$qn[n] <- ET$ppfd_mol.m2
-                daily_totals$cn[n] <- ET$cond_mm
-                daily_totals$eq_n[n] <- ET$eet_mm
-                daily_totals$ep_n[n] <- ET$pet_mm
-                daily_totals$ea_n[n] <- ET$aet_mm
-
-                # Update monthly totals:
-                monthly_totals$eq_m[m] <- monthly_totals$eq_m[m] + ET$eet_mm
-                monthly_totals$ep_m[m] <- monthly_totals$ep_m[m] + ET$pet_mm
-                monthly_totals$ea_m[m] <- monthly_totals$ea_m[m] + ET$aet_mm
-                monthly_totals$q_m[m] <- monthly_totals$q_m[m] + ET$ppfd_mol.m2
-            } # end daily
-            monthly_totals$cpa[m] <- (
-                monthly_totals$ea_m[m]/monthly_totals$eq_m[m]
-                )
-            monthly_totals$cwd[m] <- monthly_totals$ep_m[m] -
-                                         monthly_totals$ea_m[m]
-        } # end monthly
-
-        # Save results to file:
-        daily_outfile <- paste("stash_results_", as.character(y), "-daily.csv",
-                               sep="")
-        write.csv(daily_totals, file=daily_outfile)
-        monthly_outfile <- paste("stash_results_", as.character(y),
-                                 "-monthly.csv", sep="")
-        write.csv(monthly_totals, file=monthly_outfile)
-    } # end for-loop
 }
