@@ -1,0 +1,83 @@
+SPLASH v.1.0
+============
+
+Copyright (C) 2015, see LICENSE
+
+
+To run (Python 2/3):
+
+`python main.py`
+Results are printed to screen.
+Requires input file (../../../data/example_data.csv).
+
+
+To run tests (Python 2/3):
+
+TEST 1:
+`python solar.py`
+Results are printed to file (solar.log)
+
+TEST 2:
+`python evap.py`
+Results are printed to file (evap.log)
+
+TEST 3:
+`python splash.py`
+Results are printed to file (splash.log) and screen.
+
+To create input data (Python 2/3):
+
+`python splash_data.py`
+Results are printed to file (./out/splash_data_out.csv); make certain directory "out" exists before running.
+
+Contents
+========
+
+const.py
+    Contains definitions for SPLASH global constants.
+    Libraries:
+        - numpy
+
+data.py
+    DATA class definition for reading input data.
+    Libraries:
+        - logging
+        - numpy
+
+evap.py
+    EVAP class definition for calculating daily evapotranspiration quantities.
+    Libraries:
+        - logging
+        - numpy
+
+main.py
+    Main function for running the SPLASH code.
+    Libraries:
+        - logging
+
+solar.py
+    SOLAR class definition for calculating daily radiation fluxes.
+    Libraries:
+        - logging
+        - numpy
+
+splash.py
+    SPLASH class definition for updating daily quantities of radiation, evapotranspiration, soil moisture and runoff.
+    Libraries:
+        - logging
+        - numpy
+
+splash_data.py
+    SPLASH_DATA class and script to produce a CSV file with daily input data (i.e., sunshine fraction, air temperature, and precipitation)
+    Libraries:
+        - datetime
+        - glob
+        - numpy
+        - os.path
+        - scipy.io.netcdf
+
+utilities.py
+    Contains utility functions that are shared amongst classes.
+    Libraries:
+        - logging
+        - numpy
