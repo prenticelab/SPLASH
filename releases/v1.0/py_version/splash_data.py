@@ -3,7 +3,7 @@
 # splash_data.py
 #
 # VERSION: 1.0
-# LAST UPDATED: 2016-02-16
+# LAST UPDATED: 2016-02-17
 #
 # ~~~~~~~~
 # license:
@@ -43,6 +43,7 @@
 ###############################################################################
 import datetime
 import glob
+import logging
 import numpy
 import os.path
 from scipy.io import netcdf
@@ -62,6 +63,9 @@ class SPLASH_DATA:
               - fixed mean daily CRU air temperature (tmp not tmn) [15.01.27]
               - renaming (addresses issue #3) [15.08.23]
               - references const.py for SPLASH constants [15.08.23]
+              - addressed Python 2/3 compatibility [16.02.17]
+              - fixed netCDF RuntimeWarning [16.02.17]
+              - added logging [16.02.17]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -74,6 +78,8 @@ class SPLASH_DATA:
                   - float, elevation, meters AMSL (user_elv)
         Features: Initialize class
         """
+        logging.info("SPLASH_DATA called")
+
         # Initialize variable 'is set' booleans:
         self.date_is_set = False         # for timestamp
         self.cru_sf_is_set = False       # for CRU-based Sf
@@ -93,17 +99,21 @@ class SPLASH_DATA:
 
         # Check user inputs:
         self.elv = user_elv
+        logging.info("elevation set to %f m", user_elv)
         self.elv2pres()
+
         if user_lat > 90.0 or user_lat < -90.0:
-            print("Latitude outside range of validity (-90 to 90)!")
-            exit(1)
+            logging.error("Latitude outside range of validity (-90 to 90)!")
+            raise ValueError("Latitude outside valid range (-90 to 90)!")
         else:
             self.lat = user_lat
+            logging.info("latitude set to %f", user_lat)
         if user_lon > 180.0 or user_lon < -180.0:
-            print("Longitude outside range of validity (-180 to 180)!")
-            exit(1)
+            logging.error("Longitude outside range of validity (-180 to 180)!")
+            raise ValueError("Longitude outside valid range (-180 to 180)!")
         else:
             self.lon = user_lon
+            logging.info("longitude set to %f", user_lon)
 
         # Find the 0.5 degree pixel associated with user coordinates:
         (self.px_lon, self.px_lat) = self.grid_centroid()
@@ -118,6 +128,7 @@ class SPLASH_DATA:
         Input:    str, directory path (d)
         Features: Define the directory to CRU monthly cloudiness netCDF file
         """
+        logging.info("CRU cloudiness directory set to %s", d)
         self.data_dir['cld'] = d
 
     def set_cru_pre_dir(self, d):
@@ -126,6 +137,7 @@ class SPLASH_DATA:
         Input:    str, directory path (d)
         Features: Define the directory to CRU monthly precipitation netCDF file
         """
+        logging.info("CRU precipitation directory set to %s", d)
         self.data_dir['pre'] = d
 
     def set_cru_tmp_dir(self, d):
@@ -135,6 +147,7 @@ class SPLASH_DATA:
         Features: Define the directory to CRU monthly mean air temperature
                   netCDF file
         """
+        logging.info("CRU temperature directory set to %s", d)
         self.data_dir['tmp'] = d
 
     def set_watch_rainf_dir(self, d):
@@ -143,6 +156,7 @@ class SPLASH_DATA:
         Input:    str, directory path (d)
         Features: Define the directory to WATCH daily rainfall netCDF file
         """
+        logging.info("WATCH precipitation directory set to %s", d)
         self.data_dir['Rainf'] = d
 
     def set_watch_tair_dir(self, d):
@@ -152,6 +166,7 @@ class SPLASH_DATA:
         Features: Define the directory to WATCH daily air temperature netCDF
                   file
         """
+        logging.info("WATCH temperature directory set to %s", d)
         self.data_dir['Tair'] = d
 
     def set_output_dir(self, d):
@@ -165,11 +180,20 @@ class SPLASH_DATA:
         self.output_file = d + 'splash_data_out.csv'
         header = 'date,sf,tair,pn\n'
         if os.path.isfile(self.output_file):
-            user_resp = raw_input("File already exists, overwrite (y/n)? ")
+            try:
+                user_resp = raw_input("File already exists, overwrite (y/n)? ")
+            except NameError:
+                # Maybe using Python 3, try again:
+                try:
+                    user_resp = input("File already exists, overwrite (y/n)? ")
+                except:
+                    logging.exception("Could not get user input")
+                    raise
             if user_resp.lower() == 'y':
                 self.writeout(self.output_file, header)
         else:
             self.writeout(self.output_file, header)
+            logging.info("creating output file %s", self.output_file)
 
     def set_sf_source(self, n):
         """
@@ -178,6 +202,7 @@ class SPLASH_DATA:
         Features: Define the source preference for fractional sunshine hours
                   (e.g., 'cru' or 'watch')
         """
+        logging.info("setting sunshine fraction preference to '%s'", n)
         self.data_src['sf'] = n
 
     def set_pn_source(self, n):
@@ -187,6 +212,7 @@ class SPLASH_DATA:
         Features: Define the source preference for precipitation (e.g., 'cru'
                   or 'watch')
         """
+        logging.info("setting precipitation preference to '%s'", n)
         self.data_src['pn'] = n
 
     def set_tair_source(self, n):
@@ -196,6 +222,7 @@ class SPLASH_DATA:
         Features: Define the source preference for air temperature (e.g., 'cru'
                   or 'watch')
         """
+        logging.info("setting temperature preference to '%s'", n)
         self.data_src['tair'] = n
 
     def add_one_month(self, dt0):
@@ -297,8 +324,8 @@ class SPLASH_DATA:
         lon_min = -180 + 0.5*grid_res
         lat_dim = 360
         lon_dim = 720
-        lats = [lat_min + y * grid_res for y in xrange(lat_dim)]
-        lons = [lon_min + x * grid_res for x in xrange(lon_dim)]
+        lats = [lat_min + y * grid_res for y in range(lat_dim)]
+        lons = [lon_min + x * grid_res for x in range(lon_dim)]
 
         # Find bounding longitude:
         centroid_lon = None
@@ -392,6 +419,7 @@ class SPLASH_DATA:
                   - get_month_days
                   - save_to_file
         """
+        logging.debug("processing date %s", d)
         if self.date_is_set:
             # Check to see if we're in the same month:
             if self.timestamp.replace(day=1) == d.replace(day=1):
@@ -463,11 +491,11 @@ class SPLASH_DATA:
             #    *  Missing value = 1.00e+20
 
             # Find time index:
-            f_time = f.variables['day'].data
+            f_time = f.variables['day'].data.copy()
             ti = numpy.where(ct.day == f_time)[0][0]
 
             # Get the spatial data for current time:
-            f_data = f.variables[v].data[ti]
+            f_data = f.variables[v].data[ti].copy()
 
             f.close()
             return f_data
@@ -527,13 +555,13 @@ class SPLASH_DATA:
             bt = datetime.date(1900, 1, 1)
 
             # Read the time data as array:
-            f_time = f.variables['time'].data
+            f_time = f.variables['time'].data.copy()
 
             # Find the time index for the current date:
             ti = self.get_time_index(bt, ct, f_time)
 
             # Get the spatial data for current time:
-            f_data = f.variables[v].data[ti]
+            f_data = f.variables[v].data[ti].copy()
             f.close()
             return f_data
 
@@ -595,6 +623,7 @@ class SPLASH_DATA:
         if self.data_src['pn'] == 'cru':
             # Check to see if you already have this month's data processed:
             if not self.is_same_month or not self.cru_pn_is_set:
+                logging.debug("processing CRU monthly precipitation")
                 # Either in new month or no CRU-based Pn data is set:
                 voi = 'pre'
                 d = self.get_monthly_cru(voi, ct)
@@ -604,9 +633,11 @@ class SPLASH_DATA:
             else:
                 pn = self.pn
         elif self.data_src['pn'] == 'watch':
+            logging.debug("processing WATCH daily precipitation")
+
             # Calculate water density, kg/m^3:
             pw = self.density_h2o(tc, self.patm)
-            #
+
             # Look up WATCH rainfall data:
             voi = 'Rainf'
             d = self.get_daily_watch(voi, ct)
@@ -631,6 +662,7 @@ class SPLASH_DATA:
         if self.data_src['sf'] == 'cru':
             # Check to see if you already have this month's data processed:
             if not self.is_same_month or not self.cru_sf_is_set:
+                logging.debug("processing CRU monthly cloudiness")
                 # Either in new month or no CRU-based Sf data is set:
                 voi = 'cld'
                 d = self.get_monthly_cru(voi, ct)
@@ -658,6 +690,7 @@ class SPLASH_DATA:
         if self.data_src['tair'] == 'cru':
             # Check to see if you already have this month's data processed:
             if not self.is_same_month or not self.cru_tair_is_set:
+                logging.debug("processing CRU monthly air temperature")
                 # Either in new month or no CRU-based Tair data is set:
                 voi = 'tmp'
                 d = self.get_monthly_cru(voi, ct)
@@ -666,6 +699,8 @@ class SPLASH_DATA:
             else:
                 tair = self.tair
         elif self.data_src['tair'] == 'watch':
+            logging.debug("processing WATCH daily air temperature")
+
             # Look up WATCH air temperature data:
             voi = 'Tair'
             d = self.get_daily_watch(voi, ct)
@@ -693,7 +728,8 @@ class SPLASH_DATA:
             OUT = open(self.output_file, 'a')
             OUT.write(output_line)
         except IOError:
-            print("Error: cannot write to file: %s" % (self.output_file))
+            logging.exception("Failed to write to %s" % (self.output_file))
+            raise
         else:
             OUT.close()
 
@@ -708,7 +744,8 @@ class SPLASH_DATA:
             OUT = open(f, 'w')
             OUT.write(d)
         except IOError:
-            print("Error: cannot write to file: %s" % (f))
+            logging.exception("Failed to write to %s" % (f))
+            raise
         else:
             OUT.close()
 
@@ -727,9 +764,22 @@ def add_one_day(dt0):
     return dt1
 
 ###############################################################################
-## MAIN
+# MAIN
 ###############################################################################
 if __name__ == '__main__':
+    # Create a root logger:
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+
+    # Instantiating logging handler and record format:
+    root_handler = logging.StreamHandler()
+    rec_format = "%(asctime)s:%(levelname)s:%(name)s:%(funcName)s:%(message)s"
+    formatter = logging.Formatter(rec_format, datefmt="%Y-%m-%d %H:%M:%S")
+    root_handler.setFormatter(formatter)
+
+    # Send logging handler to root logger:
+    root_logger.addHandler(root_handler)
+
     # Create a class instance with lon., lat. and elevation based on your
     # location of interest:
     user_lat = 37.7    # degrees north
@@ -738,10 +788,10 @@ if __name__ == '__main__':
     my_class = SPLASH_DATA(user_lat, user_lon, user_elv)
 
     # Set the data input/output directories for your machine:
-    cru_dir = "/usr/local/share/database/cru/"
-    out_dir = "/home/user/Desktop/out/"
-    watch_rain_dir = "/usr/local/share/database/watch/netcdf/rainf/"
-    watch_air_dir = "/usr/local/share/database/watch/netcdf/tair/"
+    cru_dir = "/usr/local/share/data/cru/"
+    out_dir = "out/"
+    watch_rain_dir = "/usr/local/share/data/watch/rainf/"
+    watch_air_dir = "/usr/local/share/data/watch/tair/"
     my_class.set_cru_cld_dir(cru_dir)
     my_class.set_cru_pre_dir(cru_dir)
     my_class.set_cru_tmp_dir(cru_dir)
