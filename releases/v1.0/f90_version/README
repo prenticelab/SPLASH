@@ -1,10 +1,10 @@
-Fortran 90 version of SPLASH
+SPLASH v.1.0
+============
 
-written by Benjamin Stocker <benjamin.stocker@gmail.com>
-distributed under a GNU Lesser General Public License (see ../../../LICENSE)
-Feb. 2016
+Copyright (C) 2015, see LICENSE
 
-To exectue Test 1, 2, and 3 (see https://bitbucket.org/labprentice/splash/wiki/Home), compile by
+
+To execute Test 1, 2, and 3 (see https://bitbucket.org/labprentice/splash/wiki/Home), compile by
 
   make test
 
@@ -12,7 +12,7 @@ and execute by
 
   ./runsplash
 
-To exectue Test 4 (spin up), compile by
+To execute Test 4 (spin up), compile by
 
   make
 
@@ -22,3 +22,18 @@ and execute by
 
 Output is written to ./output/ (make sure the directory exists before executing splash).
 That's all. Have fun.
+
+
+Contents
+========
+Makefile
+    Makefile for PGI Fortran compiler.
+
+spinup_splash.f90
+    Source code for test 4 (see Wiki).
+
+splash.mod.f90
+    Source code for the SPLASH module.
+
+test_splash.f90
+    Source code for consistency tests 1--3 (see Wiki).
