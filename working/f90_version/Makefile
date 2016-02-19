@@ -1,4 +1,4 @@
-# Copyright (C) 2015, see LICENSE
+# Copyright (C) 2016 Prentice Lab
 # Use PGI compiler ( pgf95 v.16.1-0)
 #   The Portland Group - PGI Compilers and Groups
 #   Copyright (c) 2016, NVIDIA Corporation
