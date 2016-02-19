@@ -3,24 +3,19 @@ SPLASH v.1.0
 
 Copyright (C) 2015, see LICENSE
 
+To compile (using PGI compiler):
 
-To execute Test 1, 2, and 3 (see https://bitbucket.org/labprentice/splash/wiki/Home), compile by
+`make`
 
-  make test
+To execute Test 1, 2, and 3 (see https://bitbucket.org/labprentice/splash/wiki/Home):
 
-and execute by
+`./test_splash`
 
-  ./runsplash
+To execute Test 4 (spin up):
 
-To execute Test 4 (spin up), compile by
+`./spinup_splash`
 
-  make
-
-and execute by
-
-  ./runsplash
-
-Output is written to ./output/ (make sure the directory exists before executing splash).
+Output is written to ./output; make sure the directory exists before executing.
 That's all. Have fun.
 
 

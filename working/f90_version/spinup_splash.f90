@@ -73,16 +73,16 @@ contains
 
 
   subroutine get_input_monthly1year()
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Populates monthly climate input vectors with values (obsolete)
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     inlen = nmonth
 
     ! allocate size of array
     allocate( insf(nmonth) )
     allocate( intc(nmonth) )
     allocate( inppt(nmonth) )
-  
+
     ! Example data (Met Office average climate for this gridcell)
     insf  = (/0.21, 0.27, 0.30, 0.40, 0.39, 0.39, 0.40, 0.43, 0.36, 0.32, 0.23, 0.19/)
     intc  = (/4.80, 4.85, 7.10, 9.10, 12.4, 15.3, 17.6, 17.3, 14.6, 11.2, 7.55, 5.05/)
@@ -92,9 +92,9 @@ contains
 
 
   subroutine get_input_daily1year()
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! Reads daily climate input from files
-    !----------------------------------------------------------------   
+    !----------------------------------------------------------------
     ! allocate size of array
 
     inlen = 366
@@ -106,24 +106,24 @@ contains
     ! Reading daily input data from file
     print*, 'reading daily climate input from files ...'
 
-    print*, '   ../data/daily_sf_2000_cruts.txt'
-    insf(:)  = read1year_daily( "../data/daily_sf_2000_cruts.txt", inlen )
-    
-    print*, '   ../data/daily_tair_2000_wfdei.txt'
-    intc(:)  = read1year_daily( "../data/daily_tair_2000_wfdei.txt", inlen )
-    
-    print*, '   ../data/daily_pn_2000_wfdei.txt'
-    inppt(:) = read1year_daily( "../data/daily_pn_2000_wfdei.txt", inlen )
+    print*, '   daily_sf_2000_cruts.txt'
+    insf(:)  = read1year_daily( "daily_sf_2000_cruts.txt", inlen )
+
+    print*, '   daily_tair_2000_wfdei.txt'
+    intc(:)  = read1year_daily( "daily_tair_2000_wfdei.txt", inlen )
+
+    print*, '   daily_pn_2000_wfdei.txt'
+    inppt(:) = read1year_daily( "daily_pn_2000_wfdei.txt", inlen )
 
     print*, '... done.'
 
-  end subroutine get_input_daily1year  
+  end subroutine get_input_daily1year
 
 
   function read1year_daily( filename, ndayyear ) result ( dval )
     !////////////////////////////////////////////////////////////////
     ! Function reads a file that contains 365 lines, each line for
-    ! a daily value. 
+    ! a daily value.
     !----------------------------------------------------------------
     ! arguments
     character(len=*), intent(in) :: filename
@@ -135,7 +135,7 @@ contains
     ! allocate lengt of vector
     allocate( dval(ndayyear) )
 
-    open( 20, file='../data/'//filename, status='old', form='formatted', action='read', err=888 )
+    open( 20, file='../../data/'//filename, status='old', form='formatted', action='read', err=888 )
     read( 20, *) dval
     close( 20 )
 

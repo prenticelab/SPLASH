@@ -9,11 +9,9 @@ module _splash
   ! - latitude (deg N)
   ! - elevation (m.a.s.l.)
   !
-  ! author: T.W. Davis, Fortran version by B. Stocker
-  !
   ! version: 1.0
   !
-  ! last updated: 2016-02-16
+  ! last updated: 2016-02-18
   !
   ! citation:
   ! T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
@@ -512,7 +510,7 @@ contains
     if (verbose) print*,'Econ ',econ
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! 16. Calculate daily condensation (wc), mm
+    ! 16. Calculate daily condensation (cn), mm
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Eq. 68, Documentation
     out_evap%cn = 1000.0 * econ * abs(rnn_d)

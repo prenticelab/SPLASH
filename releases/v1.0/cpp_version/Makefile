@@ -1,5 +1,7 @@
 # Copyright (C) 2015, see LICENSE
 # Use GNU C++ compiler (g++ v.4.8.2)
+#   GNU Compiler Collection
+#   Copyright (C) Free Software Foundation, Inc.
 
 #---------- Variables ----------#
 CXX = g++

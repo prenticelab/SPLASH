@@ -106,14 +106,14 @@ contains
     ! Reading daily input data from file
     print*, 'reading daily climate input from files ...'
 
-    print*, '   ../../../data/daily_sf_2000_cruts.txt'
-    insf(:)  = read1year_daily( "../../../data/daily_sf_2000_cruts.txt", inlen )
+    print*, '   daily_sf_2000_cruts.txt'
+    insf(:)  = read1year_daily( "daily_sf_2000_cruts.txt", inlen )
 
-    print*, '   ../../../data/daily_tair_2000_wfdei.txt'
-    intc(:)  = read1year_daily( "../../../data/daily_tair_2000_wfdei.txt", inlen )
+    print*, '   daily_tair_2000_wfdei.txt'
+    intc(:)  = read1year_daily( "daily_tair_2000_wfdei.txt", inlen )
 
-    print*, '   ../../../data/daily_pn_2000_wfdei.txt'
-    inppt(:) = read1year_daily( "../../../data/daily_pn_2000_wfdei.txt", inlen )
+    print*, '   daily_pn_2000_wfdei.txt'
+    inppt(:) = read1year_daily( "daily_pn_2000_wfdei.txt", inlen )
 
     print*, '... done.'
 
@@ -132,7 +132,7 @@ contains
     ! function return value
     real, allocatable, dimension(:) :: dval    ! Daily value to be read in
 
-    ! allocate lengt of vector
+    ! allocate length of vector
     allocate( dval(ndayyear) )
 
     open( 20, file='../../../data/'//filename, status='old', form='formatted', action='read', err=888 )

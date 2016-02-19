@@ -1,28 +1,31 @@
-# Copyright (C) 2015, see LICENSE, Benjamin D. Stocker
-# contact: benjamin.stocker@gmail.com
+# Copyright (C) 2015, see LICENSE
+# Use PGI compiler ( pgf95 v.16.1-0)
+#   The Portland Group - PGI Compilers and Groups
+#   Copyright (c) 2016, NVIDIA Corporation
 
-# Use gfortran compiler
-# FCOM=gfortran -ffixed-line-length-0
-## debug compilation mode with gfortran
-# FCOM=gfortran -ffixed-line-length-0 -fdefault-real-8 -g -fbounds-check -Wall -fbacktrace -finit-real=nan -ffree-form
+#---------- Variables ----------#
+FC=pgf95
+FCFLAGS = -r8 -Mextend -g -O0 -Mextend -Mbounds -Minfo -Minform=inform -Kieee -Ktrap=fp -Mfreeform
+PROGRAMS = spinup_splash test_splash
 
-## Use PGF95 compiler
-FCOM=pgf95 -r8 -Mextend -g -O0 -Mextend -Mbounds -Minfo -Minform=inform -Kieee -Ktrap=fp -Mfreeform
+all: $(PROGRAMS)
 
-export FCOM
+#---------- Dependencies ----------#
+spinup_splash.o: splash.mod.o
+spinup_splash: splash.mod.o
+test_splash.o: splash.mod.o
+test_splash: splash.mod.o
 
-# name of executable
-EXE = runsplash
+#---------- Targets ----------#
+%: %.o
+	$(FC) $(FCFLAGS) -o $@ $^ $(LDFLAGS)
 
-standard:
-	$(FCOM) -c splash.mod.f90
-	$(FCOM) splash.mod.o spinup_splash.f90 -o $(EXE)	
+%.o: %.f90
+	$(FC) $(FCFLAGS) -c $<
 
-test:
-	$(FCOM) -c splash.mod.f90
-	$(FCOM) splash.mod.o test_splash.f90 -o $(EXE)
+%.o: %.F90
+	$(FC) $(FCFLAGS) -c $<
 
 .PHONY: clean
 clean:
-	rm $(EXE) *.o *.mod
-
+	rm -f $(PROGRAMS) *.o *.mod *.MOD
