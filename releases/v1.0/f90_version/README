@@ -10,7 +10,9 @@ Copyright (C) 2016 Prentice Lab
 Requirements
 ============
 
-This code was successfully compiled and executed using the PGI Fortran compiler (pgf95 v.16.1-0) provided by The Portland Group - PGI Compilers and Groups (NVIDIA Corporation, 2016).
+This code was successfully compiled and executed using the PGI Fortran compiler
+(pgf95 v.16.1-0) provided by The Portland Group - PGI Compilers and Groups
+(NVIDIA Corporation, 2016).
 
 To compile (using PGI compiler):
 
