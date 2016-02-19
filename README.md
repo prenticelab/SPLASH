@@ -7,7 +7,7 @@
 
 * LATEST RELEASE: v1.0
 * LAST UPDATED: 2016-02-18
-* LICENSE: GNU Lesser General Public License (see LICENSE)
+* LICENSE: GNU Lesser General Public License
 * TEAM: labprentice
 * REPO: https://bitbucket.org/labprentice/splash
 
