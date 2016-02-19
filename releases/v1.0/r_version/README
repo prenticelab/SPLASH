@@ -1,10 +1,18 @@
 SPLASH v.1.0
 ============
 
-Copyright (C) 2015, see LICENSE
+License
+=======
+
+Copyright (C) 2016 Prentice Lab
 
 
-To run (R v.3.2.1 "World-Famous Astronaut"):
+Requirements
+============
+
+This code was successfully compiled and executed using R-3.2.3 "Wooden Christmas-Tree" (The R Foundation for Statistical Computing, 2015).
+
+To run (Rscript-3.2.3):
 
 `Rscript main.R`
 Status is printed to screen.
