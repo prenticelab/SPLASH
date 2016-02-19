@@ -10,6 +10,7 @@
 * LICENSE: GNU Lesser General Public License
 * TEAM: labprentice
 * REPO: https://bitbucket.org/labprentice/splash
+* WIKI: https://bitbucket.org/labprentice/splash/wiki/
 
 # Repository Structure
 ----------------------
