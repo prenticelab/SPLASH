@@ -1,0 +1,84 @@
+SPLASH v.1.1-dev
+================
+
+License
+=======
+Copyright (C) 2016 Prentice Lab
+
+
+Requirements
+============
+
+This code was successfully compiled and executed using the GNU C++ compiler
+(g++ v.4.8.2) provided by the GNU Compiler Collection (Free Software Foundation,
+Inc., 2016).
+
+This code utilizes the C numerics library (cmath), input/output operations
+library (cstdio), and the standard general utilities library (cstdlib) and also
+references the vector container and string type.
+
+To compile (using GNU C++ compiler):
+
+`make`
+
+To run:
+
+`./main`
+
+Results are printed to screen.
+Requires input file (../../../data/example_data.csv).
+
+Contents
+========
+
+DATA.cpp / DATA.h
+    This class handles reading input data.
+    Libraries:
+        - cstdlib
+        - fstream
+        - iostream
+        - string
+        - vector
+
+etr.h
+    C++ header file for the evapotranspiration and radiation structure.
+
+EVAP.cpp / EVAP.h
+    This class calculates daily quantities of radiation, evaporation, and condensation.
+    Libraries:
+        - cmath
+        - stdio.h
+        - vector
+
+global.cpp / global.h
+    Script defining global constants.
+
+main.cpp
+    Main function for running the SPLASH code.
+    Libraries:
+        - iostream
+        - string
+        - vector
+
+Makefile
+    Makefile for GNU C++ compiler.
+
+smr.h
+    C++ header file for the soil moisture and runoff structure.
+
+SOLAR.cpp / SOLAR.h
+    This class calculates daily radiation fluxes.
+    Libraries:
+        - cmath
+        - stdio.h
+        - vector
+
+SPLASH.cpp / SPLASH.h
+    This class updates daily quantities of radiation, evapotranspiration, soil moisture and runoff based on the SPLASH methodology.
+    Libraries:
+        - cmath
+        - stdio.h
+        - vector
+
+srad.h
+    C++ header file for solar radiation fluxes structure.

@@ -5,9 +5,12 @@
 # Repository Details
 ---------------
 
-* LAST UPDATED: 2016-01-22
+* LATEST RELEASE: v1.0
+* LAST UPDATED: 2016-02-18
+* LICENSE: GNU Lesser General Public License
 * TEAM: labprentice
-* REPO: splash (private)
+* REPO: https://bitbucket.org/labprentice/splash
+* WIKI: https://bitbucket.org/labprentice/splash/wiki/
 
 # Repository Structure
 ----------------------
@@ -53,148 +56,11 @@ This directory holds the current documentation for the SPLASH code.
 
     * Contains the modular LaTeX chapter files and appendix
 
-## cpp_version/
-This directory holds the C++ version of the SPLASH code.
-
-* __DATA.cpp / DATA.h__
-
-    * C++ class definition file. This class handles reading input data.
-
-* __etr.h__
-
-    * C++ header file for the __e__vapo__t__ranspiration and __r__adiation structure.
-
-* __EVAP.cpp / EVAP.h__
-
-    * C++ class definition file. This class calculates daily quantities of radiation, evaporation, and condensation.
-
-* __global.cpp / global.h__
-
-    * Script defining global constants.
-
-* __main.cpp__
-
-    * Main function for running the SPLASH code.
-
-* __Makefile__
-
-    * Makefile for C++ SPLASH code.
-
-* __smr.h__
-
-    * C++ header file for the __s__oil __m__oisture and __r__unoff structure.
-
-* __SOLAR.cpp / SOLAR.h__
-
-    * C++ class definition file. This class calculates daily radiation fluxes.
-
-* __SPLASH.cpp / SPLASH.h__
-
-    * C++ class definition file. This class updates daily quantities of radiation, evapotranspiration, soil moisture and runoff based on the SPLASH methodology.
-
-* __srad.h__
-
-    * C++ header file for solar radiation fluxes structure.
-
-
-## f90_version/
-This directory holds the FORTRAN90 version of the SPLASH code.
-
-* __Makefile__
-
-    * Use to compile the splash.F script.
-
-* __splash.f90__
-
-    * Runs SPLASH for one year, following a spin-up of soil moisture, based on example monthly meteorological data (hard-coded).
-
-## py_version/
-This directory holds the Python version of the SPLASH code.
-
-* __const.py__
-
-    * Contains definitions for SPLASH global constants.
-
-* __data.py__
-
-    * DATA class definition for reading input data.
-
-* __data_grid.py__
-
-    * DATA_G class for reading CRU TS gridded data.
-
-* __evap.py__
-
-    * EVAP class definition for calculating daily evapotranspiration quantities:
-
-        * Equilibrium ET, mm/day
-
-        * Potential ET, mm/day
-
-        * Actual ET, mm/day
-
-        * Condensation, mm/day
-
-* __main.py__
-
-    * Main function for running the SPLASH code.
-
-* __solar.py__
-
-    * SOLAR class definition for calculating daily radiation fluxes.
-
-* __splash.py__
-
-    * SPLASH class definition for updating daily quantities of radiation, evapotranspiration, soil moisture and runoff.
-
-* __splash_data.py__
-
-    * SPLASH_DATA class and script to produce a CSV file with daily input data (i.e., sunshine fraction, air temperature, and precipitation)
-
-* __utilities.py__
-
-    * Contains utility functions that are shared amongst classes.
-
-## r_version/
-This directory holds the R version of the SPLASH code.
-
-* __const.R__
-
-    * This script contains the global constants defined in SPLASH.
-
-* __data.R__
-
-    * This script contains functions to handle the file IO for reading and writing data, i.e.:
-
-        * read_csv(character fname, double y=-1)
-
-        * read_txt(list my_data, character fname, character var, double y=-1)
-
-* __evap.R__
-
-    * This script contains functions to calculate daily condensation, and evapotranspiration.
-
-* __main.R__
-
-    * This script runs the SPLASH model for one year.
-
-* __solar.R__
-
-    * This script contains functions to calculate daily radiation fluxes.
-
-* __splash.R__
-
-    * This script contains functions for running SPLASH for point-based data, i.e.:
-
-        * spin_up(list mdat, list dtot)
-
-        * quick_run(double lat, double elv, double n, double y, double wn, double sf, double tc, double pn)
-
-        * run_one_day(double lat, double elv, double n, double y, double wn, double sf, double tc, double pn)
-
-* __test.R__
-
-    * This script performs SPLASH consistency tests.
+## releases/v1.0/
+This directory holds the SPLASH v1.0 code release in C++, Fortran90, Python 2/3, and R.
+
+## working/
+This directory contains the SPLASH source code currently under development.
 
 # SPLASH: Robust indices of radiation, evapotranspiration and plant-available moisture
 ----------------------------------------------------------------------------

@@ -1,0 +1,56 @@
+SPLASH v.1.0
+============
+
+License
+=======
+
+Copyright (C) 2016 Prentice Lab
+
+
+Requirements
+============
+
+This code was successfully compiled and executed using R-3.2.3
+"Wooden Christmas-Tree" (The R Foundation for Statistical Computing, 2015).
+
+To run (Rscript-3.2.3):
+
+`Rscript main.R`
+Status is printed to screen.
+Outputs are saved to file (out/splash_results_daily.csv and out/splash_results_monthly.csv); make certain out directory exists before running
+Requires input file (../../../data/example_data.csv).
+
+To run tests:
+
+`Rscript tests.R`
+Results are printed to screen.
+
+
+Contents
+========
+
+const.R
+    This script contains the global constants defined in SPLASH.
+
+data.R
+    This script contains functions to handle the file IO for reading and writing data, i.e.:
+    - read_csv(character fname, double y=-1)
+    - read_txt(list my_data, character fname, character var, double y=-1)
+
+evap.R
+    This script contains functions to calculate daily condensation, and evapotranspiration.
+
+main.R
+    This script runs the SPLASH model for one year.
+
+solar.R
+    This script contains functions to calculate daily radiation fluxes.
+
+splash.R
+    This script contains functions for running SPLASH for point-based data, i.e.:
+    - spin_up(list mdat, list dtot)
+    - quick_run(double lat, double elv, double n, double y, double wn, double sf, double tc, double pn)
+    - run_one_day(double lat, double elv, double n, double y, double wn, double sf, double tc, double pn)
+
+test.R
+    This script performs SPLASH consistency tests.
