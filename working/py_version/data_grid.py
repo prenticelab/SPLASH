@@ -44,7 +44,7 @@ import logging
 import os.path
 
 import numpy
-from scipy.io import netcdf
+from scipy.io.netcdf import NetCDFFile
 
 from utilities import get_x_y
 
@@ -307,7 +307,7 @@ class DATA_G:
         if my_file:
             # Open netCDF file for reading:
             self.logger.debug("opening NetCDF file %s", my_file)
-            f = netcdf.NetCDFFile(my_file, "r")
+            f = NetCDFFile(my_file, "r")
 
             # Save data for variables of interest:
             # NOTE: for CRU TS 3.2:
@@ -454,7 +454,7 @@ class DATA_G:
         self.logger.debug("retrieving lon and lat arrays from CRU file")
         my_file = self.tmp_file
         if my_file:
-            f = netcdf.NetCDFFile(my_file, "r")
+            f = NetCDFFile(my_file, "r")
             f_lat = f.variables['lat'].data.copy()
             f_lon = f.variables['lon'].data.copy()
             f.close()
