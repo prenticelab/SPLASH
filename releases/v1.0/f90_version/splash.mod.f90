@@ -9,18 +9,30 @@ module _splash
   ! - latitude (deg N)
   ! - elevation (m.a.s.l.)
   !
-  ! version: 1.0
+  ! VERSION: 1.0
+  ! LAST UPDATED: 2016-02-19
   !
-  ! last updated: 2016-02-18
+  ! Copyright (C) 2016 Prentice Lab
   !
-  ! citation:
+  ! SPLASH is free software: you can redistribute it and/or modify it under
+  ! the terms of the GNU Lesser General Public License as published by
+  ! the Free Software Foundation, either version 2.1 of the License, or
+  ! (at your option) any later version.
+  !
+  ! SPLASH is distributed in the hope that it will be useful,
+  ! but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ! GNU Lesser General Public License for more details.
+  !
+  ! You should have received a copy of the GNU Lesser General Public License
+  ! along with SPLASH.  If not, see <http://www.gnu.org/licenses/>.
+  !
+  ! Citation:
   ! T. W. Davis, I. C. Prentice, B. D. Stocker, R. J. Whitley, H. Wang, B. J.
   ! Evans, A. V. Gallego-Sala, M. T. Sykes, and W. Cramer, Simple process-
   ! led algorithms for simulating habitats (SPLASH): Robust indices of radiation,
   ! evapotranspiration and plant-available moisture, Geoscientific Model
   ! Development, 2016 (in progress)
-  ! Copyright (C) 2015, see LICENSE, Benjamin D. Stocker
-  ! contact: benjamin.stocker@gmail.com
   !----------------------------------------------------------------
   implicit none
 

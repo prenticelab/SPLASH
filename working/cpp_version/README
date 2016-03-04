@@ -1,7 +1,21 @@
 SPLASH v.1.1-dev
 ================
 
-Copyright (C) 2015, see LICENSE
+License
+=======
+Copyright (C) 2016 Prentice Lab
+
+
+Requirements
+============
+
+This code was successfully compiled and executed using the GNU C++ compiler
+(g++ v.4.8.2) provided by the GNU Compiler Collection (Free Software Foundation,
+Inc., 2016).
+
+This code utilizes the C numerics library (cmath), input/output operations
+library (cstdio), and the standard general utilities library (cstdlib) and also
+references the vector container and string type.
 
 To compile (using GNU C++ compiler):
 

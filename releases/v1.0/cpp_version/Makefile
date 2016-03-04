@@ -1,4 +1,4 @@
-# Copyright (C) 2015, see LICENSE
+# Copyright (C) 2016 Prentice Lab
 # Use GNU C++ compiler (g++ v.4.8.2)
 #   GNU Compiler Collection
 #   Copyright (C) Free Software Foundation, Inc.

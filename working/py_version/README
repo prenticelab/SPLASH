@@ -1,8 +1,23 @@
 SPLASH v.1.1-dev
 ================
 
-Copyright (C) 2015, see LICENSE
+License
+=======
 
+Copyright (C) 2016 Prentice Lab
+
+
+Requirements
+============
+
+This code was successfully compiled and executed using Python 2.7 and Python 3.5
+interpreters (Python Software Foundation, 2016).
+
+This code requires the installation of third-party packages: NumPy (v.1.8.2,
+v.1.10.4 by NumPy Developers, 2013) and SciPy (v.0.13.3, v.0.17.0 by SciPy
+Developers, 2016) and references the basic date and time types (datetime),
+logging facility (logging), Unix-style pathname pattern extension (glob), and
+miscellaneous operating system interfaces (os) modules.
 
 To run (Python 2/3):
 
