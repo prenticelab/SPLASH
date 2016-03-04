@@ -60,7 +60,8 @@ class DATA_G:
               - added longitude and latitude class variables [16.02.13]
               - created get lon lat function [16.02.13]
     """
-    error_val = numpy.inf
+    # I changed the rror value to be NaN rahter than inf (makes more sense for calculations)
+    error_val = numpy.nan 
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -77,9 +78,17 @@ class DATA_G:
         self.cld_file = None
         self.pre_file = None
         self.tmp_file = None
+        self.tmn_file = None
+        self.tmx_file = None
+        self.vap_file = None
+        self.fapar_file = None
         self.tair = None
         self.pre = None
         self.sf = None
+        self.tmn = None
+        self.tmx = None
+        self.vap = None
+        self.fapar = None
         self.elevation = None
         self.latitude = None
         self.longitude = None
@@ -162,6 +171,44 @@ class DATA_G:
             self.logger.warning("failed to load CRU TS temperature file")
             self.tmp_file = None
 
+        tmn_file = self.get_cru_file(path, 'tmn')
+        print tmn_file
+        if os.path.isfile(tmn_file):
+            self.logger.info("found CRU T MIN temperature file %s", tmn_file)
+            self.tmn_file = tmn_file
+        else:
+            self.logger.warning("failed to load CRU T MIN temperature file")
+            self.tmn_file = None
+
+        tmx_file = self.get_cru_file(path, 'tmx')
+        if os.path.isfile(tmx_file):
+            self.logger.info("found CRU T MAX temperature file %s", tmx_file)
+            self.tmx_file = tmx_file
+        else:
+            self.logger.warning("failed to load CRU T MAX temperature file")
+            self.tmx_file = None
+
+        vap_file = self.get_cru_file(path, 'vap')
+        if os.path.isfile(vap_file):
+            self.logger.info("found CRU Vap file %s", vap_file)
+            self.vap_file = vap_file
+        else:
+            self.logger.warning("failed to load CRU Vap file")
+            self.vap_file = None
+
+    def find_fapar_files(self, path):
+        """
+        Features: Searches for fapar file on the path within a single directory
+        Depends:  get_fapar_file
+        """
+        fapar_file = self.get_fapar_file(path, 'fAPAR')
+        if os.path.isfile(fapar_file):
+            self.logger.info("found fAPAR3g file %s", fapar_file)
+            self.fapar_file = fapar_file
+        else:
+            self.logger.warning("failed to load fAPAR3g file")
+            self.fapar_file = None
+
     def get_cru_file(self, path, voi):
         """
         Name:     DATA_G.get_cru_file
@@ -173,6 +220,32 @@ class DATA_G:
         # Read through all files within the paths for voi:
         my_file = None
         my_pattern = os.path.join(path, "*%s*.*" % (voi))
+        print my_pattern
+        my_files = glob.glob(my_pattern)
+
+        if my_files:
+            if len(my_files) > 1:
+                self.logger.warning("Found %d files!", len(my_files))
+            else:
+                my_file = my_files[0]
+                self.logger.info("found file %s", my_file)
+        else:
+            self.logger.warning("Found 0 files!")
+
+        return my_file
+
+    def get_fapar_file(self, path, voi):
+        """
+        Name:     DATA_G.get_fapar_file
+        Input:    - str, directory path for fAPAR data files (path)
+                  - str, variable of interest (voi)
+        Output:   str OR list of file names
+        Features: Returns the CRU TS file for given variable of interest
+        """
+        # Read through all files within the paths for voi:
+        my_file = None
+        my_pattern = os.path.join(path, "*%s*.*" % (voi))
+        print my_pattern
         my_files = glob.glob(my_pattern)
 
         if my_files:
@@ -208,7 +281,7 @@ class DATA_G:
                   - str, variable of interest (v)
         Output:   numpy nd.array
         Features: Returns 360x720 monthly CRU TS dataset for a given month and
-                  variable of interest (e.g., cld, pre, tmp)
+                  variable of interest (e.g., cld, pre, tmp, tmn, tmx)
                   NODATA = error_val
         Depends:  - get_cru_file
                   - get_time_index
@@ -221,6 +294,15 @@ class DATA_G:
             my_file = self.pre_file
         elif v == 'cld':
             my_file = self.cld_file
+        elif v == 'tmn':
+            my_file = self.tmn_file
+        elif v == 'tmx':
+            my_file = self.tmx_file
+        elif v == 'vap':
+        	my_file = self.vap_file
+        elif v == 'fAPAR':
+        	my_file = self.fapar_file
+
 
         if my_file:
             # Open netCDF file for reading:
@@ -317,7 +399,7 @@ class DATA_G:
         Inputs:   - float, longitude, degrees (lon)
                   - float, latitude, degrees (lat)
         Outputs:  None.
-        Features: Prints the four variables (i.e., elv, pre, tair, and sf) for
+        Features: Prints the four variables (i.e., elv, pre, tair, tmn, tmx and sf) for
                   a given location
         Depends:  get_x_y
         """
@@ -327,6 +409,8 @@ class DATA_G:
         print("Latitude: %0.4f degrees (%d)" % (lat, y))
         print("Elevation: %0.4f m" % (self.elevation[y, x]))
         print("Mean air temperature: %0.6f deg. C" % (self.tair[y, x]))
+        print("Min monhtly air temperature: %0.6f deg. C" % (self.tmn[y, x]))
+        print("Max monthly air temperature: %0.6f deg. C" % (self.tmx[y, x]))
         print("Precipitation: %0.6f mm/d" % (self.pre[y, x]))
         print("Sunshine fraction: %0.6f" % (self.sf[y, x]))
 
@@ -387,7 +471,7 @@ class DATA_G:
         """
         Name:     DATA_G.read_monthly_clim
         Inputs:   datetime.date, month of interest (m)
-        Features: Reads monthly climatology (i.e., temperature, precipitation,
+        Features: Reads monthly climatology (i.e., temperature, min monthly temp, max monhtly temp, precipitation,
                   and cloudiness), converts cloudiness to sunshine fraction and
                   monthly precipitation to daily fraction
         Depends:  - get_monthly_cru
@@ -413,21 +497,32 @@ class DATA_G:
             self.tair = numpy.zeros(shape=(360, 720))
             self.pre = numpy.zeros(shape=(360, 720))
             self.sf = numpy.zeros(shape=(360, 720))
+            self.tmn = numpy.zeros(shape=(360, 720))
+            self.tmx = numpy.zeros(shape=(360, 720))
+            self.vap = numpy.zeros(shape=(360, 720))
+            self.fapar = numpy.zeros(shape=(360, 720))
 
             # Read monthly data:
             self.logger.debug("reading monthly climatology")
             tmp = self.get_monthly_cru(m, 'tmp')
             pre = self.get_monthly_cru(m, 'pre')
             cld = self.get_monthly_cru(m, 'cld')
+            tmn = self.get_monthly_cru(m, 'tmn')
+            tmx = self.get_monthly_cru(m, 'tmx')
+            vap = self.get_monthly_cru(m, 'vap')
+            fapar = self.get_monthly_cru(m, 'fAPAR')
 
             # Update good and noval indexes:
             self.logger.debug("updating good and no-value indexes")
             self.noval_idx = numpy.where(
                 (self.elevation == self.error_val) | (tmp == self.error_val) |
-                (pre == self.error_val) | (cld == self.error_val))
+                (pre == self.error_val) | (cld == self.error_val) | (tmn == self.error_val) |
+				(tmx == self.error_val) | (vap == self.error_val) | (fapar == self.error_val))
             self.good_idx = numpy.where(
                 (self.elevation != self.error_val) & (tmp != self.error_val) &
-                (pre != self.error_val) & (cld != self.error_val))
+                (pre != self.error_val) & (cld != self.error_val) & 
+            	(tmn != self.error_val) & (tmx != self.error_val) & 
+            	(vap != self.error_val) & (fapar != self.error_val))
 
             # Convert cloudiness to fractional sunshine, sf
             self.logger.debug("converting cloudiness to sunshine fraction")
@@ -444,6 +539,10 @@ class DATA_G:
             self.tair = tmp
             self.pre = pre
             self.sf = sf
+            self.tmn = tmn
+            self.tmx = tmx
+            self.vap = vap
+            self.fapar = fapar
 
     def set_date(self, date):
         """
