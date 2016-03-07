@@ -44,7 +44,7 @@ import logging
 import os.path
 
 import numpy
-from scipy.io import netcdf
+import netcdf_3_RW
 
 from utilities import get_x_y
 
