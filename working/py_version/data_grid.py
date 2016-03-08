@@ -45,6 +45,7 @@ import os.path
 
 import numpy
 #import netcdf_3_RW
+from scipy.io import netcdf
 
 from utilities import get_x_y
 
