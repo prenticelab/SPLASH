@@ -405,7 +405,10 @@ class DATA_G:
             f.close()
 
             self.logger.debug("setting error value")
-            noval_idx = numpy.where(f_data == f_noval)
+            if v == 'fAPAR':
+               noval_idx = numpy.where(f_data > 2)
+            else: 
+                noval_idx = numpy.where(f_data == f_noval)
             f_data[noval_idx] *= 0.0
             f_data[noval_idx] += self.error_val
 
