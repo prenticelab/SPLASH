@@ -82,6 +82,7 @@ class DATA_G:
         self.tmx_file = None
         self.vap_file = None
         self.fapar_file = None
+        self.evi_file = None
         self.tair = None
         self.pre = None
         self.sf = None
@@ -89,6 +90,7 @@ class DATA_G:
         self.tmx = None
         self.vap = None
         self.fapar = None
+        self.evi = None
         self.elevation = None
         self.latitude = None
         self.longitude = None
@@ -196,6 +198,27 @@ class DATA_G:
             self.logger.warning("failed to load CRU Vap file")
             self.vap_file = None
 
+    def find_watch_files(self, path):
+        """
+        Features: Searches for the daily watch files(tAir & rainf)) within a single directory
+        Depends:  get_watch_file
+        """
+        rainf_file = self.get_watch_file(path, 'Rainf')
+        if os.path.isfile(pre_file):
+            self.logger.info("found WACTH precipitation file %s", rainf_file)
+            self.data_dir['Rainf'] = rainf_file
+        else:
+            self.logger.warning("failed to load CWACTH precipitationfile")
+            self.data_dir['Rainf'] = None
+
+        Tair_file = self.get_watch_file(path, 'Tair')
+        if os.path.isfile(tmp_file):
+            self.logger.info("found WACTH Tair temperature file %s", Tair_file)
+            self.data_dir['Tair'] = Tair_file
+        else:
+            self.logger.warning("failed to load WACTH Tair temperature file")
+            self.data_dir['Tair']= None
+
     def find_fapar_files(self, path):
         """
         Features: Searches for fapar file on the path within a single directory
@@ -208,6 +231,19 @@ class DATA_G:
         else:
             self.logger.warning("failed to load fAPAR3g file")
             self.fapar_file = None
+
+    def find_evi_files(self, path):
+        """
+        Features: Searches for evi file on the path within a single directory
+        Depends:  get_evi_file
+        """
+        evi_file = self.get_evi_file(path, 'fAPAR') # This is set to fAPAR becuase EVI in ISI_MIP == fAPAR
+        if os.path.isfile(evi_file):
+            self.logger.info("found EVI file %s", evi_file)
+            self.evi_file = evi_file
+        else:
+            self.logger.warning("failed to load evi file")
+            self.evi_file = None
 
     def get_cru_file(self, path, voi):
         """
@@ -238,6 +274,31 @@ class DATA_G:
         """
         Name:     DATA_G.get_fapar_file
         Input:    - str, directory path for fAPAR data files (path)
+                  - str, variable of interest (voi)
+        Output:   str OR list of file names
+        Features: Returns the CRU TS file for given variable of interest
+        """
+        # Read through all files within the paths for voi:
+        my_file = None
+        my_pattern = os.path.join(path, "*%s*.*" % (voi))
+        print my_pattern
+        my_files = glob.glob(my_pattern)
+
+        if my_files:
+            if len(my_files) > 1:
+                self.logger.warning("Found %d files!", len(my_files))
+            else:
+                my_file = my_files[0]
+                self.logger.info("found file %s", my_file)
+        else:
+            self.logger.warning("Found 0 files!")
+
+        return my_file
+
+    def get_evi_file(self, path, voi):
+        """
+        Name:     DATA_G.get_evi_file
+        Input:    - str, directory path for EVI data files (path)
                   - str, variable of interest (voi)
         Output:   str OR list of file names
         Features: Returns the CRU TS file for given variable of interest
@@ -302,11 +363,13 @@ class DATA_G:
         	my_file = self.vap_file
         elif v == 'fAPAR':
         	my_file = self.fapar_file
+        elif v == 'fAPAR':          #Set to fAPAR for EVI ebcuase ISI-MIP EVI == fAPAR
+            my_file = self.evi_file
 
 
         if my_file:
             # Open netCDF file for reading:
-            self.logger.debug("opening NetCDF file %s", my_file)
+            self.logger.debug("opening NetCDF file %s", my_file, mmap = False)
             f = netcdf.netcdf_file(my_file, "r")
 
             # Save data for variables of interest:
@@ -501,6 +564,7 @@ class DATA_G:
             self.tmx = numpy.zeros(shape=(360, 720))
             self.vap = numpy.zeros(shape=(360, 720))
             self.fapar = numpy.zeros(shape=(360, 720))
+            self.evi = numpy.zeros(shape=(360, 720))
 
             # Read monthly data:
             self.logger.debug("reading monthly climatology")
@@ -511,18 +575,20 @@ class DATA_G:
             tmx = self.get_monthly_cru(m, 'tmx')
             vap = self.get_monthly_cru(m, 'vap')
             fapar = self.get_monthly_cru(m, 'fAPAR')
+            evi = self.get_monthly_cru(m, 'fAPAR')  # Set to fAPAR for EVI ebcuase ISI_MIP fAPAR == EVI
 
             # Update good and noval indexes:
             self.logger.debug("updating good and no-value indexes")
             self.noval_idx = numpy.where(
                 (self.elevation == self.error_val) | (tmp == self.error_val) |
                 (pre == self.error_val) | (cld == self.error_val) | (tmn == self.error_val) |
-				(tmx == self.error_val) | (vap == self.error_val) | (fapar == self.error_val))
+				(tmx == self.error_val) | (vap == self.error_val) | (fapar == self.error_val) | 
+                (evi == self.error_val))
             self.good_idx = numpy.where(
                 (self.elevation != self.error_val) & (tmp != self.error_val) &
                 (pre != self.error_val) & (cld != self.error_val) & 
             	(tmn != self.error_val) & (tmx != self.error_val) & 
-            	(vap != self.error_val) & (fapar != self.error_val))
+            	(vap != self.error_val) & (fapar != self.error_val) & (evi != self.error_val))
 
             # Convert cloudiness to fractional sunshine, sf
             self.logger.debug("converting cloudiness to sunshine fraction")
@@ -543,6 +609,7 @@ class DATA_G:
             self.tmx = tmx
             self.vap = vap
             self.fapar = fapar
+            self.evi = evi
 
     def set_date(self, date):
         """
