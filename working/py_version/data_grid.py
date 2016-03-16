@@ -364,8 +364,9 @@ class DATA_G:
         	my_file = self.vap_file
         elif v == 'fAPAR':
         	my_file = self.fapar_file
-        elif v == 'fAPAR':          #Set to fAPAR for EVI ebcuase ISI-MIP EVI == fAPAR
+        elif v == 'evi':          #Set to fAPAR for EVI ebcuase ISI-MIP EVI == fAPAR
             my_file = self.evi_file
+            v = 'fAPAR'
 
 
         if my_file:
@@ -579,7 +580,7 @@ class DATA_G:
             tmx = self.get_monthly_cru(m, 'tmx')
             vap = self.get_monthly_cru(m, 'vap')
             fapar = self.get_monthly_cru(m, 'fAPAR')
-            evi = self.get_monthly_cru(m, 'fAPAR')  # Set to fAPAR for EVI ebcuase ISI_MIP fAPAR == EVI
+            evi = self.get_monthly_cru(m, 'evi')  # Set to fAPAR for EVI ebcuase ISI_MIP fAPAR == EVI
 
             # Update good and noval indexes:
             self.logger.debug("updating good and no-value indexes")
