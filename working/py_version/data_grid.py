@@ -84,6 +84,7 @@ class DATA_G:
         self.vap_file = None
         self.fapar_file = None
         self.evi_file = None
+
         self.tair = None
         self.pre = None
         self.sf = None
@@ -407,7 +408,7 @@ class DATA_G:
 
             self.logger.debug("setting error value")
             if v == 'fAPAR':
-               noval_idx = numpy.where((f_data > 1) OR (f_data < 0.12)) 
+               noval_idx = numpy.where((f_data > 1)) # | (f_data < 0.12)) 
             else: 
                 noval_idx = numpy.where(f_data == f_noval)
             f_data[noval_idx] *= 0.0
@@ -415,6 +416,55 @@ class DATA_G:
 
             self.logger.debug("finished reading %s for month %s" % (v, ct))
             return f_data
+
+    def get_daily_watch(self, v, ct):
+            """
+            Name:     SPLASH_DATA.get_daily_watch
+            Input:    - str, variable of interest (v)
+                  - datetime.date, current time (ct)
+            Output:   numpy nd.array
+            Features: Returns 360x720 monthly WATCH dataset for a given variable
+                     of interest (e.g., Tair, Rainf)
+             """
+            # Save class variable to local variable:
+            if v == 'tair':
+                d = self.tair_file
+            elif v == 'rainf':
+                d= self.rainf_file
+
+            # Search directory for netCDF file:
+            my_path = '%s%s*%d%02d.nc' % (d, v, ct.year, ct.month)
+            try:
+                my_file = glob.glob(my_path)[0]
+            except IndexError:
+                print("No WATCH file was found for variable: %s" % (v))
+                print("and month: %s" % (ct.month))
+            else:
+                # Open netCDF file for reading:
+                f = netcdf.NetCDFFile(my_file, "r")
+
+                #   VARIABLES:
+                #    * day (int),
+                #    * lat (grid box center, degrees north)
+                #    * lon (grid box center, degrees east)
+                #    * timestp (days since beginning of month)
+                #
+                #   DATA:
+                #    * 'Rainf' units = kg m^-2 s^-1
+                #    * 'Tair' units = Kelvin
+                #    *  Missing value = 1.00e+20
+
+                # Find time index:
+                f_time = f.variables['day'].data.copy()
+                ti = numpy.where(ct.day == f_time)[0][0]
+
+                # Get the spatial data for current time:
+                f_data = f.variables[v].data[ti].copy()
+
+                f.close()
+                return f_data
+
+                
 
     def get_time_index(self, bt, ct, aot):
         """
