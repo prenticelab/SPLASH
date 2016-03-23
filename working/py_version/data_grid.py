@@ -48,7 +48,7 @@ import numpy
 from scipy.io import netcdf
 
 from utilities import get_x_y
-
+from const import kPo, kTo, kL, kMa, kG, kR
 
 ###############################################################################
 # CLASSES:
@@ -77,22 +77,26 @@ class DATA_G:
         self.date = None
         self.elv_file = None
         self.cld_file = None
-        self.pre_file = None
+       
         self.tmp_file = None
         self.tmn_file = None
         self.tmx_file = None
         self.vap_file = None
         self.fapar_file = None
         self.evi_file = None
+        self.Tair_file = None
+        self.Rainf_file = None
 
-        self.tair = None
-        self.pre = None
+        self.tmp = None
+      
         self.sf = None
         self.tmn = None
         self.tmx = None
         self.vap = None
         self.fapar = None
         self.evi = None
+        self.Tair = None
+        self.Rainf = None
         self.elevation = None
         self.latitude = None
         self.longitude = None
@@ -159,13 +163,13 @@ class DATA_G:
             self.logger.warning("failed to load CRU TS elevation file")
             self.elv_file = None
 
-        pre_file = self.get_cru_file(path, 'pre')
-        if os.path.isfile(pre_file):
-            self.logger.info("found CRU TS precipitation file %s", pre_file)
-            self.pre_file = pre_file
-        else:
-            self.logger.warning("failed to load CRU TS precipitation file")
-            self.pre_file = None
+        # pre_file = self.get_cru_file(path, 'pre')
+        # if os.path.isfile(pre_file):
+        #     self.logger.info("found CRU TS precipitation file %s", pre_file)
+        #     self.pre_file = pre_file
+        # else:
+        #     self.logger.warning("failed to load CRU TS precipitation file")
+        #     self.pre_file = None
 
         tmp_file = self.get_cru_file(path, 'tmp')
         if os.path.isfile(tmp_file):
@@ -176,7 +180,7 @@ class DATA_G:
             self.tmp_file = None
 
         tmn_file = self.get_cru_file(path, 'tmn')
-        print tmn_file
+        
         if os.path.isfile(tmn_file):
             self.logger.info("found CRU T MIN temperature file %s", tmn_file)
             self.tmn_file = tmn_file
@@ -200,26 +204,26 @@ class DATA_G:
             self.logger.warning("failed to load CRU Vap file")
             self.vap_file = None
 
-    def find_watch_files(self, path):
+    def find_watch_files(self, path, ct):
         """
-        Features: Searches for the daily watch files(tAir & rainf)) within a single directory
+        Features: Searches for the daily watch files(tAir & Rainf)) within a single directory
         Depends:  get_watch_file
         """
-        rainf_file = self.get_watch_file(path, 'Rainf')
-        if os.path.isfile(pre_file):
-            self.logger.info("found WACTH precipitation file %s", rainf_file)
-            self.data_dir['Rainf'] = rainf_file
+        Rainf_file = self.get_watch_file(path, 'Rainf', ct)
+        if os.path.isfile(Rainf_file):
+            self.logger.info("found WACTH precipitation file %s", Rainf_file)
+            self.Rainf_file = Rainf_file
         else:
             self.logger.warning("failed to load CWACTH precipitationfile")
-            self.data_dir['Rainf'] = None
+            self.Rainf_file = None
 
-        Tair_file = self.get_watch_file(path, 'Tair')
-        if os.path.isfile(tmp_file):
+        Tair_file = self.get_watch_file(path, 'Tair', ct)
+        if os.path.isfile(Tair_file):
             self.logger.info("found WACTH Tair temperature file %s", Tair_file)
-            self.data_dir['Tair'] = Tair_file
+            self.Tair_file = Tair_file
         else:
             self.logger.warning("failed to load WACTH Tair temperature file")
-            self.data_dir['Tair']= None
+            self.Tair_file = None
 
     def find_fapar_files(self, path):
         """
@@ -258,7 +262,32 @@ class DATA_G:
         # Read through all files within the paths for voi:
         my_file = None
         my_pattern = os.path.join(path, "*%s*.*" % (voi))
-        print my_pattern
+        
+        my_files = glob.glob(my_pattern)
+
+        if my_files:
+            if len(my_files) > 1:
+                self.logger.warning("Found %d files!", len(my_files))
+            else:
+                my_file = my_files[0]
+                self.logger.info("found file %s", my_file)
+        else:
+            self.logger.warning("Found 0 files!")
+
+        return my_file
+
+    def get_watch_file(self, path, voi, ct):
+        """
+        Name:     DATA_G.get_cru_file
+        Input:    - str, directory path for CRU data files (path)
+                  - str, variable of interest (voi)
+        Output:   str OR list of file names
+        Features: Returns the CRU TS file for given variable of interest
+        """
+        # Read through all files within the paths for voi:
+        my_file = None
+        my_pattern = os.path.join(path, "%s*%d%02d.nc" % (voi, ct.year, ct.month))
+        
         my_files = glob.glob(my_pattern)
 
         if my_files:
@@ -283,7 +312,7 @@ class DATA_G:
         # Read through all files within the paths for voi:
         my_file = None
         my_pattern = os.path.join(path, "*%s*.*" % (voi))
-        print my_pattern
+        
         my_files = glob.glob(my_pattern)
 
         if my_files:
@@ -308,7 +337,7 @@ class DATA_G:
         # Read through all files within the paths for voi:
         my_file = None
         my_pattern = os.path.join(path, "*%s*.*" % (voi))
-        print my_pattern
+        
         my_files = glob.glob(my_pattern)
 
         if my_files:
@@ -353,8 +382,8 @@ class DATA_G:
 
         if v == 'tmp':
             my_file = self.tmp_file
-        elif v == 'pre':
-            my_file = self.pre_file
+        # elif v == 'pre':
+        #     my_file = self.pre_file
         elif v == 'cld':
             my_file = self.cld_file
         elif v == 'tmn':
@@ -372,7 +401,7 @@ class DATA_G:
 
         if my_file:
             # Open netCDF file for reading:
-            self.logger.debug("opening NetCDF file %s", my_file, mmap = False)
+            self.logger.debug("opening NetCDF file %s", my_file)
             f = netcdf.netcdf_file(my_file, "r")
 
             # Save data for variables of interest:
@@ -417,7 +446,7 @@ class DATA_G:
             self.logger.debug("finished reading %s for month %s" % (v, ct))
             return f_data
 
-    def get_daily_watch(self, v, ct):
+    def get_daily_watch(self, ct, v):
             """
             Name:     SPLASH_DATA.get_daily_watch
             Input:    - str, variable of interest (v)
@@ -427,21 +456,15 @@ class DATA_G:
                      of interest (e.g., Tair, Rainf)
              """
             # Save class variable to local variable:
-            if v == 'tair':
-                d = self.tair_file
-            elif v == 'rainf':
-                d= self.rainf_file
-
-            # Search directory for netCDF file:
-            my_path = '%s%s*%d%02d.nc' % (d, v, ct.year, ct.month)
-            try:
-                my_file = glob.glob(my_path)[0]
-            except IndexError:
-                print("No WATCH file was found for variable: %s" % (v))
-                print("and month: %s" % (ct.month))
-            else:
+            if v == 'Tair':
+                my_file = self.Tair_file
+            elif v == 'Rainf':
+                my_file = self.Rainf_file
+            
+            
+            if my_file:
                 # Open netCDF file for reading:
-                f = netcdf.NetCDFFile(my_file, "r")
+                f = netcdf.netcdf_file(my_file, "r")
 
                 #   VARIABLES:
                 #    * day (int),
@@ -459,9 +482,17 @@ class DATA_G:
                 ti = numpy.where(ct.day == f_time)[0][0]
 
                 # Get the spatial data for current time:
-                f_data = f.variables[v].data[ti].copy()
-
+                f_var = f.variables[v]
+                f_noval = f_var._FillValue
+                f_temp = f_var.data[ti]
+                f_data = numpy.copy(f_temp)
+                f_var = None
                 f.close()
+
+                noval_idx = numpy.where(f_data == f_noval)
+                f_data[noval_idx] *= 0.0
+                f_data[noval_idx] += self.error_val
+
                 return f_data
 
                 
@@ -517,7 +548,7 @@ class DATA_G:
         Inputs:   - float, longitude, degrees (lon)
                   - float, latitude, degrees (lat)
         Outputs:  None.
-        Features: Prints the four variables (i.e., elv, pre, tair, tmn, tmx and sf) for
+        Features: Prints the four variables (i.e., elv, pre, tmp, tmn, tmx and sf) for
                   a given location
         Depends:  get_x_y
         """
@@ -526,10 +557,10 @@ class DATA_G:
         print("Longitude: %0.4f degrees (%d)" % (lon, x))
         print("Latitude: %0.4f degrees (%d)" % (lat, y))
         print("Elevation: %0.4f m" % (self.elevation[y, x]))
-        print("Mean air temperature: %0.6f deg. C" % (self.tair[y, x]))
+        print("Mean air temperature: %0.6f deg. C" % (self.tmp[y, x]))
         print("Min monhtly air temperature: %0.6f deg. C" % (self.tmn[y, x]))
         print("Max monthly air temperature: %0.6f deg. C" % (self.tmx[y, x]))
-        print("Precipitation: %0.6f mm/d" % (self.pre[y, x]))
+        # print("Precipitation: %0.6f mm/d" % (self.pre[y, x]))
         print("Sunshine fraction: %0.6f" % (self.sf[y, x]))
 
     def read_elv(self):
@@ -612,9 +643,8 @@ class DATA_G:
 
             # Reset the data arrays:
             self.logger.debug("initializing climate arrays")
-            self.tair = numpy.zeros(shape=(360, 720))
-            self.pre = numpy.zeros(shape=(360, 720))
-            self.sf = numpy.zeros(shape=(360, 720))
+            self.tmp = numpy.zeros(shape=(360, 720))
+            # self.pre = numpy.zeros(shape=(360, 720))
             self.tmn = numpy.zeros(shape=(360, 720))
             self.tmx = numpy.zeros(shape=(360, 720))
             self.vap = numpy.zeros(shape=(360, 720))
@@ -624,8 +654,7 @@ class DATA_G:
             # Read monthly data:
             self.logger.debug("reading monthly climatology")
             tmp = self.get_monthly_cru(m, 'tmp')
-            pre = self.get_monthly_cru(m, 'pre')
-            cld = self.get_monthly_cru(m, 'cld')
+            # pre = self.get_monthly_cru(m, 'pre')
             tmn = self.get_monthly_cru(m, 'tmn')
             tmx = self.get_monthly_cru(m, 'tmx')
             vap = self.get_monthly_cru(m, 'vap')
@@ -636,35 +665,102 @@ class DATA_G:
             self.logger.debug("updating good and no-value indexes")
             self.noval_idx = numpy.where(
                 (self.elevation == self.error_val) | (tmp == self.error_val) |
-                (pre == self.error_val) | (cld == self.error_val) | (tmn == self.error_val) |
+                (tmn == self.error_val) |
 				(tmx == self.error_val) | (vap == self.error_val) | (fapar == self.error_val) | 
                 (evi == self.error_val))
             self.good_idx = numpy.where(
                 (self.elevation != self.error_val) & (tmp != self.error_val) &
-                (pre != self.error_val) & (cld != self.error_val) & 
             	(tmn != self.error_val) & (tmx != self.error_val) & 
             	(vap != self.error_val) & (fapar != self.error_val) & (evi != self.error_val))
 
-            # Convert cloudiness to fractional sunshine, sf
-            self.logger.debug("converting cloudiness to sunshine fraction")
-            sf = numpy.copy(cld)
-            sf[self.good_idx] *= 1e-2
-            sf[self.good_idx] *= -1.0
-            sf[self.good_idx] += 1.0
+            ## Convert cloudiness to fractional sunshine, sf
+            #self.logger.debug("converting cloudiness to sunshine fraction")
+            #sf = numpy.copy(cld)
+            #sf[self.good_idx] *= 1e-2
+            #sf[self.good_idx] *= -1.0
+            #sf[self.good_idx] += 1.0
 
-            # Convert monthly precip to daily fraction & clip missing to zero:
-            self.logger.debug("converting monthly to daily precipitation")
-            pre[self.good_idx] /= float(self.nm)
+            ## Convert monthly precip to daily fraction & clip missing to zero:
+            #self.logger.debug("converting monthly to daily precipitation")
+            #pre[self.good_idx] /= float(self.nm)
 
             # Save data:
-            self.tair = tmp
-            self.pre = pre
-            self.sf = sf
+            self.tmp = tmp
+            # self.pre = pre
             self.tmn = tmn
             self.tmx = tmx
             self.vap = vap
             self.fapar = fapar
             self.evi = evi
+
+
+    def read_daily_clim(self, m):
+        """
+        Name:     DATA_G.read_daily_clim
+        Inputs:   datetime.date, month of interest (m)
+        Features: Reads monthly climatology (i.e., temperature, min monthly temp, max monhtly temp, precipitation,
+                  and cloudiness), converts cloudiness to sunshine fraction and
+                  monthly precipitation to daily fraction
+        Depends:  - get_daily_watch
+                  - set_date
+        """
+        # Check to see if new monthly data needs to be processed:
+        # to_process = False
+        # self.logger.debug("checking whether to process month... ")
+        # if self.date:
+        #     # Check to see if this is a new month:
+        #     if not self.year == m.year or not self.month == m.month:
+        #         to_process = True
+        # else:
+        #     to_process = True
+        # self.logger.debug("... %s", to_process)
+
+        # if to_process:
+            # Set the date:
+        self.set_date(m)
+
+        # Reset the data arrays:
+        self.logger.debug("initializing climate arrays")
+        self.Tair = numpy.zeros(shape=(360, 720))
+        self.Rainf = numpy.zeros(shape=(360, 720))
+        self.sf = numpy.zeros(shape = (360,720))
+        
+
+        # Read monthly data:
+        self.logger.debug("reading monthly climatology")
+        Tair = self.get_daily_watch(m, 'Tair')
+        Rainf = self.get_daily_watch(m, 'Rainf')
+        sf = self.get_monthly_cru(m, 'cld')
+
+        # Update good and noval indexes:
+        self.logger.debug("updating good and no-value indexes")
+        self.noval_idx = numpy.where(
+           (Tair == self.error_val) |
+            (Rainf == self.error_val) | (sf == self.error_val))
+        self.good_idx = numpy.where(
+            (Tair != self.error_val) &
+            (Rainf != self.error_val) & (sf != self.error_val))
+
+        # processing date
+
+        Tair[self.good_idx] -= 273.15 
+
+        patm = kPo*(1.0 - kL*self.elevation/kTo)**(kG*kMa/(kR*kL))
+        pw = self.density_h2o(Tair, patm)
+
+        Rainf /= pw   # m/s
+        Rainf[self.good_idx] *= 8.64e7
+
+        sf[self.good_idx] /= 100.0                   # unitless
+        sf = 1.0 - sf                 # complement of cloudiness
+    
+
+        # Save data:
+        self.Tair = Tair
+        self.Rainf = Rainf
+        self.sf = sf
+        
+
 
     def set_date(self, date):
         """
@@ -682,6 +778,67 @@ class DATA_G:
         self.n = date.timetuple().tm_yday
         self.nm = self.get_month_days(date)
         self.ny = self.get_year_days(date)
+
+
+    def density_h2o(self, tc, p):
+        """
+        Name:     SPLASH_DATA.density_h2o
+        Input:    - float, air temperature (tc), degrees C
+                  - float, atmospheric pressure (p), Pa
+        Output:   float, density of water, kg/m^3
+        Features: Calculates density of water at a given temperature and
+                  pressure
+        Ref:      Chen et al. (1977)
+        """
+        # Calculate density at 1 atm:
+        po = (
+            0.99983952 +
+            (6.788260e-5)*tc +
+            -(9.08659e-6)*tc*tc +
+            (1.022130e-7)*tc*tc*tc +
+            -(1.35439e-9)*tc*tc*tc*tc +
+            (1.471150e-11)*tc*tc*tc*tc*tc +
+            -(1.11663e-13)*tc*tc*tc*tc*tc*tc +
+            (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc +
+            -(1.00659e-18)*tc*tc*tc*tc*tc*tc*tc*tc
+        )
+
+        # Calculate bulk modulus at 1 atm:
+        ko = (
+            19652.17 +
+            148.1830*tc +
+            -2.29995*tc*tc +
+            0.01281*tc*tc*tc +
+            -(4.91564e-5)*tc*tc*tc*tc +
+            (1.035530e-7)*tc*tc*tc*tc*tc
+        )
+
+        # Calculate temperature dependent coefficients:
+        ca = (
+            3.26138 +
+            (5.223e-4)*tc +
+            (1.324e-4)*tc*tc +
+            -(7.655e-7)*tc*tc*tc +
+            (8.584e-10)*tc*tc*tc*tc
+        )
+        cb = (
+            (7.2061e-5) +
+            -(5.8948e-6)*tc +
+            (8.69900e-8)*tc*tc +
+            -(1.0100e-9)*tc*tc*tc +
+            (4.3220e-12)*tc*tc*tc*tc
+        )
+
+        # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
+        pbar = (1.0e-5)*p
+        #
+        pw = (1e3)*po*(ko + ca*pbar + cb*pbar**2)
+        pw /= (ko + ca*pbar + cb*pbar**2 - pbar)
+        return pw
+
+   
+
+
 
 ###############################################################################
 # MAIN PROGRAM
@@ -714,4 +871,4 @@ if __name__ == '__main__':
     my_class.read_monthly_clim(my_date)
     root_logger.info("read %d precipitation", my_class.pre.size)
     root_logger.info("read %d sunshine fraction", my_class.sf.size)
-    root_logger.info("read %d air temperature", my_class.tair.size)
+    root_logger.info("read %d air temperature", my_class.tmp.size)

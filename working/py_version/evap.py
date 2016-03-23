@@ -89,17 +89,17 @@ class EVAP:
             self.logger.debug("initialized solar class")
 
         # Initialize class variables:
-        self.sat = None    # slope of saturation vap press temp curve, Pa/K
-        self.lv = None     # enthalpy of vaporization, J/kg
-        self.pw = None     # density of water, kg/m^3
-        self.psy = None    # psychrometric constant, Pa/K
-        self.econ = None   # water-to-energy conversion factor
-        self.cond = None   # daily condensation, mm
-        self.eet_d = None  # daily EET, mm
-        self.pet_d = None  # daily PET, mm
-        self.rx = None     # variable substitute, (mm/hr)/(W/m^2)
-        self.hi = None     # intersection hour angle (hi), degrees
-        self.aet_d = None  # daily AET (aet_d), mm
+        self.sat = None     # slope of saturation vap press temp curve, Pa/K
+        self.lv = None    # enthalpy of vaporization, J/kg
+        self.pw = None    # density of water, kg/m^3
+        self.psy = None   # psychrometric constant, Pa/K
+        self.econ = None  # water-to-energy conversion factor
+        self.cond = None  # daily condensation, mm
+        self.eet_d = None # daily EET, mm
+        self.pet_d = None # daily PET, mm
+        self.rx = None    # variable substitute, (mm/hr)/(W/m^2)
+        self.hi = None    # intersection hour angle (hi), degrees
+        self.aet_d = None # daily AET (aet_d), mm
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -138,9 +138,8 @@ class EVAP:
             rnn_d = self.solar.rnn_d
             self.logger.info(
                 ("calculating daily evaporative fluxes for day %d of %d for "
-                 "year %d with sunshine fraction %f, air temperature %f "
-                 "Celcuis, and supply rate %f") % (
-                    n, self.solar.kN, self.solar.year, sf, tc, sw))
+                 "year %d ") % (
+                    n, self.solar.kN, self.solar.year))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Calculate water-to-energy conversion (econ), m^3/J
@@ -201,10 +200,10 @@ class EVAP:
         # 7. Calculate the intersection hour angle (hi), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         cos_hi = sw/(rw*rv*rx) + rnl/(rw*rv) - ru/rv
-        if cos_hi >= 1.0:
+        if cos_hi.all >= 1.0:
             # Supply exceeds demand:
             hi = 0.0
-        elif cos_hi <= -1.0:
+        elif cos_hi.all <= -1.0:
             # Supply limits demand everywhere:
             hi = 180.0
         else:
@@ -279,9 +278,9 @@ class EVAP:
                   pressure
         Ref:      Chen et al. (1977)
         """
-        self.logger.debug(
-            ("calculating density of water at temperature %f Celcius and "
-             "pressure %f Pa") % (tc, p))
+        # self.logger.debug(
+        #     ("calculating density of water at temperature %f Celcius and "
+        #      "pressure %f Pa") % (tc, p))
 
         # Calculate density at 1 atm (kg/m^3):
         po = 0.99983952
@@ -293,7 +292,7 @@ class EVAP:
         po += -(1.11663e-13)*tc*tc*tc*tc*tc*tc
         po += (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc
         po += -(1.00659e-18)*tc*tc*tc*tc*tc*tc*tc*tc
-        self.logger.info("water density at 1 atm calculated as %f kg/m^3", po)
+        # self.logger.info("water density at 1 atm calculated as %f kg/m^3", po)
 
         # Calculate bulk modulus at 1 atm (bar):
         ko = 19652.17
@@ -302,7 +301,7 @@ class EVAP:
         ko += 0.01281*tc*tc*tc
         ko += -(4.91564e-5)*tc*tc*tc*tc
         ko += (1.035530e-7)*tc*tc*tc*tc*tc
-        self.logger.info("bulk modulus at 1 atm calculated as %f bar", ko)
+        # self.logger.info("bulk modulus at 1 atm calculated as %f bar", ko)
 
         # Calculate temperature dependent coefficients:
         ca = 3.26138
@@ -310,18 +309,18 @@ class EVAP:
         ca += (1.324e-4)*tc*tc
         ca += -(7.655e-7)*tc*tc*tc
         ca += (8.584e-10)*tc*tc*tc*tc
-        self.logger.info("temperature coef, Ca, calculated as %f", ca)
+        # self.logger.info("temperature coef, Ca, calculated as %f", ca)
 
         cb = (7.2061e-5)
         cb += -(5.8948e-6)*tc
         cb += (8.69900e-8)*tc*tc
         cb += -(1.0100e-9)*tc*tc*tc
         cb += (4.3220e-12)*tc*tc*tc*tc
-        self.logger.info("temperature coef, Cb, calculated as %f bar^-1", cb)
+        # self.logger.info("temperature coef, Cb, calculated as %f bar^-1", cb)
 
         # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
         pbar = (1.0e-5)*p
-        self.logger.info("atmospheric pressure calculated as %f bar", pbar)
+        # self.logger.info("atmospheric pressure calculated as %f bar", pbar)
 
         pw = (ko + ca*pbar + cb*pbar**2.0)
         pw /= (ko + ca*pbar + cb*pbar**2.0 - pbar)
@@ -341,9 +340,9 @@ class EVAP:
                   - kMv
         Refs:     Allen et al. (1998); Tsilingiris (2008)
         """
-        self.logger.debug(
-            ("calculating psychrometric constant at temperature %f Celcius "
-             "and pressure %f Pa") % (tc, p))
+        # self.logger.debug(
+        #     ("calculating psychrometric constant at temperature %f Celcius "
+        #      "and pressure %f Pa") % (tc, p))
 
         # Calculate the specific heat capacity of water, J/kg/K
         # Eq. 47, Tsilingiris (2008)
@@ -354,12 +353,12 @@ class EVAP:
         cp += -(8.830478888e-8)*tc*tc*tc*tc
         cp += (5.071307038e-10)*tc*tc*tc*tc*tc
         cp *= (1e3)
-        self.logger.info("specific heat capacity calculated as %f J/kg/K", cp)
+        # self.logger.info("specific heat capacity calculated as %f J/kg/K", cp)
 
         # Calculate latent heat of vaporization, J/kg
         lv = self.enthalpy_vap(tc)
-        self.logger.info(
-            "enthalpy of vaporization calculated as %f MJ/kg", (1e-6)*lv)
+        # self.logger.info(
+        #     "enthalpy of vaporization calculated as %f MJ/kg", (1e-6)*lv)
 
         # Calculate psychrometric constant, Pa/K
         # Eq. 8, Allen et al. (1998)

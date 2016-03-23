@@ -92,17 +92,17 @@ class SPLASH:
             self.logger.debug("initialized EVAP class")
 
         # Initialize daily status variables:
-        self.ho = 0.      # daily solar irradiation, J/m2
-        self.hn = 0.      # daily net radiation, J/m2
-        self.ppfd = 0.    # daily PPFD, mol/m2
-        self.cond = 0.    # daily condensation water, mm
-        self.wn = 0.      # daily soil moisture, mm
-        self.precip = 0.  # daily precipitation, mm
-        self.ro = 0.      # daily runoff, mm
-        self.eet = 0.     # daily equilibrium ET, mm
-        self.pet = 0.     # daily potential ET, mm
-        self.aet = 0.     # daily actual ET, mm
-        self.wn_vec = numpy.array([])  # daily soil moisture array
+        self.ho = None    # daily solar irradiation, J/m2
+        self.hn = None     # daily net radiation, J/m2
+        self.ppfd = None   # daily PPFD, mol/m2
+        self.cond = None   # daily condensation water, mm
+        self.wn = None     # daily soil moisture, mm
+        self.precip = None # daily precipitation, mm
+        self.ro = None    # daily runoff, mm
+        self.eet = None    # daily equilibrium ET, mm
+        self.pet = None    # daily potential ET, mm
+        self.aet = None   # daily actual ET, mm
+        self.wn_vec = None # daily soil moisture array
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -254,6 +254,7 @@ class SPLASH:
             # Bucket is too full
             #   allocate excess water to runoff
             #   set soil moisture to capacity (i.e., kWm)
+            
             ro = sm - kWm
             sm = kWm
             self.logger.debug("soil moisture: %f mm", sm)
@@ -296,7 +297,7 @@ class SPLASH:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Calculate evaporative supply rate (sw), mm/h
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        sw = kCw*float(wn)/kWm
+        sw = kCw*(wn)/kWm
         self.logger.debug("evaporative supply rate: %f mm/h", sw)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -346,11 +347,48 @@ class SPLASH:
         self.logger.debug("soil moisture: %f mm", sm)
         self.logger.debug("excess runoff: %f mm", ro)
 
+
+
+
+
+
+    #if sm.any > kWm:
+           
+            
+   #          # Bucket is too full
+   #          #   allocate excess water to runoff
+   #          #   set soil moisture to capacity (i.e., kWm)
+   #      sm_toofull = numpy.where(sm > kWm) 
+
+   #      self.logger.debug("bucket is too full")
+   #      self.logger.debug("setting soil moisture to saturation")
+   #      self.logger.debug("calculating runoff")
+        
+   #      ro_toofull = sm - kWm
+   #      self.ro[sm_toofull] = ro_toofull
+   #      sm[sm_toofull] = kWm
+
+   #      sm_empty = numpy.where(sm < 0)
+   # # elif sm.any < 0:
+   #      self.logger.debug("bucket is too empty")
+   #      self.logger.debug("correcting actual ET")
+   #      # Bucket is too empty
+   #      #   reduce actual ET by discrepancy amount
+   #      #   set soil moisture and runoff to zero
+   #      self.aet[sm_empty] = self.aet + sm
+   #      sm[sm_empty] = 0.
+   #      self.ro[sm_empty] = 0.
+   #      #else:
+   #      self.sm_ok = numpy.where ((sm < kWm ) & (sm <> 0))
+   #      self.ro[self.sm_ok] = 0.
+   #      #self.logger.debug("soil moisture: %f mm", sm)
+   #      #self.logger.debug("excess runoff: %f mm", ro)
+
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Update soil moisture & runoff
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         self.wn = sm  # daily soil moisture, mm
-        self.ro = ro  # daily runoff, mm
+        #self.ro = ro  # daily runoff, mm
 
     def print_vals(self):
         """

@@ -189,8 +189,7 @@ class SOLAR:
         self.kN = kN
         self.logger.info(
             ("calculating daily radiation fluxes for day %d of %d "
-             "for year %d with sunshine fraction %f and air temperature "
-             "%f Celcius") % (n, kN, self.year, sf, tc))
+             "for year %d  ") % (n, kN, self.year))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Calculate heliocentric longitudes (nu and lambda), degrees
@@ -294,11 +293,11 @@ class SOLAR:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 12. Calculate net radiation cross-over hour angle (hn), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if (rnl - rw*ru)/(rw*rv) >= 1.0:
+        if ((rnl - rw*ru)/(rw*rv)) >= 1.0:
             # Net radiation negative all day
             self.logger.debug("net radiation negative all day")
             hn = 0
-        elif (rnl - rw*ru)/(rw*rv) <= -1.0:
+        elif ((rnl - rw*ru)/(rw*rv)) <= -1.0:
             # Net radiation positive all day
             self.logger.debug("net radiation positive all day")
             hn = 180.0
