@@ -286,7 +286,7 @@ class DATA_G:
         """
         # Read through all files within the paths for voi:
         my_file = None
-        my_pattern = os.path.join(path, "%s/%s*%d%02d.nc" % (voi, voi, ct.year, ct.month))
+        my_pattern = os.path.join(path, "%s_daily/%s*%d%02d.nc" % (voi, voi, ct.year, ct.month))
         
         my_files = glob.glob(my_pattern)
 
