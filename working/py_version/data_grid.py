@@ -262,7 +262,7 @@ class DATA_G:
         # Read through all files within the paths for voi:
         my_file = None
         my_pattern = os.path.join(path, "*%s*.*" % (voi))
-        
+        print my_pattern
         my_files = glob.glob(my_pattern)
 
         if my_files:
