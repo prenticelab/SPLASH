@@ -308,7 +308,7 @@ contains
     type( outtype_evap )  :: out_evap
     type( outtype_berger) :: out_berger
 
-    integer :: ndayyear
+    integer :: ndayyearfun
 
     real :: my_rho
     real :: dr                 ! distance factor
@@ -534,7 +534,7 @@ contains
     ! 17. Estimate daily EET (eet_d), mm
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Eq. 70, Documentation
-    out_evap%eet = 1000.0*econ*(out_evap%rn)
+    out_evap%eet = 1000.0 * econ * out_evap%rn
 
     ! consistency check
     if (verbose) print*,'out_evap%EET (mm) ', out_evap%eet
@@ -575,7 +575,7 @@ contains
     if (verbose) print*,'intersection hour angle ', hi
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
-    ! 21. Estimate daily out_evap%AET (out_evap%aet), mm
+    ! 21. Estimate daily AET (out_evap%aet), mm
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Eq. 81, Documentation
     out_evap%aet = (24.0/pi)*(radians(sw*hi) + rx*rw*rv*(dgsin(hn) - dgsin(hi)) + radians((rx*rw*ru - rx*rnl)*(hn - hi)))

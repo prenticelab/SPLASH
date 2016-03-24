@@ -1,3 +1,8 @@
+# SPLASH: Robust indices of radiation, evapotranspiration and plant-available moisture
+----------------------------------------------------------------------------
+
+This program calculates bioclimatic indices and fluxes (radiation, evapotranspiration, soil moisture) for use in studies of ecosystem function, species distribution, and vegetation dynamics under changing climate scenarios. Predictions are based on a minimum of required inputs: latitude, precipitation, air temperature, and cloudiness.
+
 # Table of Contents
 -------------------
 [TOC]
@@ -62,8 +67,6 @@ This directory holds the SPLASH v1.0 code release in C++, Fortran90, Python 2/3,
 ## working/
 This directory contains the SPLASH source code currently under development.
 
-# SPLASH: Robust indices of radiation, evapotranspiration and plant-available moisture
-----------------------------------------------------------------------------
 ## Theory
 There is a growing need of global ecophysiological datasets for the study of vegetation dynamics under changing climate scenarios; however, simulation of natural processes is often necessary due to the lack of observations.
 Bioclimatic indices, such as the climatic water deficit and the plant available water coefficient, are improvements over indices of mean annual temperature and precipitation. The algorithms to produce these indices are based on the STASH (STAtic SHell) model, developed as a simple process-based predictive model for the simulation of tree species distributions at the regional scale (Sykes and Prentice, 1995, 1996; Sykes et al., 1996).
