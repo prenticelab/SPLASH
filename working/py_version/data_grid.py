@@ -628,15 +628,16 @@ class DATA_G:
                   - set_date
         """
         # Check to see if new monthly data needs to be processed:
-        to_process = False
-        self.logger.debug("checking whether to process month... ")
-        if self.date:
-            # Check to see if this is a new month:
-            if not self.year == m.year or not self.month == m.month:
-                to_process = True
-        else:
-            to_process = True
-        self.logger.debug("... %s", to_process)
+        to_process = True
+        #to_process = False
+        #self.logger.debug("checking whether to process month... ")
+        #if self.date:
+        #    # Check to see if this is a new month:
+        #    if not self.year == m.year or not self.month == m.month:
+        #        to_process = True
+        #else:
+        #    to_process = True
+        #self.logger.debug("... %s", to_process)
 
         if to_process:
             # Set the date:
