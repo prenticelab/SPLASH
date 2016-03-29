@@ -22,7 +22,7 @@ program test_splash
   ! You should have received a copy of the GNU Lesser General Public License
   ! along with SPLASH.  If not, see <http://www.gnu.org/licenses/>.
   !----------------------------------------------------------------
-  use _splash
+  use splash
 
   implicit none
 

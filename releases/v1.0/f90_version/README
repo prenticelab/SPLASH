@@ -12,7 +12,9 @@ Requirements
 
 This code was successfully compiled and executed using the PGI Fortran compiler
 (pgf95 v.16.1-0) provided by The Portland Group - PGI Compilers and Groups
-(NVIDIA Corporation, 2016). The free version 'pgfortran' is available for Mac OS X.
+(NVIDIA Corporation, 2016). The free version 'pgfortran' is available for Mac OS X. 
+Compilation successfully tested also for 'gfortran'. To select preferred compiler, 
+set variables 'FC' and 'FCFLAGS' accordingly in Makefile.
 
 To compile (using PGI compiler):
 

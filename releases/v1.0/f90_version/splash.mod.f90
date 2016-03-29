@@ -1,4 +1,4 @@
-module _splash
+module splash
   !////////////////////////////////////////////////////////////////
   ! SPLASH
   ! This module contains all functions and parameter values to run
@@ -308,7 +308,7 @@ contains
     type( outtype_evap )  :: out_evap
     type( outtype_berger) :: out_berger
 
-    integer :: ndayyearfun
+    integer :: ndayyear
 
     real :: my_rho
     real :: dr                 ! distance factor
@@ -373,7 +373,7 @@ contains
     ! 4. Calculate declination angle (delta), degrees
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Woolf (1968)
-    delta = dasin( dgsin( out_berger%lambda ) * dgsin( keps ) )   ! xxx arcsin is asin in Fortran?
+    delta = asin( dgsin( out_berger%lambda ) * dgsin( keps ) )   ! xxx arcsin is asin in Fortran?
     delta = degrees( delta )
 
     ! consistency check
@@ -633,7 +633,7 @@ contains
   end function evap
 
 
-  function dgcos( x )
+  function dgcos( x ) result( out_dgcos )
     !----------------------------------------------------------------
     ! Calculates the cosine of an angle given in degrees. Equal to
     ! 'dsin' in Python version.
@@ -642,14 +642,14 @@ contains
     real, intent(in) :: x  ! angle, degrees (0-360)
 
     ! function return value
-    real, intent(out) :: dgcos ! cosine value of x when x is in degrees
+    real :: out_dgcos ! cosine value of x when x is in degrees
 
-    dgcos = dcos(x*pi/180.0)
+    out_dgcos = cos(x*pi/180.0)
 
   end function dgcos
 
 
-  function dgsin( x )
+  function dgsin( x ) result( out_dgsin )
     !----------------------------------------------------------------
     ! Calculates the sinus of an angle given in degrees. Equal to
     ! 'dsin' in Python version.
@@ -658,14 +658,14 @@ contains
     real, intent(in) :: x  ! angle, degrees (0-360)
 
     ! function return value
-    real, intent(out) :: dgsin ! sinus value of x when x is in degrees
+    real :: out_dgsin ! sinus value of x when x is in degrees
 
-    dgsin = dsin(x*pi/180.0)
+    out_dgsin = sin(x*pi/180.0)
 
   end function dgsin
 
 
-  function degrees( x )
+  function degrees( x ) result( out_degrees )
     !----------------------------------------------------------------
     ! Returns corresponding degrees if x is given in radians
     !----------------------------------------------------------------
@@ -673,14 +673,14 @@ contains
     real, intent(in) :: x  ! angle, radians
 
     ! function return value
-    real, intent(out) :: degrees
+    real :: out_degrees
 
-    degrees = x*180.0/pi
+    out_degrees = x*180.0/pi
 
   end function degrees
 
 
-  function radians( x )
+  function radians( x ) result( out_radians )
     !----------------------------------------------------------------
     ! Returns corresponding radians if x is given in degrees
     !----------------------------------------------------------------
@@ -688,9 +688,9 @@ contains
     real, intent(in) :: x  ! angle, radians
 
     ! function return value
-    real, intent(out) :: radians
+    real :: out_radians
 
-    radians = x*pi/180.0
+    out_radians = x*pi/180.0
 
   end function radians
 
@@ -719,7 +719,7 @@ contains
     ! Variable substitutes:
     xee = ke**2
     xec = ke**3
-    xse = dsqrt(1.0 - xee)
+    xse = sqrt(1.0 - xee)
 
     ! Mean longitude for vernal equinox:
     tmp1 = (ke/2.0 + xec/8.0)*(1.0 + xse)*dgsin(komega)
@@ -736,7 +736,7 @@ contains
     ranm = radians(anm)
 
     ! True anomaly:
-    ranv = (ranm + (2.0*ke - xec/4.0)*dsin(ranm) + 5.0/4.0*xee*dsin(2.0*ranm) + 13.0/12.0*xec*dsin(3.0*ranm))
+    ranv = (ranm + (2.0*ke - xec/4.0) * sin(ranm) + 5.0/4.0*xee * sin(2.0*ranm) + 13.0/12.0*xec * sin(3.0*ranm) )
     anv = degrees(ranv)
 
     ! True longitude:
@@ -1120,4 +1120,4 @@ contains
 
   end subroutine write_to_file
 
-end module _splash
+end module splash

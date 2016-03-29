@@ -4,8 +4,16 @@
 #   Copyright (c) 2016, NVIDIA Corporation
 
 #---------- Variables ----------#
-FC=pgf95
-FCFLAGS = -r8 -Mextend -g -O0 -Mextend -Mbounds -Minfo -Minform=inform -Kieee -Ktrap=fp -Mfreeform
+## >>> un-comment the following 2 lines for compilation with PGI compiler
+# FC=pgf95
+# FCFLAGS = -r8 -Mextend -g -O0 -Mbounds -Minfo -Minform=inform -Kieee -Ktrap=fp -Mfreeform
+## <<<
+
+## >>> un-comment the follwing 2 lines for compilation with (free) gfortran compiler
+FC=gfortran
+FCFLAGS = -ffree-line-length-0 -ffree-form -fdefault-real-8 -fdefault-integer-8
+## <<<
+
 PROGRAMS = spinup_splash test_splash
 
 all: $(PROGRAMS)

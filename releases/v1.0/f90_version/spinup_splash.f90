@@ -22,7 +22,7 @@ program test_spinup_splash
   ! You should have received a copy of the GNU Lesser General Public License
   ! along with SPLASH.  If not, see <http://www.gnu.org/licenses/>.
   !----------------------------------------------------------------
-  use _splash
+  use splash
 
   implicit none
 
@@ -80,7 +80,7 @@ program test_spinup_splash
   call write_to_file()
 
   print*, '--------------- '
-  print*, 'TEST 4 results (daily soil moisture) are in output/sm.d.out '
+  print*, 'TEST 4 results (daily soil moisture) are in output/*.d.out '
   print*, '--------------- '
 
   print*,'SPLASH sucessfully completed.'
