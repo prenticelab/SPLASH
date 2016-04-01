@@ -92,17 +92,30 @@ class SPLASH:
             self.logger.debug("initialized EVAP class")
 
         # Initialize daily status variables:
-        self.ho = None    # daily solar irradiation, J/m2
-        self.hn = None     # daily net radiation, J/m2
-        self.ppfd = None   # daily PPFD, mol/m2
-        self.cond = None   # daily condensation water, mm
-        self.wn = None     # daily soil moisture, mm
-        self.precip = None # daily precipitation, mm
-        self.ro = None    # daily runoff, mm
-        self.eet = None    # daily equilibrium ET, mm
-        self.pet = None    # daily potential ET, mm
-        self.aet = None   # daily actual ET, mm
-        self.wn_vec = None # daily soil moisture array
+        self.ho = numpy.zeros([720,])    # daily solar irradiation, J/m2
+        self.hn = numpy.zeros([720,])      # daily net radiation, J/m2
+        self.ppfd = numpy.zeros([720,])    # daily PPFD, mol/m2
+        self.cond = numpy.zeros([720,])    # daily condensation water, mm
+        self.wn = numpy.zeros([720,])      # daily soil moisture, mm
+        self.precip = numpy.zeros([720,])  # daily precipitation, mm
+        self.ro = numpy.zeros([720,])     # daily runoff, mm
+        self.eet = numpy.zeros([720,])     # daily equilibrium ET, mm
+        self.pet = numpy.zeros([720,])     # daily potential ET, mm
+        self.aet = numpy.zeros([720,])    # daily actual ET, mm
+        self.wn_vec = numpy.zeros([720,])  # daily soil moisture array
+
+        # # Initialize daily status variables:
+        # self.ho = None    # daily solar irradiation, J/m2
+        # self.hn = None     # daily net radiation, J/m2
+        # self.ppfd = None   # daily PPFD, mol/m2
+        # self.cond = None   # daily condensation water, mm
+        # self.wn = None     # daily soil moisture, mm
+        # self.precip = None # daily precipitation, mm
+        # self.ro = None    # daily runoff, mm
+        # self.eet = None    # daily equilibrium ET, mm
+        # self.pet = None    # daily potential ET, mm
+        # self.aet = None   # daily actual ET, mm
+        # self.wn_vec = None # daily soil moisture array
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -314,80 +327,61 @@ class SPLASH:
             self.aet = self.evap.aet_d    # daily actual ET, mm
             self.eet = self.evap.eet_d    # daily equilibrium ET, mm
             self.pet = self.evap.pet_d    # daily potential ET, mm
+            self.ppfd_d = self.evap.ppfd_d
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate today's soil moisture (sm), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        sm = wn + pn + self.cond - self.aet
-        self.logger.debug("calculated soil moisture as %f mm", sm)
+        self.sm = wn + pn + self.cond - self.aet
+        self.logger.debug("calculated soil moisture as %f mm", self.sm)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate runoff (ro), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if sm > kWm:
-            self.logger.debug("bucket is too full")
-            self.logger.debug("setting soil moisture to saturation")
-            self.logger.debug("calculating runoff")
-            # Bucket is too full
-            #   allocate excess water to runoff
-            #   set soil moisture to capacity (i.e., kWm)
-            ro = sm - kWm
-            sm = kWm
-        elif sm < 0:
-            self.logger.debug("bucket is too empty")
-            self.logger.debug("correcting actual ET")
-            # Bucket is too empty
-            #   reduce actual ET by discrepancy amount
-            #   set soil moisture and runoff to zero
-            self.aet += sm
-            sm = 0
-            ro = 0
-        else:
-            ro = 0
-        self.logger.debug("soil moisture: %f mm", sm)
-        self.logger.debug("excess runoff: %f mm", ro)
-
-
-
-
-
-
-    #if sm.any > kWm:
-           
-            
-   #          # Bucket is too full
-   #          #   allocate excess water to runoff
-   #          #   set soil moisture to capacity (i.e., kWm)
-   #      sm_toofull = numpy.where(sm > kWm) 
-
-   #      self.logger.debug("bucket is too full")
-   #      self.logger.debug("setting soil moisture to saturation")
-   #      self.logger.debug("calculating runoff")
         
-   #      ro_toofull = sm - kWm
-   #      self.ro[sm_toofull] = ro_toofull
-   #      sm[sm_toofull] = kWm
+        self.bucket_full_idx = numpy.where(self.sm > kWm)
+        self.bucket_empty_idx = numpy.where(self.sm < 0)
+        self.other_bucket_idx = numpy.where(((self.sm > kWm) & (self.sm <  numpy.float64(0.0)))
+                                         | numpy.isnan(self.sm))
 
-   #      sm_empty = numpy.where(sm < 0)
-   # # elif sm.any < 0:
-   #      self.logger.debug("bucket is too empty")
-   #      self.logger.debug("correcting actual ET")
-   #      # Bucket is too empty
-   #      #   reduce actual ET by discrepancy amount
-   #      #   set soil moisture and runoff to zero
-   #      self.aet[sm_empty] = self.aet + sm
-   #      sm[sm_empty] = 0.
-   #      self.ro[sm_empty] = 0.
-   #      #else:
-   #      self.sm_ok = numpy.where ((sm < kWm ) & (sm <> 0))
-   #      self.ro[self.sm_ok] = 0.
-   #      #self.logger.debug("soil moisture: %f mm", sm)
-   #      #self.logger.debug("excess runoff: %f mm", ro)
+       
+        self.sm[self.bucket_full_idx] = kWm
+        self.ro[self.bucket_full_idx] = self.sm - kWm
+        self.aet.flat[self.bucket_empty_idx] = self.aet + self.sm
+        self.sm[self.bucket_empty_idx] = 0.0
+        self.ro[self.bucket_empty_idx] = 0.0
+        self.ro[self.other_bucket_idx] = 0.0
+
+        
+
+    #    if sm > kWm:
+    #        self.logger.debug("bucket is too full")
+    #        self.logger.debug("setting soil moisture to saturation")
+    #        self.logger.debug("calculating runoff")
+    #        # Bucket is too full
+    #        #   allocate excess water to runoff
+    #        #   set soil moisture to capacity (i.e., kWm)
+    #        ro = sm - kWm
+    #        sm = kWm
+    #    elif sm < 0:
+    #        self.logger.debug("bucket is too empty")
+    #        self.logger.debug("correcting actual ET")
+    #        # Bucket is too empty
+    #        #   reduce actual ET by discrepancy amount
+    #        #   set soil moisture and runoff to zero
+    #        self.aet += sm
+    #        sm = 0
+    #        ro = 0
+    #    else:
+    #        ro = 0
+    #    self.logger.debug("soil moisture: %f mm", sm)
+    #    self.logger.debug("excess runoff: %f mm", ro)
+
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Update soil moisture & runoff
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.wn = sm  # daily soil moisture, mm
+        self.wn = self.sm  # daily soil moisture, mm
         #self.ro = ro  # daily runoff, mm
 
     def print_vals(self):

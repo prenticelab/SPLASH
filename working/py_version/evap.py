@@ -116,7 +116,7 @@ class EVAP:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 0. Validate supply rate
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if sw < 0:
+        if sw.any < 0:
             self.logger.error("supply rate is outside range of validity")
             raise ValueError("Please provide a valid evporative supply rate")
 
@@ -136,6 +136,7 @@ class EVAP:
             hn = self.solar.hn
             rn_d = self.solar.rn_d
             rnn_d = self.solar.rnn_d
+            self.ppfd_d = self.solar.ppfd_d
             self.logger.info(
                 ("calculating daily evaporative fluxes for day %d of %d for "
                  "year %d ") % (

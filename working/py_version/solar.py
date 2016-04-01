@@ -293,20 +293,36 @@ class SOLAR:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 12. Calculate net radiation cross-over hour angle (hn), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if ((rnl - rw*ru)/(rw*rv)) >= 1.0:
-            # Net radiation negative all day
-            self.logger.debug("net radiation negative all day")
-            hn = 0
-        elif ((rnl - rw*ru)/(rw*rv)) <= -1.0:
-            # Net radiation positive all day
-            self.logger.debug("net radiation positive all day")
-            hn = 180.0
-        else:
-            hn = (rnl - rw*ru)/(rw*rv)
-            hn = numpy.arccos(hn)
-            hn /= pir
+        rad_cond = numpy.array(((rnl - rw*ru)/(rw*rv)))
+        self.neg_rad_idx = numpy.where(rad_cond >= 1.0)
+        self.pos_rad_idx = numpy.where(rad_cond <= -1.0)
+        self.other_rad_idx = numpy.where(((rad_cond  < numpy.float64(1.0)) & (rad_cond > numpy.float64(-1.0)))
+                                         | numpy.isnan(rad_cond))
+
+        hn = rad_cond
+        hn[self.neg_rad_idx] = 0.0
+        hn[self.pos_rad_idx] = 180.0
+        hn[self.other_rad_idx] = rad_cond
+        hn[self.other_rad_idx]  = numpy.arccos(hn)
+        hn[self.other_rad_idx]  /= pir
+
         self.hn = hn
-        self.logger.info("cross-over hour angle set to %f", hn)
+
+        #if ((rnl - rw*ru)/(rw*rv)) >= 1.0:
+        #    # Net radiation negative all day
+        #    self.logger.debug("net radiation negative all day")
+
+        #    hn = 0
+        #elif ((rnl - rw*ru)/(rw*rv)) <= -1.0:
+        #    # Net radiation positive all day
+        #    self.logger.debug("net radiation positive all day")
+        #    hn = 180.0
+        #else:
+        #    hn = (rnl - rw*ru)/(rw*rv)
+        #    hn = numpy.arccos(hn)
+        #    hn /= pir
+        #self.hn = hn
+        #self.logger.info("cross-over hour angle set to %f", hn)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 13. Calculate daytime net radiation (rn_d), J/m^2

@@ -86,9 +86,9 @@ class DATA_G:
         self.evi_file = None
         self.Tair_file = None
         self.Rainf_file = None
+        self.co2_file = None
 
         self.tmp = None
-      
         self.sf = None
         self.tmn = None
         self.tmx = None
@@ -97,6 +97,8 @@ class DATA_G:
         self.evi = None
         self.Tair = None
         self.Rainf = None
+        self.co2 = None
+        
         self.elevation = None
         self.latitude = None
         self.longitude = None
@@ -251,6 +253,23 @@ class DATA_G:
             self.logger.warning("failed to load evi file")
             self.evi_file = None
 
+    def find_noaa_files(self, path):
+        """
+        Features: Searches for the NOAA variable files (i.e., co2) within a single directory and returns file contents
+        Depends:  get_noaa_file
+        """
+        co2_file = self.get_noaa_file(path, 'co2')
+        if os.path.isfile(co2_file):
+            self.logger.info("found NOAA co2 file %s", co2_file)
+            self.co2_file = co2_file
+        else:
+            self.logger.warning("failed to load  NOAA co2 file")
+            self.co2_file = None
+
+        co2_data = numpy.loadtxt(co2_file)
+
+        return co2_data
+
     def get_cru_file(self, path, voi):
         """
         Name:     DATA_G.get_cru_file
@@ -338,6 +357,32 @@ class DATA_G:
         # Read through all files within the paths for voi:
         my_file = None
         my_pattern = os.path.join(path, "*%s*.*" % (voi))
+        
+        my_files = glob.glob(my_pattern)
+
+        if my_files:
+            if len(my_files) > 1:
+                self.logger.warning("Found %d files!", len(my_files))
+            else:
+                my_file = my_files[0]
+                self.logger.info("found file %s", my_file)
+        else:
+            self.logger.warning("Found 0 files!")
+
+        return my_file
+
+    def get_noaa_file(self, path, voi):
+        """
+        Name:     DATA_G.get_noaa_file
+        Input:    - str, directory path for NOAA data files (path)
+                  - str, variable of interest (voi)
+        Output:   str OR list of file names
+        Features: Returns the NOAA file for given variable of interest
+        """
+        # Read through all files within the paths for voi:
+        my_file = None
+        my_pattern = os.path.join(path, "*%s*.*" % (voi))
+        self.file_name_found = my_pattern
         
         my_files = glob.glob(my_pattern)
 
@@ -495,9 +540,8 @@ class DATA_G:
                 f_data[noval_idx] += self.error_val
 
                 return f_data
-
-                
-
+    
+        
     def get_time_index(self, bt, ct, aot):
         """
         Name:     get_time_index
