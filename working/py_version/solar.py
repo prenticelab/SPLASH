@@ -302,9 +302,9 @@ class SOLAR:
         hn = rad_cond
         hn[self.neg_rad_idx] = 0.0
         hn[self.pos_rad_idx] = 180.0
-        hn[self.other_rad_idx] = rad_cond
-        hn[self.other_rad_idx]  = numpy.arccos(hn)
-        hn[self.other_rad_idx]  /= pir
+        #hn[self.other_rad_idx] = rad_cond
+        hn[self.other_rad_idx]  = (numpy.arccos(hn))/pir
+        #hn[self.other_rad_idx]  /= pir
 
         self.hn = hn
 

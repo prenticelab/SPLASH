@@ -383,6 +383,7 @@ class SPLASH:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         self.wn = self.sm  # daily soil moisture, mm
         #self.ro = ro  # daily runoff, mm
+        
 
     def print_vals(self):
         """

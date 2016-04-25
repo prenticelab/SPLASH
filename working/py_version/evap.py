@@ -201,16 +201,29 @@ class EVAP:
         # 7. Calculate the intersection hour angle (hi), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         cos_hi = sw/(rw*rv*rx) + rnl/(rw*rv) - ru/rv
-        if cos_hi.all >= 1.0:
-            # Supply exceeds demand:
-            hi = 0.0
-        elif cos_hi.all <= -1.0:
-            # Supply limits demand everywhere:
-            hi = 180.0
-        else:
-            hi = numpy.arccos(cos_hi)
-            hi /= pir
+        
+        self.supply_ex_dem = numpy.where(cos_hi >= 1.0)
+        self.supply_lim_dem = numpy.where(cos_hi <= -1.0)
+        self.other_sup_dem = numpy.where(((cos_hi  < numpy.float64(1.0)) & (cos_hi > numpy.float64(-1.0)))
+                                         | numpy.isnan(cos_hi))
+
+        hi = cos_hi
+        hi[self.supply_ex_dem] = 0.0
+        hi[self.supply_lim_dem] = 180.0
+        hi[self.other_sup_dem] = (numpy.arccos(cos_hi))/pir
+
         self.hi = hi
+
+        # if cos_hi.all >= 1.0:
+        #     # Supply exceeds demand:
+        #     hi = 0.0
+        # elif cos_hi.all <= -1.0:
+        #     # Supply limits demand everywhere:
+        #     hi = 180.0
+        # else:
+        #     hi = numpy.arccos(cos_hi)
+        #     hi /= pir
+        # self.hi = hi
         self.logger.info("intersection hour angle, hi, set to %f", hi)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
