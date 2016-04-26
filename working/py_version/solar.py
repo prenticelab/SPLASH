@@ -299,7 +299,7 @@ class SOLAR:
         #self.other_rad_idx = numpy.where(((rad_cond  < numpy.float64(1.0)) & (rad_cond > numpy.float64(-1.0)))
         #                                 | numpy.isnan(rad_cond))
 
-        hn = (numpy.arccos(hn))/pir
+        hn = (numpy.arccos(rad_cond))/pir
         hn[self.neg_rad_idx] = 0.0
         hn[self.pos_rad_idx] = 180.0
         #hn[self.other_rad_idx] = rad_cond
