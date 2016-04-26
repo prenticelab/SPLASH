@@ -341,8 +341,8 @@ class SPLASH:
         
         self.bucket_full_idx = numpy.where(self.sm > kWm)
         self.bucket_empty_idx = numpy.where(self.sm < 0)
-        #self.other_bucket_idx = numpy.where(((self.sm > kWm) & (self.sm <  numpy.float64(0.0)))
-        #                                 | numpy.isnan(self.sm))
+        self.other_bucket_idx = numpy.where(((self.sm > kWm) & (self.sm <  numpy.float64(0.0)))
+                                         | numpy.isnan(self.sm))
 
         #self.sm = 0.0
         #self.ro = 0.0
