@@ -296,14 +296,14 @@ class SOLAR:
         rad_cond = numpy.array(((rnl - rw*ru)/(rw*rv)))
         self.neg_rad_idx = numpy.where(rad_cond >= 1.0)
         self.pos_rad_idx = numpy.where(rad_cond <= -1.0)
-        self.other_rad_idx = numpy.where(((rad_cond  < numpy.float64(1.0)) & (rad_cond > numpy.float64(-1.0)))
-                                         | numpy.isnan(rad_cond))
+        #self.other_rad_idx = numpy.where(((rad_cond  < numpy.float64(1.0)) & (rad_cond > numpy.float64(-1.0)))
+        #                                 | numpy.isnan(rad_cond))
 
-        hn = rad_cond
+        hn = (numpy.arccos(hn))/pir
         hn[self.neg_rad_idx] = 0.0
         hn[self.pos_rad_idx] = 180.0
         #hn[self.other_rad_idx] = rad_cond
-        hn[self.other_rad_idx]  = (numpy.arccos(hn))/pir
+        #hn[self.other_rad_idx]  = (numpy.arccos(hn))/pir
         #hn[self.other_rad_idx]  /= pir
 
         self.hn = hn
