@@ -345,16 +345,16 @@ class SPLASH:
         #                                 | numpy.isnan(self.sm))
 
         #self.sm = 0.0
-        self.ro = 0.0
+        #self.ro = 0.0
 
         self.sm[self.bucket_full_idx] = kWm
         self.ro[self.bucket_full_idx] = self.sm - kWm
         self.aet.flat[self.bucket_empty_idx] = self.aet + self.sm
-        #self.ro[self.bucket_empty_idx] = 0.0
+        self.ro[self.bucket_empty_idx] = 0.0
 
         #self.sm[self.bucket_empty_idx] = 0.0
         
-        #self.ro[self.other_bucket_idx] = 0.0
+        self.ro[self.other_bucket_idx] = 0.0
 
         
 
