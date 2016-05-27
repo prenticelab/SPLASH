@@ -2,8 +2,8 @@
 #
 # evap.R
 #
-# VERSION: 1.0
-# LAST UPDATED: 2016-02-19
+# VERSION: 1.0-r1
+# LAST UPDATED: 2016-05-27
 #
 # ~~~~~~~~
 # license:
@@ -59,6 +59,7 @@
 # - added berger_tls function [15.01.13]
 # - updated evap function (similar to stash.py EVAP class) [15.01.13]
 # - added missing variables to evap list [16.02.17]
+# - updated documentation [16.05.27]
 #
 #### IMPORT SOURCES ##########################################################
 source("const.R")
@@ -140,7 +141,7 @@ elv2pres <- function(z) {
 
 # ************************************************************************
 # Name:     enthalpy_vap
-# Inputs:   double (tc), degrees C
+# Inputs:   double (tc), air temperature, degrees C
 # Returns:  double, J/kg
 # Features: This function calculates the temperature-dependent enthalpy
 #           of vaporization (latent heat of vaporization)
@@ -224,16 +225,16 @@ sat_slope <- function(tc) {
 #             $hs_deg ............ sunset angle, degrees
 #             $ra_j.m2 ........... daily extraterrestrial radiation, J/m^2
 #             $tau ............... atmospheric transmittivity, unitless
-#             $ppfd_mol.m2 ....... daily PPFD, mol/m^2
+#             $ppfd_mol.m2 ....... daily photosyn photon flux density, mol/m^2
 #             $hn_deg ............ net radiation hour angle, degrees
 #             $rn_j.m2 ........... daily net radiation, J/m^2
 #             $rnn_j.m2 .......... daily nighttime net radiation, J/m^2
 #             $econ_m3.j ......... water to energy conversion, m^3/J
 #             $cond_mm ........... daily condensation, mm
-#             $eet_mm ............ daily equilibrium ET, mm
-#             $pet_mm ............ daily potential ET, mm
+#             $eet_mm ............ daily equilibrium evapotranspiration, mm
+#             $pet_mm ............ daily potential evapotranspiration, mm
 #             $hi_deg ............ intersection hour angle, degrees
-#             $aet_mm ............ daily actual ET, mm
+#             $aet_mm ............ daily actual evapotranspiration, mm
 # Features: This function calculates daily radiation, condensation, and
 #           evaporation fluxes.
 # Depends:  - kw ............. entrainment factor for PET

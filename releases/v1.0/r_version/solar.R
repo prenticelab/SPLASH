@@ -2,8 +2,8 @@
 #
 # solar.R
 #
-# VERSION: 1.0
-# LAST UPDATED: 2016-02-19
+# VERSION: 1.0-r1
+# LAST UPDATED: 2016-05-27
 #
 # ~~~~~~~~
 # license:
@@ -50,6 +50,7 @@
 # - replaced simplified_kepler with full_kepler method [14.11.25]
 # - added berger_tls function [15.01.13]
 # - updated evap function (similar to stash.py EVAP class) [15.01.13]
+# - updated some documentation [16.05.27]
 #
 #### IMPORT SOURCES ##########################################################
 source("const.R")
@@ -156,7 +157,7 @@ dsin <- function(d) {
 #             $hs_deg ............ sunset angle, degrees
 #             $ra_j.m2 ........... daily extraterrestrial radiation, J/m^2
 #             $tau ............... atmospheric transmittivity, unitless
-#             $ppfd_mol.m2 ....... daily PPFD, mol/m^2
+#             $ppfd_mol.m2 ....... daily photosyn. photon flux density, mol/m^2
 #             $hn_deg ............ net radiation hour angle, degrees
 #             $rn_j.m2 ........... daily net radiation, J/m^2
 #             $rnn_j.m2 .......... daily nighttime net radiation, J/m^2
@@ -264,7 +265,7 @@ calc_daily_solar <- function(lat, n, elv=0, y=0, sf=1, tc=23.0) {
     solar$tau <- tau
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # 09. Calculate daily PPFD (ppfd_d), mol/m^2
+    # 09. Calculate daily photosynthetic photon flux density (ppfd_d), mol/m^2
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ppfd_d <- (1e-6)*kfFEC*(1 - kalb_vis)*tau*ra_d
     solar$ppfd_mol.m2 <- ppfd_d
@@ -325,6 +326,7 @@ calc_daily_solar <- function(lat, n, elv=0, y=0, sf=1, tc=23.0) {
 #           to a Julian day number (i.e., a method of consecutative
 #           numbering of days---does not have anything to do with
 #           the Julian calendar!)
+#           * valid for dates after -4712 January 1 (i.e., jde >= 0)
 # Ref:      Eq. 7.1 J. Meeus (1991), Chapter 7 "Julian Day", Astronomical
 #             Algorithms
 # ************************************************************************

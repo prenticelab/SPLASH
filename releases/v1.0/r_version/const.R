@@ -2,8 +2,8 @@
 #
 # const.R
 #
-# VERSION: 1.0
-# LAST UPDATED: 2016-02-19
+# VERSION: 1.0-r1
+# LAST UPDATED: 2016-05-27
 #
 # ~~~~~~~~
 # license:
@@ -59,15 +59,12 @@ kb <- 0.20          # constant for Rl (Linacre, 1968; Kramer, 1957)
 kc <- 0.25          # constant for Rs (Linacre, 1968)
 kCw <- 1.05         # supply constant, mm/hr (Federer, 1982)
 kd <- 0.50          # constant for Rs (Linacre, 1968)
-ke <- 0.01670       # eccentricity of earth's orbit, 2000CE (Berger 1978)
-keps <- 23.44       # obliquity of earth's elliptic, 2000CE (Berger 1978)
 kfFEC <- 2.04       # from-flux-to-energy, umol/J (Meek et al., 1984)
 kG <- 9.80665       # gravitational acceleration, m/s^2 (Allen, 1973)
 kGsc <- 1360.8      # solar constant, W/m^2 (Kopp & Lean, 2011)
 kL <- 0.0065        # adiabatic lapse rate, K/m (Cavcar, 2000)
 kMa <- 0.028963     # molecular weight of dry air, kg/mol (Tsilingiris, 2008)
 kMv <- 0.01802      # mol. weight of water vapor, kg/mol (Tsilingiris, 2008)
-komega <- 283       # lon. of perihelion, degrees, 2000CE (Berger, 1978)
 kSecInDay <- 86400  # number of seconds in a day
 kPo <- 101325       # standard atmosphere, Pa (Allen, 1973)
 kR <- 8.31447       # universal gas constant, J/mol/K (Moldover et al., 1988)
@@ -75,3 +72,8 @@ kTo <- 288.15       # base temperature, K (Berberan-Santos et al., 1997)
 kWm <- 150          # soil moisture capacity, mm (Cramer-Prentice, 1988)
 kw <- 0.26          # PET entrainment, (1+kw)*EET (Priestley-Taylor, 1972)
 pir <- pi/180       # pi in radians
+
+# Paleoclimate variables:
+ke <- 0.01670       # eccentricity of earth's orbit, 2000CE (Berger 1978)
+keps <- 23.44       # obliquity of earth's elliptic, 2000CE (Berger 1978)
+komega <- 283       # lon. of perihelion, degrees, 2000CE (Berger, 1978)

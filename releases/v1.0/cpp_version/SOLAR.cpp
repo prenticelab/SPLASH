@@ -10,8 +10,8 @@ using namespace std;
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * SOLAR.cpp
  *
- * VERSION 1.0
- * LAST UPDATED: 2016-02-19
+ * VERSION 1.0-r1
+ * LAST UPDATED: 2016-05-27
  *
  * ~~~~~~~~
  * license:
@@ -289,6 +289,7 @@ int SOLAR::julian_day(int y, int m, int i){
     Output:   int, Julian Ephemeris Day
     Features: Converts Gregorian date (year, month, day) to Julian
               Ephemeris Day
+              * valid for dates after -4712 January 1 (i.e., jde >= 0)
     Ref:      Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," Astronomical
               Algorithms
     *********************************************************************** */

@@ -10,8 +10,8 @@ using namespace std;
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * EVAP.cpp
  *
- * VERSION 1.0
- * LAST UPDATED: 2016-02-19
+ * VERSION 1.0-r1
+ * LAST UPDATED: 2016-05-27
  *
  * ~~~~~~~~
  * license:
@@ -58,6 +58,7 @@ using namespace std;
  * 04. added EVAP header file to include list [15.02.19]
  * 05. updated R and To [15.08.22]
  * 06. included global.h [16.01.22]
+ * 07. updated documentation [16.05.27]
  *
  * //////////////////////////////////////////////////////////////////////// */
 
@@ -107,14 +108,14 @@ void EVAP::calculate_daily_fluxes(double sw, int n, int y, double sf,
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     cn = (1.0e3)*econ*abs(rnn_d);
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // 4. Estimate daily EET (eet_d), mm
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // 4. Estimate daily equilibrium evapotranspiration (eet_d), mm
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     eet_d = (1.0e3)*econ*rn_d;
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // 5. Estimate daily PET (pet_d), mm
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // 5. Estimate daily potential evapotranspiration (pet_d), mm
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     pet_d = (1.0 + Global::w)*eet_d;
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -137,9 +138,9 @@ void EVAP::calculate_daily_fluxes(double sw, int n, int y, double sf,
         hi /= Global::pir;
     }
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // 8. Estimate daily AET (aet_d), mm
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // 8. Estimate daily actual evapotranspiration (aet_d), mm
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     aet_d = sw*hi*Global::pir;
     aet_d += rx*rw*rv*(dsin(hn) - dsin(hi));
     aet_d += (rx*rw*ru - rx*rnl)*(hn - hi)*Global::pir;
@@ -206,9 +207,9 @@ double EVAP::elv2pres(double z){
     Output:   double, atmospheric pressure, Pa
     Features: Calculates atm. pressure for a given elevation
     Depends:  Global constants
-              - Po    - To
-              - L     - Ma
-              - G     - R
+              - Po .... base pressure     - To .... base temperature
+              - L ..... temp. lapse rate  - Ma .... molecular wt. dry air
+              - G ..... standard gravity  - R ..... universal gas constant
     Ref:      Allen et al. (1998)
     *********************************************************************** */
     double ep = (Global::G * Global::Ma)/(Global::R * Global::L);
@@ -280,8 +281,8 @@ double EVAP::psychro(double tc, double p){
     Features: Calculates the psychrometric constant for a given temperature
               and pressure
     Depends:  Global constants:
-              - kMa
-              - kMv
+              - kMa .... molecular wt. dry air
+              - kMv .... molecular wt. water vapor
     Refs:     Allen et al. (1998); Tsilingiris (2008)
     *********************************************************************** */
     // Calculate the specific heat capacity of water, J/kg/K

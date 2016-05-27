@@ -2,8 +2,8 @@
 #
 # solar.py
 #
-# VERSION: 1.0
-# LAST UPDATED: 2016-02-19
+# VERSION: 1.0-r1
+# LAST UPDATED: 2016-05-27
 #
 # ~~~~~~~~
 # license:
@@ -41,6 +41,8 @@ import logging
 
 import numpy
 
+# NOTE: For palaeoclimate studies, import separate ke, keps and komega values
+#       corresponding to your study period
 from const import (ke, keps, kGsc, kA, kb, kc, kd, kfFEC, kalb_vis, kalb_sw,
                    komega, pir)
 from utilities import dcos
@@ -54,9 +56,10 @@ class SOLAR:
     """
     Name:     SOLAR
     Features: This class calculates the daily radiation fluxes.
-    History:  Version 1.0
+    History:  Version 1.0-r1
               - separated daily flux calculation from init [15.12.29]
               - created print vals function [16.01.29]
+              - updated documentation [16.05.27]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -269,9 +272,9 @@ class SOLAR:
         self.logger.info("base transmittivity set to %f", tau_o)
         self.logger.info("transmittivity set to %f", tau)
 
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 9. Calculate daily PPFD (ppfd_d), mol/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 9. Calculate daily photosynth. photon flux density (ppfd_d), mol/m^2
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*ra_d
         self.ppfd_d = ppfd_d
         self.logger.info("daily PPFD set to %f mol/m^2", ppfd_d)
@@ -332,11 +335,12 @@ class SOLAR:
         """
         Name:     SOLAR.julian_day
         Input:    - int, year (y)
-                  - int, month (m)
-                  - int, day of month (i)
+                  - int, month (i.e., 1--12) (m)
+                  - int, day of month (i.e., 1--31) (i)
         Output:   float, Julian Ephemeris Day
         Features: Converts Gregorian date (year, month, day) to Julian
                   Ephemeris Day
+                  * valid for dates after -4712 January 1 (i.e., jde >= 0)
         Ref:      Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day," Astronomical
                   Algorithms
         """

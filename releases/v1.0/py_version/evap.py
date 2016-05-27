@@ -2,8 +2,8 @@
 #
 # evap.py
 #
-# VERSION: 1.0
-# LAST UPDATED: 2016-02-19
+# VERSION: 1.0-r1
+# LAST UPDATED: 2016-05-27
 #
 # ~~~~~~~~
 # license:
@@ -54,14 +54,15 @@ class EVAP:
     Name:     EVAP
     Features: This class calculates daily radiation and evapotranspiration
               quantities:
-              - PPFD (ppfd_d), mol/m^2/day
-              - EET (eet_d), mm/day
-              - PET (pet_d), mm/day
-              - AET (aet_d), mm/day
+              - photosynth photon flux density (ppfd_d), mol/m^2/day
+              - equilibrium evapotranspiration (eet_d), mm/day
+              - potential evapotranspiration (pet_d), mm/day
+              - actual evapotranspiration (aet_d), mm/day
               - condensation (cn), mm/day
-    History   Version 1.0
+    History   Version 1.0-r1
               - replaced radiation methods with SOLAR class [15.12.29]
               - implemented logging [15.12.29]
+              - updated documentation [16.05.27]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -95,11 +96,11 @@ class EVAP:
         self.psy = None    # psychrometric constant, Pa/K
         self.econ = None   # water-to-energy conversion factor
         self.cond = None   # daily condensation, mm
-        self.eet_d = None  # daily EET, mm
-        self.pet_d = None  # daily PET, mm
+        self.eet_d = None  # daily equilibrium ET, mm
+        self.pet_d = None  # daily potential ET, mm
         self.rx = None     # variable substitute, (mm/hr)/(W/m^2)
         self.hi = None     # intersection hour angle (hi), degrees
-        self.aet_d = None  # daily AET (aet_d), mm
+        self.aet_d = None  # daily actual ET (aet_d), mm
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -177,14 +178,14 @@ class EVAP:
         self.logger.info("daily condensation set to %f mm", cn)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 4. Estimate daily EET (eet_d), mm
+        # 4. Estimate daily equilibrium ET (eet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         eet_d = (1e3)*econ*rn_d
         self.eet_d = eet_d
         self.logger.info("daily EET set to %f mm", eet_d)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 5. Estimate daily PET (pet_d), mm
+        # 5. Estimate daily potential ET (pet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         pet_d = (1.0 + kw)*eet_d
         self.pet_d = pet_d
@@ -214,7 +215,7 @@ class EVAP:
         self.logger.info("intersection hour angle, hi, set to %f", hi)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 8. Estimate daily AET (aet_d), mm
+        # 8. Estimate daily actual ET (aet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         aet_d = sw*hi*pir
         aet_d += rx*rw*rv*(dsin(hn) - dsin(hi))
@@ -257,12 +258,12 @@ class EVAP:
         Output:   float, atmospheric pressure, Pa
         Features: Calculates atm. pressure for a given elevation
         Depends:  Global constants
-                  - kPo
-                  - kTo
-                  - kL
-                  - kMa
-                  - kG
-                  - kR
+                  - kPo ...... base pressure
+                  - kTo ...... base temperature
+                  - kL ....... temperature lapse rate
+                  - kMa ...... molecular weight of dry air
+                  - kG ....... standard gravity
+                  - kR ....... universal gas constant
         Ref:      Allen et al. (1998)
         """
         self.logger.debug("estimating atmospheric pressure at %f m", z)
@@ -337,8 +338,8 @@ class EVAP:
         Features: Calculates the psychrometric constant for a given temperature
                   and pressure
         Depends:  Global constants:
-                  - kMa
-                  - kMv
+                  - kMa .... molecular weight of dry air
+                  - kMv .... molecular weight of water vapor
         Refs:     Allen et al. (1998); Tsilingiris (2008)
         """
         self.logger.debug(

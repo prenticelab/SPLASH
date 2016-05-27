@@ -5,8 +5,8 @@
 /* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
  * SOLAR.h
  *
- * VERSION 1.0
- * LAST UPDATED: 2016-02-19
+ * VERSION 1.0-r1
+ * LAST UPDATED: 2016-05-27
  *
  * ~~~~~~~~
  * license:
@@ -62,14 +62,14 @@ class SOLAR {
         double delta;              // declination, degrees
         double ru, rv, rw, rx;     // variable substitutions
         double hs, hn, hi;         // hour angles, degrees
-        double ra_d;               // daily solar irradiation, J/m^2
-        double tau_o;              // surface transmittivity
-        double tau;                // elv. corrected transmittivity
-        double ppfd_d;             // daily PPFD, mol/m^2
-        double rnl;                // longwave radiation flux, W/m^2
-        double rn_d;               // daily net radiation, J/m^2
-        double rnn_d;              // daily nighttime net radiation, J/m^2
-        srad dsr;                  // daily srad struct
+        double ra_d;       // daily solar irradiation, J/m^2
+        double tau_o;      // surface transmittivity
+        double tau;        // elv. corrected transmittivity
+        double ppfd_d;     // daily photosynthetic photon flux density, mol/m^2
+        double rnl;        // longwave radiation flux, W/m^2
+        double rn_d;       // daily net radiation, J/m^2
+        double rnn_d;      // daily nighttime net radiation, J/m^2
+        srad dsr;          // daily srad struct
 
         // Functions:
         double dcos(double x);
