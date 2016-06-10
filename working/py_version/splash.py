@@ -4,7 +4,7 @@
 # splash.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-02-19
+# LAST UPDATED: 2016-06-10
 #
 # ~~~~~~~~
 # license:
@@ -54,13 +54,14 @@ class SPLASH:
     Name:     SPLASH
     Features: This class updates daily quantities of radiation,
               evapotranspiration, soil moisture and runoff based on SPLASH.
-    History:  Version 1.0
+    History:  Version 1.1-dev
               - changed xrange to range for Python 2/3 compatability [16.02.05]
+              - added verbose flag for printing during run one day [16.06.10]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
-    def __init__(self, lat, elv):
+    def __init__(self, lat, elv, verbose=False):
         """
         Name:     SPLASH.__init__
         Input:    - float, latitude, degrees (lat)
@@ -71,6 +72,7 @@ class SPLASH:
         self.logger.info("SPLASH class called")
 
         # Error handle and assign required public variables:
+        self.verbose = verbose
         self.elv = elv
         self.logger.info("elevation set to %f m", elv)
 
@@ -103,6 +105,12 @@ class SPLASH:
         self.pet = 0.     # daily potential ET, mm
         self.aet = 0.     # daily actual ET, mm
         self.wn_vec = numpy.array([])  # daily soil moisture array
+
+        if self.verbose:
+            print("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s" % (
+                "Year", "Day", "Precip_mm", "Tair_degC", "Sf",
+                "Cond_mm", "EET_mm", "PET_mm", "AET_mm", "SoilMoist_mm",
+                "Runoff_mm", "NetRadDay_MJ_m2", "NetRadNight_MJ_m2"))
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -351,6 +359,15 @@ class SPLASH:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         self.wn = sm  # daily soil moisture, mm
         self.ro = ro  # daily runoff, mm
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # 6. Print daily results
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if self.verbose:
+            print("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s" % (
+                y, n, pn, tc, sf, self.cond, self.eet, self.pet, self.aet,
+                self.wn, self.ro, 1e-6*self.evap.solar.rn_d,
+                1e-6*self.evap.solar.rnn_d))
 
     def print_vals(self):
         """

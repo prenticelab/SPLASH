@@ -115,7 +115,7 @@ if __name__ == '__main__':
     my_data = DATA()
     if example == 1:
         # Example 1: read CSV file:
-        my_file = '../data/example_data.csv'
+        my_file = '../../data/example_data.csv'
         my_data.read_csv(my_file)
     elif example == 2:
         # Example 2: read TXT files:
@@ -129,9 +129,25 @@ if __name__ == '__main__':
     # Consistency Test #4: Spin-Up
     my_lat = 37.7
     my_elv = 142.
-    my_class = SPLASH(my_lat, my_elv)
+    my_class = SPLASH(my_lat, my_elv, True)
     my_class.spin_up(my_data)
-    my_class.print_daily_sm()
+
+    # Loop through a year:
+    for i in range(my_data.num_lines):
+        # Get preceding soil moisture status:
+        if i == 0:
+            wn = my_class.wn_vec[-1]
+        else:
+            wn = my_class.wn_vec[i-1]
+
+        # Calculate soil moisture and runoff:
+        my_class.run_one_day(n=i+1,
+                             y=my_data.year,
+                             wn=wn,
+                             sf=my_data.sf_vec[i],
+                             tc=my_data.tair_vec[i],
+                             pn=my_data.pn_vec[i])
+        my_class.wn_vec[i] = my_class.wn
 
 if 0:
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~ NEEDS UPDATED ~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
