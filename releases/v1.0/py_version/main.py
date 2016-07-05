@@ -77,13 +77,6 @@
 # 30. created a global constant file, const.py [15.08.22]
 # 31. added logging [16.02.05]
 #
-# -----
-# todo:
-# -----
-# 1. create a function in DATA class to save daily, monthly, and
-#    annual quantities & write out
-# 2. upate plot commands
-
 ###############################################################################
 ## IMPORT MODULES
 ###############################################################################
