@@ -3,7 +3,7 @@
 # data.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-07-26
+# LAST UPDATED: 2016-07-27
 #
 # ~~~~~~~~
 # license:
@@ -48,6 +48,49 @@ from scipy.io import netcdf
 ###############################################################################
 # FUNCTIONS:
 ###############################################################################
+def add_one_month(dt0):
+    """
+    Name:     add_one_month
+    Input:    datetime.date (dt0)
+    Output:   datetime.date (dt3)
+    Features: Adds one month to datetime
+    Ref:      A. Balogh (2010), ActiveState Code
+              http://code.activestate.com/recipes/577274-subtract-or-add-a-
+              month-to-a-datetimedate-or-datet/
+    """
+    dt1 = dt0.replace(day=1)
+    dt2 = dt1 + datetime.timedelta(days=32)
+    dt3 = dt2.replace(day=1)
+    return dt3
+
+
+def get_cru_elv(fname):
+    """
+    Name:     get_cru_elv
+    Input:    string, input/output file directory (d)
+    Output:   None.
+    Features: Return array of CRU TS 3.00 elevation integers from the .dat file
+
+              NOTE: data is read into an array with shape (360, 720)
+                    'lat' goes from -89.75 to 89.75 (360 points south to north)
+                    'lon' goes from -179.75 to 179.75 (720 points east to west)
+                    'nodata' value == -999.0
+                    'max' value is only 5734, so array can be stored as int16
+    """
+    elv = numpy.zeros((360, 720), numpy.int16)
+
+    # Open and read dat file:
+    if fname is not None and os.path.isfile(fname):
+        try:
+            elv = numpy.loadtxt(fname, numpy.int16)
+        except:
+            logging.exception("Failed to read CRU elevation file!")
+    else:
+        logging.exception("CRU elevation file does not exist!")
+
+    return elv
+
+
 def get_cru_lat(fname):
     """
     Name:     get_cru_lat
@@ -55,20 +98,27 @@ def get_cru_lat(fname):
     Output:   numpy nd.array
     Features: Returns NetCDF data array of latitudes
     """
-    lat = numpy.array([])
     if os.path.isfile(fname):
         try:
             # Open netCDF file for reading:
             f = netcdf.NetCDFFile(fname, "r")
         except:
             logging.exception("Failed to open file, %s, for reading", fname)
+            raise
         else:
-            # Read the latitude data as array:
-            lat = f.variables['lat'].data.copy()
+            try:
+                # Read the latitude data as array:
+                lat = f.variables['lat'].data.copy()
+            except:
+                logging.exception(
+                    "Failed to read 'lat' variable from %s", fname)
+                raise
         finally:
             f.close()
     else:
-        logging.warning("Failed to find file, %s, for reading", fname)
+        logging.error("Failed to find file, %s, for reading", fname)
+        raise OSError("Could not find file!")
+
     return lat
 
 
@@ -79,33 +129,92 @@ def get_cru_lon(fname):
     Output:   numpy nd.array
     Features: Returns NetCDF data array of longitudes
     """
-    lon = numpy.array([])
     if os.path.isfile(fname):
         try:
             # Open netCDF file for reading:
             f = netcdf.NetCDFFile(fname, "r")
         except:
             logging.exception("Failed to open file, %s, for reading", fname)
+            raise
         else:
-            # Read the latitude data as array:
-            lon = f.variables['lon'].data.copy()
+            try:
+                # Read the latitude data as array:
+                lon = f.variables['lon'].data.copy()
+            except:
+                logging.exception(
+                    "Failed to read 'lon' variable from %s", fname)
+                raise
         finally:
             f.close()
     else:
-        logging.warning("Failed to find file, %s, for reading", fname)
+        logging.error("Failed to find file, %s, for reading", fname)
+        raise OSError("Could not find file!")
+
     return lon
 
 
-def get_monthly_cru(fname, ct, v):
+def get_cru_time(fname):
+    """
+    Name:     get_cru_time
+    Input:    string, CRU netcdf file (fname)
+    Output:   numpy nd.array
+    Features: Returns NetCDF data array of time differences
+    """
+    if os.path.isfile(fname):
+        try:
+            f = netcdf.NetCDFFile(fname, "r")
+        except:
+            logging.exception("Failed to open file, %s, for reading", fname)
+            raise
+        else:
+            try:
+                tm = f.variables['time'].data.copy()
+            except:
+                logging.exception(
+                    "Failed to read 'time' variable from %s", fname)
+                raise
+        finally:
+            f.close()
+    else:
+        logging.error("Failed to find file, %s, for reading", fname)
+        raise OSError("Could not find file!")
+
+    return tm
+
+
+def get_time_index(ct, aot):
+    """
+    Name:     get_time_index
+    Input:    - datetime.date, current timestamp
+              - numpy.ndarray, array of time differentials (aot)
+    Output:   int
+    Features: Finds the index in an array of CRU TS days for a given timestamp
+    """
+    # CRU TS 'time' variable units are given as "days since 1900-1-1"
+    bt = datetime.date(1900, 1, 1)
+
+    # For CRU TS 3.21, the aot is indexed for mid-month days, e.g. 15--16th
+    # therefore, to make certain that ct index preceeds the index for the
+    # correct month in aot, make the day of the current month less than
+    # the 15th or 16th (i.e., replace day with '1'):
+    ct = ct.replace(day=1)
+    dt = (ct - bt).days                  # datetime difference in days
+    idx = numpy.searchsorted(aot, dt)    # numpy array index
+    return idx
+
+
+def get_monthly_cru(fname, ct, lat, lon, v):
     """
     Name:     get_monthly_cru
     Input:    - string, CRU netcdf file (fname)
-              - datetime.date, current month datetime object (ct)
+              - datetime.date, current datetime (ct)
+              - float, latitude (lat)
+              - float, longitude (lon)
               - string, variable of interest (v)
-    Output:   numpy nd.array
+    Output:   float
     Depends:  get_time_index
-    Features: Returns 360x720 monthly CRU TS dataset for a given month and
-              variable of interest (e.g., cld, pre, tmp)
+    Features: Returns monthly CRU TS value for a given month and variable of
+              interest (e.g., cld, pre, tmp)
     """
     if os.path.isfile(fname):
         try:
@@ -123,99 +232,77 @@ def get_monthly_cru(fname, ct, v):
             #       shape: (1344,)
             #       values: mid-day of each month (e.g., 15th or 16th)
             # DATA:
+            #       shape = ('time', 'lat', 'lon')
             #       'cld' units = %
             #       'pre' units = mm
             #       'tmp' units = deg. C
             #       Missing value = 9.96e+36
         except:
             logging.exception("Failed to open file, %s, for reading", fname)
+            raise
         else:
-            # Save the base time stamp:
-            bt = datetime.date(1900, 1, 1)
-            #
-            # Read the time data as array:
-            f_time = f.variables['time'].data
-            #
-            # Find the time index for the current date:
-            ti = get_time_index(bt, ct, f_time)
-            #
-            # Get the spatial data for current time:
-            f_data = f.variables[v].data[ti]
-            f.close()
-            return f_data
+            try:
+                # Read the time data as array:
+                f_time = f.variables['time'].data
+            except:
+                logging.exception(
+                    "Failed to read 'time' variable from %s", fname)
+                raise
+            else:
+                # Find the time index for the current date:
+                ti = get_time_index(ct, f_time)
 
+                # Find lon/lat indexes:
+                try:
+                    f_lon = f.variables['lon'].data
+                    f_lat = f.variables['lat'].data
+                except:
+                    logging.exception(
+                        "Failed to read lon/lat variables from %s", fname)
+                    raise
+                else:
+                    if lat in f_lat:
+                        ilat = numpy.where(f_lat == lat)[0]
+                        logging.debug("lat index = %d", ilat)
+                    else:
+                        logging.error("Could not index latitude %s", lat)
+                        raise ValueError(
+                            "Latitude %s not found in CRU TS file!" % lat)
+                    if lon in f_lon:
+                        ilon = numpy.where(f_lon == lon)[0]
+                        logging.debug("lon index = %d", ilon)
+                    else:
+                        logging.error("Could not index longitude %s", lon)
+                        raise ValueError(
+                            "Longitude %s not found in CRU TS file!" % lon)
 
-def process_cru(v, cru_dir, my_dir):
-    """
-    Name:     process_cru
-    Input:    - string, variable name, e.g., tmp, pre, cld (v)
-              - string, directory name for CRU TS data file (cru_dir)
-              - string, directory for output files (my_dir)
-    Output:   None.
-    Features: Processes CRU TS netCDF file by month into variable list and data
-              set table output files
-    Depends:  - writeout
-              - add_one_month
-              - get_monthly_cru
-    """
-    # Define the start and end dates you want to process (2002-2006):
-    start_date = datetime.date(2002, 1, 1)
-    end_date = datetime.date(2007, 1, 1)
-    #
-    # Set flag for varlist:
-    #
-    # Prepare var output file:
-    #
-    # Process each month between start and end dates:
-    cur_date = start_date
-    while cur_date < end_date:
-        # # Open and read netcdf files in the file directory:
-        my_data = get_monthly_cru(cru_dir, cur_date, v)
-        (sh_lat, sh_lon) = my_data.shape
-        #
-        # Prepare data set output file:
-        #
-        # Iterate through each lat:lon pair
-        # * row-major ordering from bottom left
-        #  x (longitude): 0...719
-        #  y (latitude): 0...359
-        for y in xrange(sh_lat):
-            for x in xrange(sh_lon):
-                # Calc station ID:
-                st_id = 720*y + x
-                station_parts = ('HDG', st_id)
-                print("%s, %s" % station_parts)
-                # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-        # Turn off varlist flag after processing first month:
-        #
-        # Increment cur_date:
-
-
-def get_time_index(bt, ct, aot):
-    """
-    Name:     get_time_index
-    Input:    - datetime.date, base timestamp
-              - datetime.date, current timestamp
-              - numpy nd.array, days since base timestamp
-    Output:   int
-    Features: Finds the index in an array of CRU TS days for a given timestamp
-    """
-    # For CRU TS 3.21, the aot is indexed for mid-month days, e.g. 15--16th
-    # therefore, to make certain that ct index preceeds the index for the
-    # correct month in aot, make the day of the current month less than
-    # the 15th or 16th (i.e., replace day with '1'):
-    ct = ct.replace(day=1)
-    #
-    # Calculate the time difference between ct and bt:
-    dt = (ct - bt).days
-    #
-    # Append dt to the aot array:
-    aot = numpy.append(aot, [dt, ])
-    #
-    # Find the first index of dt in the sorted array:
-    idx = numpy.where(numpy.sort(aot) == dt)[0][0]
-    return idx
-
-
-if __name__ == '__main__':
-    pass
+                    # Get data value:
+                    try:
+                        # Get the spatial data for current time:
+                        f_var = f.variables[v]
+                    except:
+                        logging.exception(
+                            "Failed to read '%s' variable from %s" % (
+                                v, fname))
+                        raise
+                    else:
+                        f_data = f_var.data[ti].copy()
+                        dp = f_data[ilat, ilon]
+                        try:
+                            f_missing = f_var.missing_value
+                        except:
+                            logging.warning("Failed to retrieve missing value "
+                                            "for variable %s", v)
+                            f_missing = None
+                        else:
+                            if dp == f_missing:
+                                dp = numpy.nan
+                        f_time = None
+                        f_var = None
+                        f_lon = None
+                        f_lat = None
+                        f.close()
+                        return dp
+    else:
+        logging.error("Failed to open file, %s, for reading", fname)
+        raise OSError("File not found!")
