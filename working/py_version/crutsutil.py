@@ -3,7 +3,7 @@
 # data.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-07-27
+# LAST UPDATED: 2016-07-28
 #
 # ~~~~~~~~
 # license:
@@ -62,6 +62,19 @@ def add_one_month(dt0):
     dt2 = dt1 + datetime.timedelta(days=32)
     dt3 = dt2.replace(day=1)
     return dt3
+
+
+def cld_to_sf(cld):
+    """
+    Name:     cld_to_sf
+    Inputs:   float or numpy.ndarray, CRU TS cloudiness (cld)
+    Outputs:  float, estimate of fractional sunshine hours
+    Features: Converts CRU TS cloudiness to fractional sunshine hours, Sf,
+              assuming that Sf is the complement of cloudiness
+    """
+    cld /= 100.0    # unitless
+    sf = 1.0 - cld  # complement of cloudiness
+    return sf
 
 
 def get_cru_elv(fname):
@@ -306,3 +319,22 @@ def get_monthly_cru(fname, ct, lat, lon, v):
     else:
         logging.error("Failed to open file, %s, for reading", fname)
         raise OSError("File not found!")
+
+
+def pre_to_pn(pre, cm):
+    """
+    Name:     pre_to_pn
+    Inputs:   - float or numpy.ndarray, monthly precipitation (pre)
+              - datetime.date, current month (cm)
+    Outputs:  float/numpy.ndarray
+    Features: Converts CRU TS precipitation (mm/mo) to daily precipitation
+              (mm/d)
+    """
+    # Calculate the number of days in the month:
+    tcur = cm.replace(day=1)
+    tend = add_one_month(tcur)
+    nm = (tend - datetime.timedelta(days=1)).day
+
+    # Convert mm/mo to mm/d
+    pn = pre / nm
+    return pn

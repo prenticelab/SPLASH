@@ -4,7 +4,7 @@
 # data.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-07-27
+# LAST UPDATED: 2016-07-28
 #
 # ~~~~~~~~
 # license:
@@ -52,6 +52,8 @@ from crutsutil import get_cru_elv
 from crutsutil import get_cru_lat
 from crutsutil import get_cru_lon
 from crutsutil import get_monthly_cru
+from crutsutil import cld_to_sf
+from crutsutil import pre_to_pn
 
 
 ###############################################################################
@@ -64,6 +66,9 @@ class DATA(object):
     History:  Version 1.1.0-dev
               - added logging statements [16.02.05]
               - added netCDF file handing [16.07.26]
+              - added CRU to SPLASH variable conversion [16.07.28]
+              - changed num_lines to npoints [16.07.28]
+              - created is okay check on data arrays [16.07.28]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -83,7 +88,6 @@ class DATA(object):
         self._year = 0
         self.mode = mode
         self.file_name = ""
-        self.num_lines = 0.
         self.sf_vec = numpy.array([])
         self.tair_vec = numpy.array([])
         self.pn_vec = numpy.array([])
@@ -98,6 +102,7 @@ class DATA(object):
         self._lat = None           # current latitude
         self._lon = None           # current longitude
         self._elv = None           # current elevation
+        self._okay = False         # check whether annual data is good or not
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Properties
@@ -175,6 +180,50 @@ class DATA(object):
             raise OSError("File not found!")
 
     @property
+    def elv(self):
+        """Current elevation in meters above mean sea level"""
+        return self._elv
+
+    @elv.setter
+    def elv(self, val):
+        if isinstance(val, float):
+            self._elv = val
+        elif isinstance(val, int):
+            self._elv = val
+        else:
+            raise TypeError("Expected float or int.")
+
+    @property
+    def is_okay(self):
+        """Check whether the three data vectors are okay"""
+        # Check if annual data is good:
+        if not numpy.isfinite(self.sf_vec).any():
+            self._okay = False
+            self.logger.warning("NaNs present in Sf!")
+        elif not numpy.isfinite(self.pn_vec).any():
+            self._okay = False
+            self.logger.warning("NaNs present in Pn!")
+        elif not numpy.isfinite(self.tair_vec).any():
+            self._okay = False
+            self.logger.warning("NaNs present in Tair!")
+        elif len(self.sf_vec) != len(self.pn_vec):
+            self._okay = False
+            self.logger.error("Input array lengths (Sf v. Pn) do not match!")
+        elif len(self.sf_vec) != len(self.tair_vec):
+            self._okay = False
+            self.logger.error("Input array lengths (Sf v. Tair) do not match!")
+        elif len(self.pn_vec) != len(self.tair_vec):
+            self._okay = False
+            self.logger.error("Input array lengths (Pn v. Tair) do not match!")
+        else:
+            self._okay = True
+        return self._okay
+
+    @is_okay.setter
+    def is_okay(self, val):
+        raise NotImplementedError("You cannot set this variable in this way!")
+
+    @property
     def latitude(self):
         """Array of latitude values"""
         if self._latitude is None:
@@ -235,6 +284,19 @@ class DATA(object):
             raise TypeError("Expected a list or array of values")
 
     @property
+    def npoints(self):
+        """Number of data points in the data arrays"""
+        if self.is_okay:
+            return len(self.pn_vec)
+        else:
+            self.logger.warning("Problematic data, no data points available!")
+            return 0
+
+    @npoints.setter
+    def npoints(self, val):
+        raise NotImplementedError("You cannot set this variable in this way!")
+
+    @property
     def year(self):
         """The process year"""
         return self._year
@@ -280,9 +342,12 @@ class DATA(object):
                   - float, longitude (lon)
         Output:   None
         Features: Reads all three input variables (sf, tair, and pn) for
-                  a single year from their respective netCDF files.
+                  a single year from their respective netCDF files and converts
+                  them to SPLASH variables; sets the current grid elevation;
+                  and sets the is_okay check for processing
         """
         # Make certain CRU TS files have been assigned and set elevation:
+        self.year = year
         self.check_cru_files()
         self.set_elevation(lat, lon)
 
@@ -290,9 +355,9 @@ class DATA(object):
         # * should be the same if they are all from the same CRU TS release
         yc = datetime.date(year, 1, 1)       # current year
         ye = datetime.date(year + 1, 1, 1)   # end year
-        day_cld = numpy.array([])
-        day_pre = numpy.array([])
-        day_tmp = numpy.array([])
+        self.sf_vec = numpy.array([])
+        self.pn_vec = numpy.array([])
+        self.tair_vec = numpy.array([])
         while yc < ye:
             try:
                 cld_mo = get_monthly_cru(
@@ -303,7 +368,8 @@ class DATA(object):
             else:
                 self.logger.debug("cloudiness value = %s", cld_mo)
                 cld_day = self.monthly_to_daily(cld_mo, yc)
-                day_cld = numpy.append(day_cld, [cld_day, ])
+                sf_day = cld_to_sf(cld_day)
+                self.sf_vec = numpy.append(self.sf_vec, [sf_day, ])
 
             try:
                 pre_mo = get_monthly_cru(
@@ -314,8 +380,9 @@ class DATA(object):
                 raise
             else:
                 self.logger.debug("precipitation value = %s", pre_mo)
-                pre_day = self.monthly_to_daily(pre_mo, yc)
-                day_pre = numpy.append(day_pre, [pre_day, ])
+                pre_day = self.monthly_to_daily(pre_mo, yc)  # mm/mo
+                pn_day = pre_to_pn(pre_day, yc)              # mm/d
+                self.pn_vec = numpy.append(self.pn_vec, [pn_day, ])
 
             try:
                 tmp_mo = get_monthly_cru(
@@ -326,13 +393,10 @@ class DATA(object):
                 raise
             else:
                 self.logger.debug("air temperature value = %s", tmp_mo)
-                tmp_day = self.monthly_to_daily(tmp_mo, yc)
-                day_tmp = numpy.append(day_tmp, [tmp_day, ])
+                tmp_day = self.monthly_to_daily(tmp_mo, yc)  # deg C
+                self.tair_vec = numpy.append(self.tair_vec, [tmp_day, ])
 
             yc = add_one_month(yc)
-        self.logger.debug("ready with %d cloudiness points", len(day_cld))
-        self.logger.debug("ready with %d precipitation points", len(day_pre))
-        self.logger.debug("ready with %d temperature points", len(day_tmp))
 
     def monthly_to_daily(self, mo_ds, mo_ts, method="const"):
         """
@@ -343,15 +407,19 @@ class DATA(object):
         Outputs:  numpy.ndarray
         Features: Returns quasi-daily array based on the given monthly value
         """
+        # Get the starting and ending month dates and days in month:
         tcur = mo_ts.replace(day=1)
         tend = add_one_month(tcur)
-        mo_days = (tend - datetime.timedelta(days=1)).day
+        nm = (tend - datetime.timedelta(days=1)).day
+
+        # Perform quasi-daily conversion:
         if method == "const":
-            day_ds = numpy.ones((mo_days, ), dtype=numpy.float)
+            day_ds = numpy.ones((nm, ), dtype=numpy.float)
             day_ds *= mo_ds
         else:
             self.logger.error("No method called %s", method)
             raise AttributeError("Method %s is unavailable" % method)
+
         return day_ds
 
     def read_csv(self, fname, y=-1):
@@ -378,7 +446,6 @@ class DATA(object):
             self.sf_vec = data['sf']
             self.tair_vec = data['tair']
             self.pn_vec = data['pn']
-            self.num_lines = data.shape[0]
 
             if y == -1:
                 if data.shape[0] == 366:
@@ -418,11 +485,6 @@ class DATA(object):
             else:
                 self.logger.error("variable %s undefined!", var)
                 raise ValueError("Unrecognized variable in read_txt")
-
-            # Add line numbers to list:
-            if not isinstance(self.num_lines, list):
-                self.num_lines = []
-            self.num_lines.append(data.shape[0])
 
             if y == -1:
                 if data.shape[0] == 366:
@@ -506,6 +568,8 @@ if __name__ == '__main__':
         os.path.expanduser("~"), "Data", "cru_ts",
         "cru_ts3.00_halfdeg.elv.grid.dat")
 
-    my_lat = my_data.latitude[260]
-    my_lon = my_data.longitude[200]
+    # my_lat = my_data.latitude[260]
+    # my_lon = my_data.longitude[200]
+    my_lat = my_data.latitude[0]
+    my_lon = my_data.longitude[0]
     my_data.get_annual_cru(2000, my_lat, my_lon)

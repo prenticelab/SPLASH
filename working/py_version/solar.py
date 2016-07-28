@@ -3,7 +3,7 @@
 # solar.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-02-19
+# LAST UPDATED: 2016-07-28
 #
 # ~~~~~~~~
 # license:
@@ -54,9 +54,8 @@ class SOLAR:
     """
     Name:     SOLAR
     Features: This class calculates the daily radiation fluxes.
-    Version:  1.0.0-dev
-              - separated daily flux calculation from init [15.12.29]
-              - created print vals function [16.01.29]
+    Version:  1.1.0-dev
+              - created reset params function [16.07.28]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -85,6 +84,8 @@ class SOLAR:
         else:
             self.logger.info("latitude set to %0.3f degrees", lat)
             self.lat = lat
+
+        self.init_params()
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -177,8 +178,14 @@ class SOLAR:
         # 1. Calculate number of days in year (kN), days
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if y == 0:
-            kN = 365
-            self.year = 2001
+            if n == 366:
+                kN = 366
+                self.year = 2000
+                self.logger.info("assuming year 2000 with 366 days")
+            else:
+                kN = 365
+                self.year = 2001
+                self.logger.info("assuming year 2001 with 365 days")
         elif y < 0:
             self.logger.error("year set out of range")
             raise ValueError(
@@ -350,6 +357,13 @@ class SOLAR:
 
         jde = int(365.25*(y + 4716)) + int(30.6001*(m + 1)) + i + b - 1524.5
         return jde
+
+    def init_params(self):
+        """Initializes class attributes associated with daily fluxes"""
+        self.ppfd_d = numpy.nan
+        self.ra_d = numpy.nan
+        self.rn_d = numpy.nan
+        self.rnn_d = numpy.nan
 
     def print_vals(self):
         """

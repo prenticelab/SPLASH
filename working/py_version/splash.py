@@ -4,7 +4,7 @@
 # splash.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-06-10
+# LAST UPDATED: 2016-07-28
 #
 # ~~~~~~~~
 # license:
@@ -49,7 +49,7 @@ from evap import EVAP
 ###############################################################################
 # CLASSES
 ###############################################################################
-class SPLASH:
+class SPLASH(object):
     """
     Name:     SPLASH
     Features: This class updates daily quantities of radiation,
@@ -57,6 +57,9 @@ class SPLASH:
     History:  Version 1.1-dev
               - changed xrange to range for Python 2/3 compatability [16.02.05]
               - added verbose flag for printing during run one day [16.06.10]
+              - changed d.num_lines to d.npoints [16.07.28]
+              - created _header class attribute [16.07.28]
+              - SPLASH now inherits from type 'object' [16.07.28]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -66,6 +69,7 @@ class SPLASH:
         Name:     SPLASH.__init__
         Input:    - float, latitude, degrees (lat)
                   - float, elevation, meters (elv)
+        Depends:  reset_params
         """
         # Create a class logger
         self.logger = logging.getLogger(__name__)
@@ -85,6 +89,9 @@ class SPLASH:
             self.logger.info("latitude set to %0.3f degrees", lat)
             self.lat = lat
 
+        # Set a default longitude (only used in lonlat version)
+        self.lon = numpy.nan
+
         # Create EVAP class:
         try:
             self.evap = EVAP(lat, elv)
@@ -93,28 +100,68 @@ class SPLASH:
         else:
             self.logger.debug("initialized EVAP class")
 
-        # Initialize daily status variables:
-        self.ho = 0.      # daily solar irradiation, J/m2
-        self.hn = 0.      # daily net radiation, J/m2
-        self.ppfd = 0.    # daily PPFD, mol/m2
-        self.cond = 0.    # daily condensation water, mm
-        self.wn = 0.      # daily soil moisture, mm
-        self.precip = 0.  # daily precipitation, mm
-        self.ro = 0.      # daily runoff, mm
-        self.eet = 0.     # daily equilibrium ET, mm
-        self.pet = 0.     # daily potential ET, mm
-        self.aet = 0.     # daily actual ET, mm
-        self.wn_vec = numpy.array([])  # daily soil moisture array
+        self.reset_params()
+
+        self._header = "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
+            "Year", "Day", "Lat", "Lon", "Elv", "Precip_mm", "Tair_degC",
+            "Sf", "Cond_mm", "EET_mm", "PET_mm", "AET_mm", "SoilMoist_mm",
+            "Runoff_mm", "NetRadDay_MJ_m2", "NetRadNight_MJ_m2")
 
         if self.verbose:
-            print("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s" % (
-                "Year", "Day", "Precip_mm", "Tair_degC", "Sf",
-                "Cond_mm", "EET_mm", "PET_mm", "AET_mm", "SoilMoist_mm",
-                "Runoff_mm", "NetRadDay_MJ_m2", "NetRadNight_MJ_m2"))
+            print(self._header)
+
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    # Class Properties
+    # ////////////////////////////////////////////////////////////////////////
+    @property
+    def data_str(self):
+        """Returns a string of current data values"""
+        return "%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n" % (
+            self.year,  # year
+            self.doy,   # day of year
+            self.lat,   # latitude, deg
+            self.lon,   # longitude, deg
+            self.elv,   # elevation above mean sea level, m
+            self.pn,    # daily precipitation, mm/d
+            self.tc,    # near surface air temperature, deg C
+            self.sf,    # fractional sunshine hours, unitless
+            self.cond,  # daily condensation, mm/d
+            self.eet,   # daily equilibrium evapotranspiration, mm/d
+            self.pet,   # daily potential evapotranspiration, mm/d
+            self.aet,   # daily actual evapotranspiration, mm/d
+            self.wn,    # daily soil moisture, mm
+            self.ro,    # daily runoff, mm
+            1e-6*self.evap.solar.rn_d,    # daily net radiation, MJ/m^2
+            1e-6*self.evap.solar.rnn_d)   # nightly net radiation, MJ/m^2
+
+    @data_str.setter
+    def data_str(self, val):
+        raise NotImplementedError("You cannot set this variable in this way!")
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
+    def reset_params(self):
+        """Resets all daily parameters"""
+        # Input parameters:
+        self.year = -1        # year
+        self.doy = -1         # day of year
+        self.pn = numpy.nan   # precipitation, mm/d
+        self.tc = numpy.nan   # near surface air temperature, deg C
+        self.sf = numpy.nan   # fractional sunshine hours, unitless
+
+        # Daily status parameters:
+        self.ho = numpy.nan      # daily solar irradiation, J/m2
+        self.hn = numpy.nan      # daily net radiation, J/m2
+        self.ppfd = numpy.nan    # daily PPFD, mol/m2
+        self.cond = numpy.nan    # daily condensation water, mm
+        self.wn = numpy.nan      # daily soil moisture, mm
+        self.ro = numpy.nan      # daily runoff, mm
+        self.eet = numpy.nan     # daily equilibrium ET, mm
+        self.pet = numpy.nan     # daily potential ET, mm
+        self.aet = numpy.nan     # daily actual ET, mm
+        self.wn_vec = numpy.array([])  # daily soil moisture array
+
     def spin_up(self, d):
         """
         Name:     SPLASH.spin
@@ -129,20 +176,9 @@ class SPLASH:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Create a soil moisture array:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if isinstance(d.num_lines, list):
-            n = d.num_lines[0]
-            if (numpy.array(d.num_lines) == n).all():
-                wn_vec = numpy.zeros((n,))
-            else:
-                self.logger.error(
-                    "Inconsistent number of lines read from DATA class!")
-                raise IndexError(
-                    "Inconsistent number of lines read from DATA class!")
-        else:
-            n = d.num_lines
-            wn_vec = numpy.zeros((n,))
-        self.logger.info(
-            "Created soil moisture array of length %d", len(wn_vec))
+        n = d.npoints
+        wn_vec = numpy.zeros((n,))
+        self.logger.info("Created soil moisture array of length %d", n)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Run one year:
@@ -296,10 +332,20 @@ class SPLASH:
                   - EVAP
         """
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # 0. Set meteorological variables:
+        # 0. Set input variables:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.precip = pn    # daily precipitation, mm
+        self.year = y
+        self.doy = n
+        self.logger.debug("year: %s, day: %s" % (y, n))
+
+        self.pn = pn
         self.logger.debug("daily precipitation: %f mm", pn)
+
+        self.tc = tc
+        self.logger.debug("daily air temperature: %f deg C", tc)
+
+        self.sf = sf
+        self.logger.debug("daily sunshine fraction: %f", sf)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Calculate evaporative supply rate (sw), mm/h
@@ -364,10 +410,7 @@ class SPLASH:
         # 6. Print daily results
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         if self.verbose:
-            print("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s" % (
-                y, n, pn, tc, sf, self.cond, self.eet, self.pet, self.aet,
-                self.wn, self.ro, 1e-6*self.evap.solar.rn_d,
-                1e-6*self.evap.solar.rnn_d))
+            print(self.data_str)
 
     def print_vals(self):
         """
@@ -377,7 +420,7 @@ class SPLASH:
         Features: Prints all daily values
         """
         print("Daily values:")
-        print("  Pn: %0.6f mm" % (self.precip))
+        print("  Pn: %0.6f mm" % (self.pn))
         print("  Cn: %0.6f mm" % (self.cond))
         print("  EET: %0.6f mm" % (self.eet))
         print("  PET: %0.6f mm" % (self.pet))
