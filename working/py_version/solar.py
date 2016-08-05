@@ -327,10 +327,18 @@ class SOLAR:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 14. Calculate nighttime net radiation (rnn_d), J/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rnn_d = rw*ru*(hs - hn)*pir
-        rnn_d += rw*rv*(dsin(hs) - dsin(hn))
-        rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
-        rnn_d *= (86400.0/numpy.pi)
+        # UPDATED HN- CALCULATION:
+        rnn_d = numpy.pi*ru*rw
+        rnn_d -= dsin(hn)*rv*rw
+        rnn_d -= hn*pir*ru*rw
+        rnn_d -= rnl*numpy.pi
+        rnn_d += hn*pir*rnl
+
+        # CRITICAL ERROR IN HN- CALCULATION:
+        # rnn_d = rw*ru*(hs - hn)*pir
+        # rnn_d += rw*rv*(dsin(hs) - dsin(hn))
+        # rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
+        # rnn_d *= (86400.0/numpy.pi)
         self.rnn_d = rnn_d
         self.logger.info(
             "nighttime net radiation set to %f MJ/m^2", (1.0e-6)*rnn_d)
@@ -418,3 +426,4 @@ if __name__ == '__main__':
 
     my_class = SOLAR(my_lat, my_elv)
     my_class.calculate_daily_fluxes(my_day, my_year, my_sf, my_temp)
+    my_class.print_vals()
