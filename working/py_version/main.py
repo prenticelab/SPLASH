@@ -170,6 +170,6 @@ if __name__ == '__main__':
                         f.close()
     # Print the 100%
     z = 100.0
-    msg = "[{}{}] {}%".format(
+    msg = "[{}{}] {}%\n".format(
         '#'*int(z / 5), '\u2013'*(20 - int(z / 5)), int(z))
     sys.stdout.write(msg)
