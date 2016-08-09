@@ -293,13 +293,13 @@ class SOLAR:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 12. Calculate net radiation cross-over hour angle (hn), degrees
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rad_cond = numpy.array(((rnl - rw*ru)/(rw*rv)))
-        self.neg_rad_idx = numpy.where(rad_cond >= 1.0)
-        self.pos_rad_idx = numpy.where(rad_cond <= -1.0)
+        self.rad_cond = numpy.array(((rnl - rw*ru)/(rw*rv)))
+        self.neg_rad_idx = numpy.where(self.rad_cond >= 1.0)
+        self.pos_rad_idx = numpy.where(self.rad_cond <= -1.0)
         #self.other_rad_idx = numpy.where(((rad_cond  < numpy.float64(1.0)) & (rad_cond > numpy.float64(-1.0)))
         #                                 | numpy.isnan(rad_cond))
 
-        hn = (numpy.arccos(rad_cond))/pir
+        hn = (numpy.arccos(self.rad_cond))/pir
         hn[self.neg_rad_idx] = 0.0
         hn[self.pos_rad_idx] = 180.0
         #hn[self.other_rad_idx] = rad_cond
@@ -334,10 +334,13 @@ class SOLAR:
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 14. Calculate nighttime net radiation (rnn_d), J/m^2
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rnn_d = rw*ru*(hs - hn)*pir
-        rnn_d += rw*rv*(dsin(hs) - dsin(hn))
-        rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
+        ## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        #rnn_d = rw*ru*(hs - hn)*pir
+        #rnn_d += rw*rv*(dsin(hs) - dsin(hn))
+        #rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
+        #rnn_d *= (86400.0/numpy.pi)
+        rnn_d = rw*ru*(numpy.pi - hn)*pir
+        rnn_d += rw*rv*(dsin(numpy.pi) - dsin(hn))
         rnn_d *= (86400.0/numpy.pi)
         self.rnn_d = rnn_d
         self.logger.info(
