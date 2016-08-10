@@ -328,17 +328,16 @@ class SOLAR:
         # 14. Calculate nighttime net radiation (rnn_d), J/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # UPDATED HN- CALCULATION:
-        rnn_d = numpy.pi*ru*rw
-        rnn_d -= dsin(hn)*rv*rw
-        rnn_d -= hn*pir*ru*rw
-        rnn_d -= rnl*numpy.pi
-        rnn_d += hn*pir*rnl
+        rnn_d = rw*rv*(dsin(hs) - dsin(hn))
+        rnn_d += rw*ru*pir*(hs - hn)
+        rnn_d -= rnl*(numpy.pi - pir*hn)
 
         # CRITICAL ERROR IN HN- CALCULATION:
         # rnn_d = rw*ru*(hs - hn)*pir
         # rnn_d += rw*rv*(dsin(hs) - dsin(hn))
         # rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
-        # rnn_d *= (86400.0/numpy.pi)
+
+        rnn_d *= (86400.0/numpy.pi)
         self.rnn_d = rnn_d
         self.logger.info(
             "nighttime net radiation set to %f MJ/m^2", (1.0e-6)*rnn_d)
