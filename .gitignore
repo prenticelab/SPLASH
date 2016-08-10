@@ -1,0 +1,7 @@
+# Ignore Python 2/3 compilations and log files:
+*.pyc
+*__pycache__
+*.log*
+
+# Ignore compiled object files:
+*.o
