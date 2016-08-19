@@ -9,8 +9,8 @@ module splash
   ! - latitude (deg N)
   ! - elevation (m.a.s.l.)
   !
-  ! VERSION: 1.0-r1
-  ! LAST UPDATED: 2016-05-27
+  ! VERSION: 1.0-r2
+  ! LAST UPDATED: 2016-08-19
   !
   ! Copyright (C) 2016 Prentice Lab
   !
@@ -298,13 +298,13 @@ contains
     ! - daily condensation (wc), mm
     !-------------------------------------------------------------
     ! arguments
-    real,    intent(in) :: lat           ! latitude, degrees
-    integer, intent(in) :: doy           ! day of the year (formerly 'n')
-    real,    intent(in) :: elv ! elevation, metres
-    integer, intent(in) :: yr  ! year
-    real,    intent(in) :: sf  ! fraction of sunshine hours
-    real,    intent(in) :: tc  ! mean daily air temperature, C
-    real,    intent(in) :: sw  ! evaporative supply rate, mm/hr
+    real,    intent(in) :: lat  ! latitude, degrees
+    integer, intent(in) :: doy  ! day of the year (formerly 'n')
+    real,    intent(in) :: elv  ! elevation, metres
+    integer, intent(in) :: yr   ! year
+    real,    intent(in) :: sf   ! fraction of sunshine hours
+    real,    intent(in) :: tc   ! mean daily air temperature, C
+    real,    intent(in) :: sw   ! evaporative supply rate, mm/hr
 
     ! function return variable
     type( outtype_evap )  :: out_evap
@@ -482,7 +482,8 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 14. Calculate nighttime net radiation (rnn_d), J/m^2
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    rnn_d = (86400.0/pi)*(radians(rw*ru*(hs-hn)) + rw*rv*(dgsin(hs)-dgsin(hn)) + rnl*(pi - 2.0*radians(hs) + radians(hn)))
+    ! fixed iss#13
+    rnn_d = (86400.0/pi)*(radians(rw*ru*(hs-hn)) + rw*rv*(dgsin(hs)-dgsin(hn)) - rnl*(pi - radians(hn)))
 
     ! consistency check
     if (verbose) print*,'nighttime net radiation, rnn_d ',rnn_d

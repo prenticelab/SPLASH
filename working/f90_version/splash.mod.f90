@@ -9,7 +9,7 @@ module _splash
   ! - latitude (deg N)
   ! - elevation (m.a.s.l.)
   !
-  ! VERSION: 1.0
+  ! VERSION: 1.1-dev
   ! LAST UPDATED: 2016-08-19
   !
   ! Copyright (C) 2016 Prentice Lab
@@ -480,7 +480,7 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 14. Calculate nighttime net radiation (rnn_d), J/m^2
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! Fixed HN- equation
+    ! fixed iss#13
     rnn_d = (86400.0/pi)*(radians(rw*ru*(hs-hn)) + rw*rv*(dgsin(hs)-dgsin(hn)) - rnl*(pi - radians(hn)))
 
     ! consistency check

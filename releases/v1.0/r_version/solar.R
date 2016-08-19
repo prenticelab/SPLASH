@@ -2,8 +2,8 @@
 #
 # solar.R
 #
-# VERSION: 1.0-r1
-# LAST UPDATED: 2016-05-27
+# VERSION: 1.0-r2
+# LAST UPDATED: 2016-08-19
 #
 # ~~~~~~~~
 # license:
@@ -51,6 +51,7 @@
 # - added berger_tls function [15.01.13]
 # - updated evap function (similar to stash.py EVAP class) [15.01.13]
 # - updated some documentation [16.05.27]
+# - fixed HN- equation (iss#13) [16.08.19]
 #
 #### IMPORT SOURCES ##########################################################
 source("const.R")
@@ -304,10 +305,11 @@ calc_daily_solar <- function(lat, n, elv=0, y=0, sf=1, tc=23.0) {
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # 14. Calculate nighttime net radiation (rnn_d), J/m^2
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # fixed iss#13
     rnn_d <- (86400/pi)*(
-        rw*ru*(hs - hn)*pir +
         rw*rv*(dsin(hs) - dsin(hn)) +
-        rnl*(pi - 2*hs*pir + hn*pir)
+        rw*ru*(hs - hn)*pir -
+        rnl*(pi - hn*pir)
     )
     solar$rnn_j.m2 <- rnn_d
 

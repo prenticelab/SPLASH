@@ -2,8 +2,8 @@
 #
 # solar.py
 #
-# VERSION: 1.0-r1
-# LAST UPDATED: 2016-05-27
+# VERSION: 1.0-r2
+# LAST UPDATED: 2016-08-19
 #
 # ~~~~~~~~
 # license:
@@ -56,7 +56,9 @@ class SOLAR:
     """
     Name:     SOLAR
     Features: This class calculates the daily radiation fluxes.
-    History:  Version 1.0-r1
+    History:  Version 1.0-r2
+              - fixed HN- equation (iss#13) [16.08.19]
+              Version 1.0-r1
               - separated daily flux calculation from init [15.12.29]
               - created print vals function [16.01.29]
               - updated documentation [16.05.27]
@@ -323,9 +325,10 @@ class SOLAR:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 14. Calculate nighttime net radiation (rnn_d), J/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        rnn_d = rw*ru*(hs - hn)*pir
-        rnn_d += rw*rv*(dsin(hs) - dsin(hn))
-        rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
+        # fixed iss#13
+        rnn_d = rw*rv*(dsin(hs) - dsin(hn))
+        rnn_d += rw*ru*pir*(hs - hn)
+        rnn_d -= rnl*(numpy.pi - pir*hn)
         rnn_d *= (86400.0/numpy.pi)
         self.rnn_d = rnn_d
         self.logger.info(

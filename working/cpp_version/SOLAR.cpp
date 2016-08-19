@@ -191,7 +191,7 @@ void SOLAR::calculate_daily_fluxes(int n, int y, double sf, double tc){
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 14. Calculate nighttime net radiation (rnn_d), J/m^2
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // Fixed HN- equation
+    // fixed iss#13
     rnn_d = rw*rv*(dsin(hs) - dsin(hn));
     rnn_d += rw*ru*(hs - hn)*Global::pir;
     rnn_d -= rnl*(Global::PI - hn*Global::pir);

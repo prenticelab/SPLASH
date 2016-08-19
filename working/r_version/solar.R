@@ -303,7 +303,7 @@ calc_daily_solar <- function(lat, n, elv=0, y=0, sf=1, tc=23.0) {
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # 14. Calculate nighttime net radiation (rnn_d), J/m^2
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # Fixed HN- equation
+    # fixed iss#13
     rnn_d <- (86400/pi)*(
         rw*rv*(dsin(hs) - dsin(hn)) +
         rw*ru*(hs - hn)*pir -
