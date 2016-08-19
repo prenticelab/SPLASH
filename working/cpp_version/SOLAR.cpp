@@ -11,7 +11,7 @@ using namespace std;
  * SOLAR.cpp
  *
  * VERSION 1.1-dev
- * LAST UPDATED: 2016-02-19
+ * LAST UPDATED: 2016-08-19
  *
  * ~~~~~~~~
  * license:
@@ -191,9 +191,10 @@ void SOLAR::calculate_daily_fluxes(int n, int y, double sf, double tc){
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     // 14. Calculate nighttime net radiation (rnn_d), J/m^2
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    rnn_d = rw*ru*(hs - hn)*Global::pir;
-    rnn_d += rw*rv*(dsin(hs) - dsin(hn));
-    rnn_d += rnl*(Global::PI - 2.0*hs*Global::pir + hn*Global::pir);
+    // Fixed HN- equation
+    rnn_d = rw*rv*(dsin(hs) - dsin(hn));
+    rnn_d += rw*ru*(hs - hn)*Global::pir;
+    rnn_d -= rnl*(Global::PI - hn*Global::pir);
     rnn_d *= (86400.0/Global::PI);
 }
 
