@@ -40,6 +40,7 @@
 import logging
 
 import numpy
+from scipy.stats import nanmean
 
 from const import (kw, kG, kL, kR, kPo, kTo, kMa, kMv, pir)
 from solar import SOLAR
@@ -148,54 +149,54 @@ class EVAP:
         # Slope of saturation vap press temp curve, Pa/K
         s = self.sat_slope(tc)
         self.sat = s
-        self.logger.info("slope of saturation, s, set to %f Pa/K", numpy.nanmean(s))
+        self.logger.info("slope of saturation, s, set to %f Pa/K", nanmean(s))
 
         # Enthalpy of vaporization, J/kg
         lv = self.enthalpy_vap(tc)
         self.lv = lv
-        self.logger.info("enthalpy of vaporization set to %f MJ/kg", (1e-6)*numpy.nanmean(lv))
+        self.logger.info("enthalpy of vaporization set to %f MJ/kg", (1e-6)*nanmean(lv))
 
         # Density of water, kg/m^3
         pw = self.density_h2o(tc, self.elv2pres(self.elv))
         self.pw = pw
-        self.logger.info("density of water set to %f kg/m^3", numpy.nanmean(pw))
+        self.logger.info("density of water set to %f kg/m^3", nanmean(pw))
 
         # Psychrometric constant, Pa/K
         g = self.psychro(tc, self.elv2pres(self.elv))
         self.psy = g
-        self.logger.info("psychrometric constant set to %f Pa/K", numpy.nanmean(g))
+        self.logger.info("psychrometric constant set to %f Pa/K", nanmean(g))
 
         econ = s/(lv*pw*(s + g))
         self.econ = econ
-        self.logger.info("Econ set to %f mm^3/J", (1e9)*numpy.nanmean(econ))
+        self.logger.info("Econ set to %f mm^3/J", (1e9)*nanmean(econ))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate daily condensation (cn), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         cn = (1e3)*econ*numpy.abs(rnn_d)
         self.cond = cn
-        self.logger.info("daily condensation set to %f mm", numpy.nanmean(cn))
+        self.logger.info("daily condensation set to %f mm", nanmean(cn))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Estimate daily EET (eet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         eet_d = (1e3)*econ*rn_d
         self.eet_d = eet_d
-        self.logger.info("daily EET set to %f mm", numpy.nanmean(eet_d))
+        self.logger.info("daily EET set to %f mm", nanmean(eet_d))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Estimate daily PET (pet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         pet_d = (1.0 + kw)*eet_d
         self.pet_d = pet_d
-        self.logger.info("daily PET set to %f mm", numpy.nanmean(pet_d))
+        self.logger.info("daily PET set to %f mm", nanmean(pet_d))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 6. Calculate variable substitute (rx), (mm/hr)/(W/m^2)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         rx = (3.6e6)*(1.0 + kw)*econ
         self.rx = rx
-        self.logger.info("variable substitute, rx, set to %f", numpy.nanmean(rx))
+        self.logger.info("variable substitute, rx, set to %f", nanmean(rx))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 7. Calculate the intersection hour angle (hi), degrees
@@ -224,7 +225,7 @@ class EVAP:
         #     hi = numpy.arccos(cos_hi)
         #     hi /= pir
         # self.hi = hi
-        self.logger.info("intersection hour angle, hi, set to %f", numpy.nanmean(hi))
+        self.logger.info("intersection hour angle, hi, set to %f", nanmean(hi))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 8. Estimate daily AET (aet_d), mm
@@ -234,7 +235,7 @@ class EVAP:
         aet_d += (rx*rw*ru - rx*rnl)*(hn - hi)*pir
         aet_d *= (24.0/numpy.pi)
         self.aet_d = aet_d
-        self.logger.info("daily AET set to %f mm", numpy.nanmean(aet_d))
+        self.logger.info("daily AET set to %f mm", nanmean(aet_d))
 
     def sat_slope(self, tc):
         """
@@ -248,7 +249,7 @@ class EVAP:
             numpy.exp(tc*17.269/(tc + 237.3))/((tc + 237.3)**2)
         )
         self.logger.debug(
-            "calculating temperature dependency at %f degrees", numpy.nanmean(tc))
+            "calculating temperature dependency at %f degrees", nanmean(tc))
         return s
 
     def enthalpy_vap(self, tc):
@@ -260,7 +261,7 @@ class EVAP:
         Ref:      Eq. 8, Henderson-Sellers (1984)
         """
         self.logger.debug(
-            "calculating temperature dependency at %f degrees", numpy.nanmean(tc))
+            "calculating temperature dependency at %f degrees", nanmean(tc))
         return (1.91846e6*((tc + 273.15)/(tc + 273.15 - 33.91))**2)
 
     def elv2pres(self, z):
@@ -278,7 +279,7 @@ class EVAP:
                   - kR
         Ref:      Allen et al. (1998)
         """
-        self.logger.debug("estimating atmospheric pressure at %f m", numpy.nanmean(z))
+        self.logger.debug("estimating atmospheric pressure at %f m", nanmean(z))
         p = kPo*(1.0 - kL*z/kTo)**(kG*kMa/(kR*kL))
         return p
 
