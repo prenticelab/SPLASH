@@ -90,7 +90,7 @@ module splash
   real, parameter :: kTo = 288.15         ! base temperature, K (Berberan-Santos et al., 1997)
   real, parameter :: kWm = 150            ! soil moisture capacity, mm (Cramer & Prentice, 1988)
   real, parameter :: kw = 0.26            ! entrainment factor (Lhomme, 1997; Priestley & Taylor, 1972)
-  real, parameter :: pi = 3.14159
+  real, parameter :: pi = 3.141592653589793
 
   ! Paleoclimate variables:
   real, parameter :: ke = 0.0167          ! eccentricity for 2000 CE (Berger, 1978)

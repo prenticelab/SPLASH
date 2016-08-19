@@ -79,8 +79,6 @@ module _splash
   real, parameter :: kc = 0.25            ! cloudy transmittivity (Linacre, 1968)
   real, parameter :: kCw = 1.05           ! supply constant, mm/hr (Federer, 1982)
   real, parameter :: kd = 0.50            ! angular coefficient of transmittivity (Linacre, 1968)
-  real, parameter :: ke = 0.0167          ! eccentricity for 2000 CE (Berger, 1978)
-  real, parameter :: keps = 23.44         ! obliquity for 2000 CE, degrees (Berger, 1978)
   real, parameter :: kfFEC = 2.04         ! from flux to energy conversion, umol/J (Meek et al., 1984)
   real, parameter :: kG = 9.80665         ! gravitational acceleration, m/s^2 (Allen, 1973)
   real, parameter :: kGsc = 1360.8        ! solar constant, W/m^2 (Kopp & Lean, 2011)
@@ -92,8 +90,12 @@ module _splash
   real, parameter :: kTo = 288.15         ! base temperature, K (Berberan-Santos et al., 1997)
   real, parameter :: kWm = 150            ! soil moisture capacity, mm (Cramer & Prentice, 1988)
   real, parameter :: kw = 0.26            ! entrainment factor (Lhomme, 1997; Priestley & Taylor, 1972)
+  real, parameter :: pi = 3.141592653589793
+
+  ! Paleoclimate variables:
+  real, parameter :: ke = 0.0167          ! eccentricity for 2000 CE (Berger, 1978)
+  real, parameter :: keps = 23.44         ! obliquity for 2000 CE, degrees (Berger, 1978)
   real, parameter :: komega = 283.0       ! longitude of perihelion for 2000 CE, degrees (Berger, 1978)
-  real, parameter :: pi = 3.14159
 
   integer, parameter :: nmonth = 12       ! number of months in year
 
