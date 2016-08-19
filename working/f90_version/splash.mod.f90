@@ -10,7 +10,7 @@ module _splash
   ! - elevation (m.a.s.l.)
   !
   ! VERSION: 1.0
-  ! LAST UPDATED: 2016-02-19
+  ! LAST UPDATED: 2016-08-19
   !
   ! Copyright (C) 2016 Prentice Lab
   !
@@ -325,7 +325,7 @@ contains
     real :: pw                 ! density of water, kg/m^3
     real :: lv                 ! enthalpy of vaporization, J/kg
     real :: g                  ! psychrometric constant, Pa/K
-    real :: econ               ! Eq. 58, Documentation
+    real :: econ               ! water to energy conversion
     real :: rx                 ! variable substitute (mm/hr)/(W/m^2)
     real :: hi, cos_hi         ! intersection hour angle, degrees
 
@@ -431,7 +431,6 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 9. Calculate daily PPFD (ppfd_d), mol/m^2
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! Eq. 57, Documentation
     out_evap%ppfd = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*out_evap%ra
 
     ! consistency check
@@ -473,7 +472,6 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 13. Calculate daytime net radiation (out_evap%rn), J/m^2
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! Eq. 53, Documentation
     out_evap%rn = (86400.0/pi) * (hn*(pi/180.0)*(rw*ru - rnl) + rw*rv*dgsin(hn))
 
     ! consistency check
@@ -482,8 +480,8 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 14. Calculate nighttime net radiation (rnn_d), J/m^2
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! Eq. 56, Documentation
-    rnn_d = (86400.0/pi)*(radians(rw*ru*(hs-hn)) + rw*rv*(dgsin(hs)-dgsin(hn)) + rnl*(pi - 2.0*radians(hs) + radians(hn)))
+    ! Fixed HN- equation
+    rnn_d = (86400.0/pi)*(radians(rw*ru*(hs-hn)) + rw*rv*(dgsin(hs)-dgsin(hn)) - rnl*(pi - radians(hn)))
 
     ! consistency check
     if (verbose) print*,'nighttime net radiation, rnn_d ',rnn_d
@@ -515,7 +513,6 @@ contains
     ! consistency check
     if (verbose) print*,'Psychrometric constant, Pa/K ', g
 
-    ! Eq. 58, Documentation
     econ = s/(lv*pw*(s + g))
 
     ! consistency check
@@ -524,7 +521,6 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 16. Calculate daily condensation (wc), mm
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! Eq. 68, Documentation
     out_evap%cn = 1000.0 * econ * abs(rnn_d)
 
     ! consistency check
@@ -533,7 +529,6 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 17. Estimate daily EET (eet_d), mm
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! Eq. 70, Documentation
     out_evap%eet = 1000.0*econ*(out_evap%rn)
 
     ! consistency check
@@ -542,7 +537,6 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 18. Estimate daily PET (pet_d), mm
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! Eq. 72, Documentation
     out_evap%pet = (1.0+kw)*out_evap%eet
 
     ! consistency check
@@ -577,7 +571,6 @@ contains
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
     ! 21. Estimate daily out_evap%AET (out_evap%aet), mm
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! Eq. 81, Documentation
     out_evap%aet = (24.0/pi)*(radians(sw*hi) + rx*rw*rv*(dgsin(hn) - dgsin(hi)) + radians((rx*rw*ru - rx*rnl)*(hn - hi)))
 
     ! consistency check
