@@ -3,7 +3,7 @@
 # solar.R
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-02-19
+# LAST UPDATED: 2016-08-19
 #
 # ~~~~~~~~
 # license:
@@ -303,10 +303,11 @@ calc_daily_solar <- function(lat, n, elv=0, y=0, sf=1, tc=23.0) {
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # 14. Calculate nighttime net radiation (rnn_d), J/m^2
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Fixed HN- equation
     rnn_d <- (86400/pi)*(
-        rw*ru*(hs - hn)*pir +
         rw*rv*(dsin(hs) - dsin(hn)) +
-        rnl*(pi - 2*hs*pir + hn*pir)
+        rw*ru*(hs - hn)*pir -
+        rnl*(pi - hn*pir)
     )
     solar$rnn_j.m2 <- rnn_d
 
