@@ -41,7 +41,7 @@
 import logging
 
 import numpy
-
+from scipy.stats import nanmean
 from const import kCw, kWm
 from evap import EVAP
 
@@ -238,7 +238,7 @@ class SPLASH:
         # 1. Calculate evaporative supply rate, mm/h
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         sw = kCw*(wn/kWm)
-        self.logger.debug("evaporative supply rate: %f mm/h", numpy.nanmean(sw))
+        self.logger.debug("evaporative supply rate: %f mm/h", nanmean(sw))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Calculate radiation and evaporation quantities
@@ -257,7 +257,7 @@ class SPLASH:
         # 3. Calculate today's soil moisture, mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         sm = wn + pn + cond - aet
-        self.logger.debug("calculated soil moisture as %f mm", numpy.nanmean(sm))
+        self.logger.debug("calculated soil moisture as %f mm", nanmean(sm))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate runoff, mm
@@ -270,19 +270,19 @@ class SPLASH:
             
             ro = sm - kWm
             sm = kWm
-            self.logger.debug("soil moisture: %f mm", numpy.nanmean(sm))
-            self.logger.debug("excess runoff: %f mm", numpy.nanmean(ro))
+            self.logger.debug("soil moisture: %f mm", nanmean(sm))
+            self.logger.debug("excess runoff: %f mm", nanmean(ro))
         elif sm < 0:
             self.logger.debug("bucket is too empty")
             # Bucket is too empty
             #   set soil moisture and runoff to zero
             sm = 0
             ro = 0
-            self.logger.debug("soil moisture: %d mm", numpy.nanmean(sm))
-            self.logger.debug("excess runoff: %d mm", numpy.nanmean(ro))
+            self.logger.debug("soil moisture: %d mm", nanmean(sm))
+            self.logger.debug("excess runoff: %d mm", nanmean(ro))
         else:
             ro = 0
-            self.logger.debug("excess runoff: %d mm", numpy.nanmean(ro))
+            self.logger.debug("excess runoff: %d mm", nanmean(ro))
 
         return(sm, ro)
 
@@ -305,13 +305,13 @@ class SPLASH:
         # 0. Set meteorological variables:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         self.precip = pn    # daily precipitation, mm
-        self.logger.debug("daily precipitation: %f mm", numpy.nanmean(pn))
+        self.logger.debug("daily precipitation: %f mm", nanmean(pn))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Calculate evaporative supply rate (sw), mm/h
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         sw = kCw*(wn)/kWm
-        self.logger.debug("evaporative supply rate: %f mm/h", numpy.nanmean(sw))
+        self.logger.debug("evaporative supply rate: %f mm/h", nanmean(sw))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Calculate radiation and evaporation quantities
@@ -333,7 +333,7 @@ class SPLASH:
         # 3. Calculate today's soil moisture (sm), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         self.sm = wn + pn + self.cond - self.aet
-        self.logger.debug("calculated soil moisture as %f mm", numpy.nanmean(self.sm))
+        self.logger.debug("calculated soil moisture as %f mm", nanmean(self.sm))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate runoff (ro), mm
