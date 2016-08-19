@@ -633,7 +633,7 @@ class DATA_G:
                 f[self.noval_idx] += self.error_val
                 self.elevation = f
         else:
-            self.logger.warnig("no elevation file found!")
+            self.logger.warning("no elevation file found!")
             self.elevation = None
             self.good_idx = (numpy.array([]), numpy.array([]))
             self.noval_idx = (numpy.array([]), numpy.array([]))
@@ -738,6 +738,7 @@ class DATA_G:
             self.vap = vap
             self.fapar = fapar
             self.evi = evi
+
 
 
     def read_daily_clim(self, m):

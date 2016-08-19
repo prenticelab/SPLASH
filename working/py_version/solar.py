@@ -256,7 +256,7 @@ class SOLAR:
         # Eq. 1.10.3, Duffy & Beckman (1993)
         ra_d = (86400.0/numpy.pi)*kGsc*dr*(ru*pir*hs + rv*dsin(hs))
         self.ra_d = ra_d
-        self.logger.info("daily ET radiation set to %f MJ/m^2", (1.0e-6)*ra_d)
+        self.logger.info("daily ET radiation set to %f MJ/m^2", (1.0e-6)*numpy.nansum(ra_d))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 8. Calculate transmittivity (tau), unitless
@@ -273,7 +273,7 @@ class SOLAR:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*ra_d
         self.ppfd_d = ppfd_d
-        self.logger.info("daily PPFD set to %f mol/m^2", ppfd_d)
+        self.logger.info("daily PPFD set to %f mol/m^2", numpy.nansum(ppfd_d))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 10. Estimate net longwave radiation (rnl), W/m^2
@@ -281,7 +281,7 @@ class SOLAR:
         # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
         rnl = (kb + (1.0 - kb)*sf)*(kA - tc)
         self.rnl = rnl
-        self.logger.info("net longwave radiation set to %f W/m^2", rnl)
+        self.logger.info("net longwave radiation set to %f W/m^2", numpy.nansum(rnl))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 11. Calculate variable substitute (rw), W/m^2
@@ -322,7 +322,7 @@ class SOLAR:
         #    hn = numpy.arccos(hn)
         #    hn /= pir
         #self.hn = hn
-        #self.logger.info("cross-over hour angle set to %f", hn)
+        self.logger.info("cross-over hour angle set to %f", hn)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 13. Calculate daytime net radiation (rn_d), J/m^2
@@ -330,7 +330,7 @@ class SOLAR:
         rn_d = (86400.0/numpy.pi)*(hn*pir*(rw*ru - rnl) + rw*rv*dsin(hn))
         self.rn_d = rn_d
         self.logger.info(
-            "daytime net radiation set to %f MJ/m^2", (1.0e-6)*rn_d)
+            "daytime net radiation set to %f MJ/m^2", (1.0e-6)*numpy.nansum(rn_d))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 14. Calculate nighttime net radiation (rnn_d), J/m^2
@@ -345,7 +345,7 @@ class SOLAR:
         rnn_d *= (86400.0/numpy.pi)
         self.rnn_d = rnn_d
         self.logger.info(
-            "nighttime net radiation set to %f MJ/m^2", (1.0e-6)*rnn_d)
+            "nighttime net radiation set to %f MJ/m^2", (1.0e-6)*numpy.nansum(rnn_d))
 
     def julian_day(self, y, m, i):
         """
