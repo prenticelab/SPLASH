@@ -72,7 +72,7 @@ class SPLASH:
 
         # Error handle and assign required public variables:
         self.elv = elv
-        self.logger.info("elevation set to %f m", elv)
+        self.logger.debug("elevation set to %f m", elv)
 
         if lat > 90.0 or lat < -90.0:
             self.logger.error(
@@ -80,7 +80,7 @@ class SPLASH:
             raise ValueError(
                 "Latitude outside range of validity, (-90 to 90)!")
         else:
-            self.logger.info("latitude set to %0.3f degrees", lat)
+            self.logger.debug("latitude set to %0.3f degrees", lat)
             self.lat = lat
 
         # Create EVAP class:
@@ -146,13 +146,13 @@ class SPLASH:
         else:
             n = d.num_lines
             wn_vec = numpy.zeros((n,))
-        self.logger.info(
+        self.logger.debug(
             "Created soil moisture array of length %d", len(wn_vec))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 2. Run one year:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.logger.info("running first year of spin-up")
+        self.logger.debug("running first year of spin-up")
         for i in range(n):
             # Get preceding soil moisture status:
             if i == 0:
@@ -168,7 +168,7 @@ class SPLASH:
                                     tc=d.tair_vec[i],
                                     pn=d.pn_vec[i])
             wn_vec[i] = sm
-        self.logger.info("completed first year")
+        self.logger.debug("completed first year")
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate change in starting soil moisture:
@@ -185,10 +185,10 @@ class SPLASH:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Equilibrate:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.logger.info("equilibrating daily soil moisture")
+        self.logger.debug("equilibrating daily soil moisture")
         spin_count = 1
         while diff_sm > 1.0:
-            self.logger.info("iteration: %d", spin_count)
+            self.logger.debug("iteration: %d", spin_count)
             for i in range(n):
                 # Get preceding soil moisture status:
                 if i == 0:
@@ -213,9 +213,9 @@ class SPLASH:
                                         tc=d.tair_vec[0],
                                         pn=d.pn_vec[0])
             diff_sm = numpy.abs(end_sm - start_sm)
-            self.logger.info("soil moisture differential: %f", diff_sm)
+            self.logger.debug("soil moisture differential: %f", diff_sm)
             spin_count += 1
-        self.logger.info("equilibrated after %d iterations", spin_count)
+        self.logger.debug("equilibrated after %d iterations", spin_count)
         self.wn_vec = wn_vec
         self.wn = wn_vec[-1]
 

@@ -79,7 +79,7 @@ class EVAP:
 
         # Assign default public variables:
         self.elv = elv
-        self.logger.info("elevation set to %f m", elv)
+        self.logger.debug("elevation set to %f m", elv)
 
         # Create SOLAR class:
         try:
@@ -138,7 +138,7 @@ class EVAP:
             rn_d = self.solar.rn_d
             rnn_d = self.solar.rnn_d
             self.ppfd_d = self.solar.ppfd_d
-            self.logger.info(
+            self.logger.debug(
                 ("calculating daily evaporative fluxes for day %d of %d for "
                  "year %d ") % (
                     n, self.solar.kN, self.solar.year))
@@ -149,54 +149,54 @@ class EVAP:
         # Slope of saturation vap press temp curve, Pa/K
         s = self.sat_slope(tc)
         self.sat = s
-        self.logger.info("slope of saturation, s, set to %f Pa/K", nanmean(s))
+        self.logger.debug("slope of saturation, s, set to %f Pa/K", nanmean(s))
 
         # Enthalpy of vaporization, J/kg
         lv = self.enthalpy_vap(tc)
         self.lv = lv
-        self.logger.info("enthalpy of vaporization set to %f MJ/kg", (1e-6)*nanmean(lv))
+        self.logger.debug("enthalpy of vaporization set to %f MJ/kg", (1e-6)*nanmean(lv))
 
         # Density of water, kg/m^3
         pw = self.density_h2o(tc, self.elv2pres(self.elv))
         self.pw = pw
-        self.logger.info("density of water set to %f kg/m^3", nanmean(pw))
+        self.logger.debug("density of water set to %f kg/m^3", nanmean(pw))
 
         # Psychrometric constant, Pa/K
         g = self.psychro(tc, self.elv2pres(self.elv))
         self.psy = g
-        self.logger.info("psychrometric constant set to %f Pa/K", nanmean(g))
+        self.logger.debug("psychrometric constant set to %f Pa/K", nanmean(g))
 
         econ = s/(lv*pw*(s + g))
         self.econ = econ
-        self.logger.info("Econ set to %f mm^3/J", (1e9)*nanmean(econ))
+        self.logger.debug("Econ set to %f mm^3/J", (1e9)*nanmean(econ))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate daily condensation (cn), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         cn = (1e3)*econ*numpy.abs(rnn_d)
         self.cond = cn
-        self.logger.info("daily condensation set to %f mm", nanmean(cn))
+        self.logger.debug("daily condensation set to %f mm", nanmean(cn))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Estimate daily EET (eet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         eet_d = (1e3)*econ*rn_d
         self.eet_d = eet_d
-        self.logger.info("daily EET set to %f mm", nanmean(eet_d))
+        self.logger.debug("daily EET set to %f mm", nanmean(eet_d))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Estimate daily PET (pet_d), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         pet_d = (1.0 + kw)*eet_d
         self.pet_d = pet_d
-        self.logger.info("daily PET set to %f mm", nanmean(pet_d))
+        self.logger.debug("daily PET set to %f mm", nanmean(pet_d))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 6. Calculate variable substitute (rx), (mm/hr)/(W/m^2)
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         rx = (3.6e6)*(1.0 + kw)*econ
         self.rx = rx
-        self.logger.info("variable substitute, rx, set to %f", nanmean(rx))
+        self.logger.debug("variable substitute, rx, set to %f", nanmean(rx))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 7. Calculate the intersection hour angle (hi), degrees
@@ -225,7 +225,7 @@ class EVAP:
         #     hi = numpy.arccos(cos_hi)
         #     hi /= pir
         # self.hi = hi
-        self.logger.info("intersection hour angle, hi, set to %f", nanmean(hi))
+        self.logger.debug("intersection hour angle, hi, set to %f", nanmean(hi))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 8. Estimate daily AET (aet_d), mm
@@ -235,7 +235,7 @@ class EVAP:
         aet_d += (rx*rw*ru - rx*rnl)*(hn - hi)*pir
         aet_d *= (24.0/numpy.pi)
         self.aet_d = aet_d
-        self.logger.info("daily AET set to %f mm", nanmean(aet_d))
+        self.logger.debug("daily AET set to %f mm", nanmean(aet_d))
 
     def sat_slope(self, tc):
         """
@@ -307,7 +307,7 @@ class EVAP:
         po += -(1.11663e-13)*tc*tc*tc*tc*tc*tc
         po += (5.044070e-16)*tc*tc*tc*tc*tc*tc*tc
         po += -(1.00659e-18)*tc*tc*tc*tc*tc*tc*tc*tc
-        # self.logger.info("water density at 1 atm calculated as %f kg/m^3", po)
+        # self.logger.debug("water density at 1 atm calculated as %f kg/m^3", po)
 
         # Calculate bulk modulus at 1 atm (bar):
         ko = 19652.17
@@ -316,7 +316,7 @@ class EVAP:
         ko += 0.01281*tc*tc*tc
         ko += -(4.91564e-5)*tc*tc*tc*tc
         ko += (1.035530e-7)*tc*tc*tc*tc*tc
-        # self.logger.info("bulk modulus at 1 atm calculated as %f bar", ko)
+        # self.logger.debug("bulk modulus at 1 atm calculated as %f bar", ko)
 
         # Calculate temperature dependent coefficients:
         ca = 3.26138
@@ -324,18 +324,18 @@ class EVAP:
         ca += (1.324e-4)*tc*tc
         ca += -(7.655e-7)*tc*tc*tc
         ca += (8.584e-10)*tc*tc*tc*tc
-        # self.logger.info("temperature coef, Ca, calculated as %f", ca)
+        # self.logger.debug("temperature coef, Ca, calculated as %f", ca)
 
         cb = (7.2061e-5)
         cb += -(5.8948e-6)*tc
         cb += (8.69900e-8)*tc*tc
         cb += -(1.0100e-9)*tc*tc*tc
         cb += (4.3220e-12)*tc*tc*tc*tc
-        # self.logger.info("temperature coef, Cb, calculated as %f bar^-1", cb)
+        # self.logger.debug("temperature coef, Cb, calculated as %f bar^-1", cb)
 
         # Convert atmospheric pressure to bar (1 bar = 100000 Pa)
         pbar = (1.0e-5)*p
-        # self.logger.info("atmospheric pressure calculated as %f bar", pbar)
+        # self.logger.debug("atmospheric pressure calculated as %f bar", pbar)
 
         pw = (ko + ca*pbar + cb*pbar**2.0)
         pw /= (ko + ca*pbar + cb*pbar**2.0 - pbar)
@@ -368,11 +368,11 @@ class EVAP:
         cp += -(8.830478888e-8)*tc*tc*tc*tc
         cp += (5.071307038e-10)*tc*tc*tc*tc*tc
         cp *= (1e3)
-        # self.logger.info("specific heat capacity calculated as %f J/kg/K", cp)
+        # self.logger.debug("specific heat capacity calculated as %f J/kg/K", cp)
 
         # Calculate latent heat of vaporization, J/kg
         lv = self.enthalpy_vap(tc)
-        # self.logger.info(
+        # self.logger.debug(
         #     "enthalpy of vaporization calculated as %f MJ/kg", (1e-6)*lv)
 
         # Calculate psychrometric constant, Pa/K
@@ -385,7 +385,7 @@ class EVAP:
 if __name__ == '__main__':
     # Create a root logger:
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
+    root_logger.setLevel(logging.debug)
 
     # Instantiating logging handler and record format:
     root_handler = logging.FileHandler("evap.log")

@@ -198,8 +198,8 @@ class SOLAR:
         my_nu, my_lambda = self.berger_tls(n)
         self.my_nu = my_nu
         self.my_lambda = my_lambda
-        self.logger.info("true anomaly, nu, set to %f degrees", my_nu)
-        self.logger.info("true lon, lambda, set to %f degrees", my_lambda)
+        self.logger.debug("true anomaly, nu, set to %f degrees", my_nu)
+        self.logger.debug("true lon, lambda, set to %f degrees", my_lambda)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate distance factor (dr), unitless
@@ -209,8 +209,8 @@ class SOLAR:
         my_rho = (1.0 - kee)/(1.0 + ke*dcos(my_nu))
         dr = (1.0/my_rho)**2
         self.dr = dr
-        self.logger.info("relative Earth-Sun distance, rho, set to %f", my_rho)
-        self.logger.info("distance factor, dr, set to %f", dr)
+        self.logger.debug("relative Earth-Sun distance, rho, set to %f", my_rho)
+        self.logger.debug("distance factor, dr, set to %f", dr)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate declination angle (delta), degrees
@@ -219,7 +219,7 @@ class SOLAR:
         delta = numpy.arcsin(dsin(my_lambda)*dsin(keps))
         delta /= pir
         self.delta = delta
-        self.logger.info("declination, delta, set to %f", delta)
+        self.logger.debug("declination, delta, set to %f", delta)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Calculate variable substitutes (u and v), unitless
@@ -228,8 +228,8 @@ class SOLAR:
         rv = dcos(delta)*dcos(self.lat)
         self.ru = ru
         self.rv = rv
-        self.logger.info("variable substitute, ru, set to %f", ru)
-        self.logger.info("variable substitute, rv, set to %f", rv)
+        self.logger.debug("variable substitute, ru, set to %f", ru)
+        self.logger.debug("variable substitute, rv, set to %f", rv)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 6. Calculate the sunset hour angle (hs), degrees
@@ -248,7 +248,7 @@ class SOLAR:
             hs = numpy.arccos(hs)
             hs /= pir
         self.hs = hs
-        self.logger.info("sunset angle, hs, set to %f", hs)
+        self.logger.debug("sunset angle, hs, set to %f", hs)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 7. Calculate daily extraterrestrial solar radiation (ra_d), J/m^2
@@ -256,7 +256,7 @@ class SOLAR:
         # Eq. 1.10.3, Duffy & Beckman (1993)
         ra_d = (86400.0/numpy.pi)*kGsc*dr*(ru*pir*hs + rv*dsin(hs))
         self.ra_d = ra_d
-        self.logger.info("daily ET radiation set to %f MJ/m^2", (1.0e-6)*numpy.nansum(ra_d))
+        self.logger.debug("daily ET radiation set to %f MJ/m^2", (1.0e-6)*numpy.nansum(ra_d))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 8. Calculate transmittivity (tau), unitless
@@ -265,15 +265,15 @@ class SOLAR:
         tau_o = (kc + kd*sf)
         tau = tau_o*(1.0 + (2.67e-5)*self.elv)
         self.tau = tau
-        self.logger.info("base transmittivity set to %f", tau_o)
-        self.logger.info("transmittivity set to %f", tau)
+        self.logger.debug("base transmittivity set to %f", tau_o)
+        self.logger.debug("transmittivity set to %f", tau)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 9. Calculate daily PPFD (ppfd_d), mol/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         ppfd_d = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*ra_d
         self.ppfd_d = ppfd_d
-        self.logger.info("daily PPFD set to %f mol/m^2", numpy.nansum(ppfd_d))
+        self.logger.debug("daily PPFD set to %f mol/m^2", numpy.nansum(ppfd_d))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 10. Estimate net longwave radiation (rnl), W/m^2
@@ -281,14 +281,14 @@ class SOLAR:
         # Eq. 11, Prentice et al. (1993); Eq. 5 and 6, Linacre (1968)
         rnl = (kb + (1.0 - kb)*sf)*(kA - tc)
         self.rnl = rnl
-        self.logger.info("net longwave radiation set to %f W/m^2", numpy.nansum(rnl))
+        self.logger.debug("net longwave radiation set to %f W/m^2", numpy.nansum(rnl))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 11. Calculate variable substitute (rw), W/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         rw = (1.0 - kalb_sw)*tau*kGsc*dr
         self.rw = rw
-        self.logger.info("variable substitute, rw, set to %f", rw)
+        self.logger.debug("variable substitute, rw, set to %f", rw)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 12. Calculate net radiation cross-over hour angle (hn), degrees
@@ -322,14 +322,14 @@ class SOLAR:
         #    hn = numpy.arccos(hn)
         #    hn /= pir
         #self.hn = hn
-        self.logger.info("cross-over hour angle set to %f", hn)
+        self.logger.debug("cross-over hour angle set to %f", hn)
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 13. Calculate daytime net radiation (rn_d), J/m^2
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         rn_d = (86400.0/numpy.pi)*(hn*pir*(rw*ru - rnl) + rw*rv*dsin(hn))
         self.rn_d = rn_d
-        self.logger.info(
+        self.logger.debug(
             "daytime net radiation set to %f MJ/m^2", (1.0e-6)*numpy.nansum(rn_d))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -344,7 +344,7 @@ class SOLAR:
         rnn_d -= rnl*(numpy.pi - hn)
         rnn_d *= (86400.0/numpy.pi)
         self.rnn_d = rnn_d
-        self.logger.info(
+        self.logger.debug(
             "nighttime net radiation set to %f MJ/m^2", (1.0e-6)*numpy.nansum(rnn_d))
 
     def julian_day(self, y, m, i):
