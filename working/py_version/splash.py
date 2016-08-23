@@ -68,7 +68,7 @@ class SPLASH:
         """
         # Create a class logger
         self.logger = logging.getLogger(__name__)
-        self.logger.info("SPLASH class called")
+        self.logger.debug("SPLASH class called")
 
         # Error handle and assign required public variables:
         self.elv = elv

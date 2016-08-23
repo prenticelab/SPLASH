@@ -70,11 +70,11 @@ class SOLAR:
         """
         # Create a class logger
         self.logger = logging.getLogger(__name__)
-        self.logger.info("SOLAR class called")
+        self.logger.debug("SOLAR class called")
 
         # Assign default public variables:
         self.elv = elv
-        self.logger.info("elevation set to %0.3f m", elv)
+        self.logger.debug("elevation set to %0.3f m", elv)
 
         # Error handle and assign required public variables:
         if lat > 90.0 or lat < -90.0:
@@ -83,7 +83,7 @@ class SOLAR:
             raise ValueError(
                 "Latitude outside range of validity, (-90 to 90)!")
         else:
-            self.logger.info("latitude set to %0.3f degrees", lat)
+            self.logger.debug("latitude set to %0.3f degrees", lat)
             self.lat = lat
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

@@ -75,7 +75,7 @@ class EVAP:
         """
         # Create a class logger
         self.logger = logging.getLogger(__name__)
-        self.logger.info("EVAP class called")
+        self.logger.debug("EVAP class called")
 
         # Assign default public variables:
         self.elv = elv

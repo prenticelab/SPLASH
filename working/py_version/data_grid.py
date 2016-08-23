@@ -105,7 +105,7 @@ class DATA_G:
 
         # Create a class logger
         self.logger = logging.getLogger(__name__)
-        self.logger.info("DATA_G class called")
+        self.logger.debug("DATA_G class called")
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -151,7 +151,7 @@ class DATA_G:
         """
         cld_file = self.get_cru_file(path, 'cld')
         if os.path.isfile(cld_file):
-            self.logger.info("found CRU TS cloudiness file %s", cld_file)
+            self.logger.debug("found CRU TS cloudiness file %s", cld_file)
             self.cld_file = cld_file
         else:
             self.logger.warning("failed to load CRU TS cloudiness file")
@@ -159,7 +159,7 @@ class DATA_G:
 
         elv_file = self.get_cru_file(path, 'elv')
         if os.path.isfile(elv_file):
-            self.logger.info("found CRU TS elevation file %s", elv_file)
+            self.logger.debug("found CRU TS elevation file %s", elv_file)
             self.elv_file = elv_file
         else:
             self.logger.warning("failed to load CRU TS elevation file")
@@ -167,7 +167,7 @@ class DATA_G:
 
         # pre_file = self.get_cru_file(path, 'pre')
         # if os.path.isfile(pre_file):
-        #     self.logger.info("found CRU TS precipitation file %s", pre_file)
+        #     self.logger.debug("found CRU TS precipitation file %s", pre_file)
         #     self.pre_file = pre_file
         # else:
         #     self.logger.warning("failed to load CRU TS precipitation file")
@@ -175,7 +175,7 @@ class DATA_G:
 
         tmp_file = self.get_cru_file(path, 'tmp')
         if os.path.isfile(tmp_file):
-            self.logger.info("found CRU TS temperature file %s", tmp_file)
+            self.logger.debug("found CRU TS temperature file %s", tmp_file)
             self.tmp_file = tmp_file
         else:
             self.logger.warning("failed to load CRU TS temperature file")
@@ -184,7 +184,7 @@ class DATA_G:
         tmn_file = self.get_cru_file(path, 'tmn')
         
         if os.path.isfile(tmn_file):
-            self.logger.info("found CRU T MIN temperature file %s", tmn_file)
+            self.logger.debug("found CRU T MIN temperature file %s", tmn_file)
             self.tmn_file = tmn_file
         else:
             self.logger.warning("failed to load CRU T MIN temperature file")
@@ -192,7 +192,7 @@ class DATA_G:
 
         tmx_file = self.get_cru_file(path, 'tmx')
         if os.path.isfile(tmx_file):
-            self.logger.info("found CRU T MAX temperature file %s", tmx_file)
+            self.logger.debug("found CRU T MAX temperature file %s", tmx_file)
             self.tmx_file = tmx_file
         else:
             self.logger.warning("failed to load CRU T MAX temperature file")
@@ -200,7 +200,7 @@ class DATA_G:
 
         vap_file = self.get_cru_file(path, 'vap')
         if os.path.isfile(vap_file):
-            self.logger.info("found CRU Vap file %s", vap_file)
+            self.logger.debug("found CRU Vap file %s", vap_file)
             self.vap_file = vap_file
         else:
             self.logger.warning("failed to load CRU Vap file")
@@ -213,7 +213,7 @@ class DATA_G:
         """
         Rainf_file = self.get_watch_file(path, 'Rainf', ct)
         if os.path.isfile(Rainf_file):
-            self.logger.info("found WACTH precipitation file %s", Rainf_file)
+            self.logger.debug("found WACTH precipitation file %s", Rainf_file)
             self.Rainf_file = Rainf_file
         else:
             self.logger.warning("failed to load CWACTH precipitationfile")
@@ -221,7 +221,7 @@ class DATA_G:
 
         Tair_file = self.get_watch_file(path, 'Tair', ct)
         if os.path.isfile(Tair_file):
-            self.logger.info("found WACTH Tair temperature file %s", Tair_file)
+            self.logger.debug("found WACTH Tair temperature file %s", Tair_file)
             self.Tair_file = Tair_file
         else:
             self.logger.warning("failed to load WACTH Tair temperature file")
@@ -234,7 +234,7 @@ class DATA_G:
         """
         fapar_file = self.get_fapar_file(path, 'fAPAR')
         if os.path.isfile(fapar_file):
-            self.logger.info("found fAPAR3g file %s", fapar_file)
+            self.logger.debug("found fAPAR3g file %s", fapar_file)
             self.fapar_file = fapar_file
         else:
             self.logger.warning("failed to load fAPAR3g file")
@@ -247,7 +247,7 @@ class DATA_G:
         """
         evi_file = self.get_evi_file(path, 'fAPAR') # This is set to fAPAR becuase EVI in ISI_MIP == fAPAR
         if os.path.isfile(evi_file):
-            self.logger.info("found EVI file %s", evi_file)
+            self.logger.debug("found EVI file %s", evi_file)
             self.evi_file = evi_file
         else:
             self.logger.warning("failed to load evi file")
@@ -260,7 +260,7 @@ class DATA_G:
         """
         co2_file = self.get_noaa_file(path, 'co2')
         if os.path.isfile(co2_file):
-            self.logger.info("found NOAA co2 file %s", co2_file)
+            self.logger.debug("found NOAA co2 file %s", co2_file)
             self.co2_file = co2_file
         else:
             self.logger.warning("failed to load  NOAA co2 file")
@@ -290,7 +290,7 @@ class DATA_G:
                 self.logger.warning("Found %d files!", len(my_files))
             else:
                 my_file = my_files[0]
-                self.logger.info("found file %s", my_file)
+                self.logger.debug("found file %s", my_file)
         else:
             self.logger.warning("Found 0 files!")
 
@@ -315,7 +315,7 @@ class DATA_G:
                 self.logger.warning("Found %d files!", len(my_files))
             else:
                 my_file = my_files[0]
-                self.logger.info("found file %s", my_file)
+                self.logger.debug("found file %s", my_file)
         else:
             self.logger.warning("Found 0 files!")
 
@@ -340,7 +340,7 @@ class DATA_G:
                 self.logger.warning("Found %d files!", len(my_files))
             else:
                 my_file = my_files[0]
-                self.logger.info("found file %s", my_file)
+                self.logger.debug("found file %s", my_file)
         else:
             self.logger.warning("Found 0 files!")
 
@@ -365,7 +365,7 @@ class DATA_G:
                 self.logger.warning("Found %d files!", len(my_files))
             else:
                 my_file = my_files[0]
-                self.logger.info("found file %s", my_file)
+                self.logger.debug("found file %s", my_file)
         else:
             self.logger.warning("Found 0 files!")
 
@@ -391,7 +391,7 @@ class DATA_G:
                 self.logger.warning("Found %d files!", len(my_files))
             else:
                 my_file = my_files[0]
-                self.logger.info("found file %s", my_file)
+                self.logger.debug("found file %s", my_file)
         else:
             self.logger.warning("Found 0 files!")
 
@@ -916,6 +916,6 @@ if __name__ == '__main__':
     my_date += datetime.timedelta(days=(my_day-1))
 
     my_class.read_monthly_clim(my_date)
-    root_logger.info("read %d precipitation", my_class.pre.size)
-    root_logger.info("read %d sunshine fraction", my_class.sf.size)
-    root_logger.info("read %d air temperature", my_class.tmp.size)
+    root_logger.debug("read %d precipitation", my_class.pre.size)
+    root_logger.debug("read %d sunshine fraction", my_class.sf.size)
+    root_logger.debug("read %d air temperature", my_class.tmp.size)
