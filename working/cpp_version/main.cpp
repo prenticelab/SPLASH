@@ -12,7 +12,7 @@ using namespace std;
  * main.cpp
  *
  * VERSION 1.1-dev
- * LAST UPDATED: 2016-02-19
+ * LAST UPDATED: 2016-09-01
  *
  * ~~~~~~~~
  * license:
@@ -73,7 +73,7 @@ int main() {
 
     // Test 4: SPIN-UP
     DATA my_data;
-    string fname = "../../../data/example_data.csv";
+    string fname = "../../data/example_data.csv";
     my_data.read_csv(fname);
     double lat = 37.7;
     double elv = 142.0;
