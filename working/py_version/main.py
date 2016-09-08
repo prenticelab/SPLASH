@@ -75,7 +75,7 @@ if __name__ == '__main__':
     # Send logging handler to root logger:
     root_logger.addHandler(root_handler)
 
-    method = "point"
+    method = "lonlat"
 
     if method == "point":
         my_data = DATA(mode='txt')
@@ -128,16 +128,16 @@ if __name__ == '__main__':
         my_data = DATA(mode="latlon")
         my_data.cru_cld_file = os.path.join(
             os.path.expanduser("~"), "Data", "cru_ts",
-            "cru_ts3.22.1901.2013.cld.dat.nc")
+            "cru_ts3.23.1991.2000.cld.dat.nc")
         my_data.cru_pre_file = os.path.join(
             os.path.expanduser("~"), "Data", "cru_ts",
-            "cru_ts3.22.1901.2013.pre.dat.nc")
+            "cru_ts3.23.1991.2000.pre.dat.nc")
         my_data.cru_tmp_file = os.path.join(
             os.path.expanduser("~"), "Data", "cru_ts",
-            "cru_ts3.22.1901.2013.tmp.dat.nc")
+            "cru_ts3.23.1991.2000.tmp.dat.nc")
         my_data.cru_elv_file = os.path.join(
             os.path.expanduser("~"), "Data", "cru_ts",
-            "cru_ts3.00_halfdeg.elv.grid.dat")
+            "halfdeg.elv.grid.dat")
 
         # Set the output directory for saving lon-lat gridded data files:
         output_dir = os.path.join(os.path.expanduser("~"), "Data", "splash")
@@ -145,14 +145,14 @@ if __name__ == '__main__':
         old_z = -1
 
         # Iterate through each latitude:
-        for y in range(len(my_data.latitude)):
+        for y in range(315, len(my_data.latitude)):
             lat = my_data.latitude[y]
 
             # Print progress:
             z = 100.0 * (y - 1.0) / (len(my_data.latitude) - 1.0)
             if int(z) % 5 == 0 and int(z) != old_z:
                 msg = "[{}{}] {}% \r".format(
-                    '#'*int(z / 5), '\u2013'*(20 - int(z / 5)), int(z))
+                    '#'*int(z / 5), '-'*(20 - int(z / 5)), int(z))
                 sys.stdout.write(msg)
                 old_z = int(z)
 
@@ -220,5 +220,5 @@ if __name__ == '__main__':
         # Print the 100%
         z = 100.0
         msg = "[{}{}] {}%\n".format(
-            '#'*int(z / 5), '\u2013'*(20 - int(z / 5)), int(z))
+            '#'*int(z / 5), '-'*(20 - int(z / 5)), int(z))
         sys.stdout.write(msg)
