@@ -9,7 +9,7 @@ using namespace std;
  * DATA.cpp
  *
  * VERSION 1.1-dev
- * LAST UPDATED: 2016-02-19
+ * LAST UPDATED: 2016-09-10
  *
  * ~~~~~~~~
  * license:
@@ -51,6 +51,7 @@ using namespace std;
  * 01. Created read_csv and read_txt class member functions [15.02.17]
  * 02. Added year to class member variables [15.02.17]
  * 03. Added DATA header file to include [15.02.19]
+ * 04. Created is_good function to return bool for good data [16.09.10]
  *
  * //////////////////////////////////////////////////////////////////////// */
 
@@ -58,7 +59,7 @@ using namespace std;
    Class Constructors:
    ///////////////////////////////////////////////////////////////////// */
 DATA::DATA()
-    : num_lines(0), year(0)
+    : num_lines(0), year(0), good(false)
 {
 }
 
@@ -139,9 +140,21 @@ void DATA::read_csv(string fname, int y) {
         num_lines = (i - 1);  // subtract one for last iteration
         num_lines--;          // subtract one more for the headerline
     } else {
+        num_lines = 0;
         cout << "! Could not read " << fname << endl;
     }
     my_file.close();
+
+    // Assign good/bad for data:
+    if (num_lines == 0) {
+        good = false;
+    } else if (num_lines < 365) {
+        good = false;
+    } else if (num_lines > 366) {
+        good = false;
+    } else {
+        good = true;
+    }
 
     // Set class variable for year:
     if (y == -1){
@@ -192,9 +205,21 @@ void DATA::read_txt(string fname, string var, int y){
         } // end while file != eof
         num_lines = i;
     } else {
+        num_lines = 0;
         cout << "! Could not read " << fname << endl;
     }
     my_file.close();
+
+    // Assign good/bad for data:
+    if (num_lines == 0) {
+        good = false;
+    } else if (num_lines < 365) {
+        good = false;
+    } else if (num_lines > 366) {
+        good = false;
+    } else {
+        good = true;
+    }
 
     // Set class variable for year:
     if (y == -1){
@@ -266,6 +291,16 @@ double DATA::get_one_pn(int n){
     Features: This function returns the precipitation for a given index.
     *********************************************************************** */
     return pn_vec[n];
+}
+
+bool DATA::is_good(){
+    /* ***********************************************************************
+    Name:     DATA.is_good
+    Input:    None
+    Output:   bool
+    Features: This function returns the boolean for good/bad data.
+    *********************************************************************** */
+    return good;
 }
 
 int DATA::nlines(){

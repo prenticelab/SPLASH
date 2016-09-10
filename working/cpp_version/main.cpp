@@ -12,7 +12,7 @@ using namespace std;
  * main.cpp
  *
  * VERSION 1.1-dev
- * LAST UPDATED: 2016-09-01
+ * LAST UPDATED: 2016-09-10
  *
  * ~~~~~~~~
  * license:
@@ -78,8 +78,10 @@ int main() {
     double lat = 37.7;
     double elv = 142.0;
     SPLASH my_class(lat, elv);
-    my_class.spin_up(my_data);
-    my_class.print_daily_wn();
+    if (my_data.is_good()) {
+        my_class.spin_up(my_data);
+        my_class.print_daily_wn();
+    }
 
     /*
 
