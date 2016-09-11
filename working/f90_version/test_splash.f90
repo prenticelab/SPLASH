@@ -3,7 +3,7 @@ program test_splash
   ! EXECUTE TESTS 1, 2, AND 3 FOR SPLASH (without spinup)
   ! see https://bitbucket.org/labprentice/splash/wiki/Home
   !
-  ! LAST UPDATED: 2016-02-19
+  ! LAST UPDATED: 2016-09-11
   !
   ! Copyright (C) 2016 Prentice Lab
   !
@@ -22,7 +22,7 @@ program test_splash
   ! You should have received a copy of the GNU Lesser General Public License
   ! along with SPLASH.  If not, see <http://www.gnu.org/licenses/>.
   !----------------------------------------------------------------
-  use _splash
+  use splash
 
   implicit none
 
