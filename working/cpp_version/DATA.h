@@ -5,7 +5,7 @@
  * DATA.h
  *
  * VERSION 1.1-dev
- * LAST UPDATED: 2016-02-19
+ * LAST UPDATED: 2016-09-10
  *
  * ~~~~~~~~
  * license:
@@ -50,6 +50,7 @@
  * 04. Created header guard [15.02.19]
  * 05. Moved all necessary includes to header file [15.02.19]
  *     ---> removed from cpp file
+ * 06. Created is_good function for returning bool for good data [16.09.10]
  *
  * //////////////////////////////////////////////////////////////////////// */
 #ifndef DATA_H
@@ -59,6 +60,7 @@ class DATA {
         // Variables:
         int num_lines;                         // number of lines read from file
         int year;                              // year for data from file
+        bool good;                             // whether data is good or not
         std::string file_name;
         std::vector<std::string> file_names;   // all file names
         std::vector<double> sf_vec;            // sun hours fraction
@@ -79,6 +81,7 @@ class DATA {
         double get_one_sf(int n);
         double get_one_tair(int n);
         double get_one_pn(int n);
+        bool is_good();
         int nlines();
         int get_year();
 };

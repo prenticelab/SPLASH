@@ -32,7 +32,7 @@ nice:
 #---------- Dependencies ----------#
 DATA.o:		DATA.h
 SOLAR.o:    global.h SOLAR.h
-EVAP.o:		global.h EVAP.h SOLAR.h
-SPLASH.o:	global.h SPLASH.h
+EVAP.o:		global.h SOLAR.h EVAP.h
+SPLASH.o:	global.h DATA.h SOLAR.h EVAP.h SPLASH.h
 global.o:   global.h
-main.o:		DATA.h EVAP.h SPLASH.h
+main.o:		DATA.h SOLAR.h EVAP.h SPLASH.h
