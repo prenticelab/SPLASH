@@ -11,7 +11,7 @@ This program calculates bioclimatic indices and fluxes (radiation, evapotranspir
 ---------------
 
 * LATEST RELEASE: v1.0
-* LAST UPDATED: 2016-02-18
+* LAST UPDATED: 2016-09-11
 * LICENSE: GNU Lesser General Public License
 * TEAM: labprentice
 * REPO: https://bitbucket.org/labprentice/splash
