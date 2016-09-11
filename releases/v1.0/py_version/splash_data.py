@@ -2,8 +2,8 @@
 #
 # splash_data.py
 #
-# VERSION: 1.0
-# LAST UPDATED: 2016-02-19
+# VERSION: 1.0-r1
+# LAST UPDATED: 2016-09-11
 #
 # ~~~~~~~~
 # license:
