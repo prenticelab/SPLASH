@@ -6,7 +6,7 @@
  * EVAP.h
  *
  * VERSION 1.0
- * LAST UPDATED: 2016-02-19
+ * LAST UPDATED: 2016-09-11
  *
  * ~~~~~~~~
  * license:
@@ -52,6 +52,7 @@
  * 05. added etr struct to include list [15.02.19]
  * 06. removed the unnecessary get() functions [15.02.19]
  * 07. removed constants; now in global.h [16.01.22]
+ * 08. addressed specific heat limitation [16.09.11]
  *
  * //////////////////////////////////////////////////////////////////////// */
 #ifndef EVAP_H
@@ -88,6 +89,7 @@ class EVAP {
         double elv2pres(double z);
         double density_h2o(double tc, double p);
         double psychro(double tc, double p);
+        double specific_heat(double tc);
 
     public:
         // Constructors
