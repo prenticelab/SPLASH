@@ -10,7 +10,7 @@ module splash
   ! - elevation (m.a.s.l.)
   !
   ! VERSION: 1.0-r2
-  ! LAST UPDATED: 2016-08-19
+  ! LAST UPDATED: 2016-09-11
   !
   ! Copyright (C) 2016 Prentice Lab
   !
@@ -271,7 +271,7 @@ contains
       waterbal%ro = waterbal%sm - kWm  ! xxx add in sofun
       waterbal%sm = kWm
 
-    elseif (waterbal%sm<0) then
+    else if (waterbal%sm<0) then
       ! Bucket is empty
       ! * set soil moisture to zero
       out_evap%aet = out_evap%aet + waterbal%sm
@@ -398,7 +398,7 @@ contains
     if ((ru/rv) >= 1.0) then
       ! Polar day (no sunset)
       hs = 180.0
-    elseif ((ru/rv) <= -1.0) then
+    else if ((ru/rv) <= -1.0) then
       ! Polar night (no sunrise)
       hs = 0.0
     else
@@ -560,7 +560,7 @@ contains
     if (cos_hi >= 1.0) then
       ! Supply exceeds demand:
       hi = 0.0
-    elseif (cos_hi <= -1.0) then
+    else if (cos_hi <= -1.0) then
       ! Supply limits demand everywhere:
       hi = 180.0
     else
@@ -918,15 +918,21 @@ contains
     real :: psychro  ! psychrometric constant, Pa/K
 
     ! Calculate the specific heat capacity of water, J/kg/K
-    ! Eq. 47, Tsilingiris (2008)
-    cp = 1.0e3*(&
-               1.0045714270&
-             + 2.050632750e-3  *tc&
-             - 1.631537093e-4  *tc*tc&
-             + 6.212300300e-6  *tc*tc*tc&
-             - 8.830478888e-8  *tc*tc*tc*tc&
-             + 5.071307038e-10 *tc*tc*tc*tc*tc&
-            )
+    ! Eq. 47, Tsilingiris (2008); valid between 0 and 100 deg C
+    if (tc < 0) then
+        cp = 1004.5714270
+    else if (tc > 100) then
+        cp = 2031.2260590
+    else
+        cp = 1.0e3*(&
+                   1.0045714270&
+                 + 2.050632750e-3  *tc&
+                 - 1.631537093e-4  *tc*tc&
+                 + 6.212300300e-6  *tc*tc*tc&
+                 - 8.830478888e-8  *tc*tc*tc*tc&
+                 + 5.071307038e-10 *tc*tc*tc*tc*tc&
+                )
+    endif
 
     ! Calculate latent heat of vaporization, J/kg
     lv = get_enthalpy_vap( tc )
