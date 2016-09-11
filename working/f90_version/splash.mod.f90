@@ -1,4 +1,4 @@
-module _splash
+module splash
   !////////////////////////////////////////////////////////////////
   ! SPLASH
   ! This module contains all functions and parameter values to run
@@ -44,12 +44,12 @@ module _splash
 
   ! function return value of evap() as derived type
   type outtype_evap
-    real :: ra         ! daily TOA solar irradiation (J/m2)
+    real :: ra         ! daily top-of-atmosphere solar irradiation (J/m2)
     real :: rn         ! daily net radiation (J/m2)
-    real :: ppfd       ! daily PPFD (mol/m^2)
-    real :: eet        ! daily out_evap%EET (mm)
-    real :: pet        ! daily PET (mm)
-    real :: aet        ! daily AET (mm)
+    real :: ppfd       ! daily photosynthetic photon flux density (mol/m^2)
+    real :: eet        ! daily equilibrium evapotranspiration (mm)
+    real :: pet        ! daily potential evapotranspiration (mm)
+    real :: aet        ! daily actual evapotranspiration (mm)
     real :: cn         ! daily condensation (mm)
   end type
 
@@ -105,7 +105,7 @@ module _splash
   ! daily totals
   real, dimension(366) :: outdra            ! daily solar irradiation, J/m2
   real, dimension(366) :: outdrn            ! daily net radiation, J/m2
-  real, dimension(366) :: outdppfd          ! daily PPFD, mol/m2
+  real, dimension(366) :: outdppfd          ! daily photosynth. photon flux density, mol/m2
   real, dimension(366) :: outdcn            ! daily condensation water, mm
   real, dimension(366) :: outdsm            ! daily soil moisture, mm
   real, dimension(366) :: outdro            ! daily runoff, mm
@@ -114,12 +114,12 @@ module _splash
   real, dimension(366) :: outdaet           ! daily actual ET, mm
 
   ! monthly totals
-  real, dimension(12) :: outmeet
-  real, dimension(12) :: outmpet
-  real, dimension(12) :: outmaet
-  real, dimension(12) :: outmcpa
-  real, dimension(12) :: outmcwd
-  real, dimension(12) :: outmppfd
+  real, dimension(12) :: outmeet            ! monthly equilibrium ET (mm)
+  real, dimension(12) :: outmpet            ! monthly potential ET (mm)
+  real, dimension(12) :: outmaet            ! monthly actual ET (mm)
+  real, dimension(12) :: outmcpa            ! monthly Priestly-Taylor coeff.
+  real, dimension(12) :: outmcwd            ! monthly climatic water deficit
+  real, dimension(12) :: outmppfd           ! monthly photosynth. photon flux density
 
 
 contains
@@ -291,20 +291,20 @@ contains
     !----------------------------------------------------------------
     ! This subroutine calculates daily radiation and evapotranspiration
     ! quantities
-    ! - daily PPFD (ppfd), mol/m^2
-    ! - daily EET (eet), mm
-    ! - daily PET (pet), mm
-    ! - daily AET (aet), mm
+    ! - daily photosynthetic photon flux density (ppfd), mol/m^2
+    ! - daily equilibrium evapotranspiration (eet), mm
+    ! - daily potential evapotranspiration (pet), mm
+    ! - daily actual evapotranspiration (aet), mm
     ! - daily condensation (wc), mm
     !-------------------------------------------------------------
     ! arguments
-    real,    intent(in) :: lat           ! latitude, degrees
-    integer, intent(in) :: doy           ! day of the year (formerly 'n')
-    real,    intent(in) :: elv ! elevation, metres
-    integer, intent(in) :: yr  ! year
-    real,    intent(in) :: sf  ! fraction of sunshine hours
-    real,    intent(in) :: tc  ! mean daily air temperature, C
-    real,    intent(in) :: sw  ! evaporative supply rate, mm/hr
+    real,    intent(in) :: lat  ! latitude, degrees
+    integer, intent(in) :: doy  ! day of the year (formerly 'n')
+    real,    intent(in) :: elv  ! elevation, metres
+    integer, intent(in) :: yr   ! year
+    real,    intent(in) :: sf   ! fraction of sunshine hours
+    real,    intent(in) :: tc   ! mean daily air temperature, C
+    real,    intent(in) :: sw   ! evaporative supply rate, mm/hr
 
     ! function return variable
     type( outtype_evap )  :: out_evap
@@ -327,7 +327,7 @@ contains
     real :: pw                 ! density of water, kg/m^3
     real :: lv                 ! enthalpy of vaporization, J/kg
     real :: g                  ! psychrometric constant, Pa/K
-    real :: econ               ! water to energy conversion
+    real :: econ               ! water-to-energy conversion, m^3/J
     real :: rx                 ! variable substitute (mm/hr)/(W/m^2)
     real :: hi, cos_hi         ! intersection hour angle, degrees
 
@@ -343,9 +343,9 @@ contains
       stop
     endif
 
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! 1. Calculate number of days in year (kN), days (take from argument)
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! 1. Calculate number of days in year (ndayyear), days (take from argument)
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ndayyear = get_julian_day(yr+1, 1, 1) - get_julian_day(yr, 1, 1)
 
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -375,7 +375,7 @@ contains
     ! 4. Calculate declination angle (delta), degrees
     ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! Woolf (1968)
-    delta = dasin( dgsin( out_berger%lambda ) * dgsin( keps ) )   ! xxx arcsin is asin in Fortran?
+    delta = asin( dgsin( out_berger%lambda ) * dgsin( keps ) )
     delta = degrees( delta )
 
     ! consistency check
@@ -430,9 +430,9 @@ contains
     if (verbose) print*,'tau_o ',tau_o
     if (verbose) print*,'tau   ',tau
 
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! 9. Calculate daily PPFD (ppfd_d), mol/m^2
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! 9. Calculate daily photosynthetic photon flux density (out_evap%ppfd), mol/m^2
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     out_evap%ppfd = (1.0e-6)*kfFEC*(1.0 - kalb_vis)*tau*out_evap%ra
 
     ! consistency check
@@ -471,9 +471,9 @@ contains
     ! consistency check
     if (verbose) print*,'cross-over hour angle, hn ',hn
 
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ! 13. Calculate daytime net radiation (out_evap%rn), J/m^2
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     out_evap%rn = (86400.0/pi) * (hn*(pi/180.0)*(rw*ru - rnl) + rw*rv*dgsin(hn))
 
     ! consistency check
@@ -520,25 +520,25 @@ contains
     ! consistency check
     if (verbose) print*,'Econ ',econ
 
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! 16. Calculate daily condensation (wc), mm
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! 16. Calculate daily condensation (out_evap%cn), mm
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     out_evap%cn = 1000.0 * econ * abs(rnn_d)
 
     ! consistency check
     if (verbose) print*,'daily condensation (mm) ',out_evap%cn
 
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! 17. Estimate daily EET (eet_d), mm
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    out_evap%eet = 1000.0*econ*(out_evap%rn)
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! 17. Estimate daily equilibrium evapotranspiration (out_evap%eet), mm
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    out_evap%eet = 1000.0 * econ * out_evap%rn
 
     ! consistency check
     if (verbose) print*,'out_evap%EET (mm) ', out_evap%eet
 
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ! 18. Estimate daily PET (pet_d), mm
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! 18. Estimate daily potential evapotranspiration (out_evap%pet), mm
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     out_evap%pet = (1.0+kw)*out_evap%eet
 
     ! consistency check
@@ -567,12 +567,12 @@ contains
       hi = degrees( acos(cos_hi) )
     endif
 
-    ! consistency check - XXX PROBLEM: THIS LEADS TO DIFFERENCE WITH OTHER VERSIONS XXX
+    ! consistency check
     if (verbose) print*,'intersection hour angle ', hi
 
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~`
-    ! 21. Estimate daily out_evap%AET (out_evap%aet), mm
-    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ! 21. Estimate daily actual evapotranspiration (out_evap%aet), mm
+    ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     out_evap%aet = (24.0/pi)*(radians(sw*hi) + rx*rw*rv*(dgsin(hn) - dgsin(hi)) + radians((rx*rw*ru - rx*rnl)*(hn - hi)))
 
     ! consistency check
@@ -628,7 +628,7 @@ contains
   end function evap
 
 
-  function dgcos( x )
+  function dgcos( x ) result( out_dgcos )
     !----------------------------------------------------------------
     ! Calculates the cosine of an angle given in degrees. Equal to
     ! 'dsin' in Python version.
@@ -637,14 +637,14 @@ contains
     real, intent(in) :: x  ! angle, degrees (0-360)
 
     ! function return value
-    real, intent(out) :: dgcos ! cosine value of x when x is in degrees
+    real :: out_dgcos ! cosine value of x when x is in degrees
 
-    dgcos = dcos(x*pi/180.0)
+    out_dgcos = cos(x*pi/180.0)
 
   end function dgcos
 
 
-  function dgsin( x )
+  function dgsin( x ) result( out_dgsin )
     !----------------------------------------------------------------
     ! Calculates the sinus of an angle given in degrees. Equal to
     ! 'dsin' in Python version.
@@ -653,14 +653,14 @@ contains
     real, intent(in) :: x  ! angle, degrees (0-360)
 
     ! function return value
-    real, intent(out) :: dgsin ! sinus value of x when x is in degrees
+    real :: out_dgsin ! sinus value of x when x is in degrees
 
-    dgsin = dsin(x*pi/180.0)
+    out_dgsin = sin(x*pi/180.0)
 
   end function dgsin
 
 
-  function degrees( x )
+  function degrees( x ) result( out_degrees )
     !----------------------------------------------------------------
     ! Returns corresponding degrees if x is given in radians
     !----------------------------------------------------------------
@@ -668,14 +668,14 @@ contains
     real, intent(in) :: x  ! angle, radians
 
     ! function return value
-    real, intent(out) :: degrees
+    real :: out_degrees
 
-    degrees = x*180.0/pi
+    out_degrees = x*180.0/pi
 
   end function degrees
 
 
-  function radians( x )
+  function radians( x ) result( out_radians )
     !----------------------------------------------------------------
     ! Returns corresponding radians if x is given in degrees
     !----------------------------------------------------------------
@@ -683,9 +683,9 @@ contains
     real, intent(in) :: x  ! angle, radians
 
     ! function return value
-    real, intent(out) :: radians
+    real :: out_radians
 
-    radians = x*pi/180.0
+    out_radians = x*pi/180.0
 
   end function radians
 
@@ -714,7 +714,7 @@ contains
     ! Variable substitutes:
     xee = ke**2
     xec = ke**3
-    xse = dsqrt(1.0 - xee)
+    xse = sqrt(1.0 - xee)
 
     ! Mean longitude for vernal equinox:
     tmp1 = (ke/2.0 + xec/8.0)*(1.0 + xse)*dgsin(komega)
@@ -731,7 +731,7 @@ contains
     ranm = radians(anm)
 
     ! True anomaly:
-    ranv = (ranm + (2.0*ke - xec/4.0)*dsin(ranm) + 5.0/4.0*xee*dsin(2.0*ranm) + 13.0/12.0*xec*dsin(3.0*ranm))
+    ranv = (ranm + (2.0*ke - xec/4.0) * sin(ranm) + 5.0/4.0*xee * sin(2.0*ranm) + 13.0/12.0*xec * sin(3.0*ranm) )
     anv = degrees(ranv)
 
     ! True longitude:
@@ -755,14 +755,14 @@ contains
     !----------------------------------------------------------------
     ! Converts Gregorian date (year, month, day) to Julian
     ! Ephemeris Day
+    ! * valid for dates after -4712 January 1 (i.e., jde >= 0)
     ! Reference:  Eq. 7.1, Meeus, J. (1991), Ch.7 "Julian Day,"
     ! Astronomical Algorithms
-    ! xxx zero indexing in Python => usage of this function ok for Fortran? xxx
     !----------------------------------------------------------------
     ! arguments
     integer, intent(in) :: yr      ! year
-    integer, intent(in) :: moy     ! month of year
-    integer, intent(in) :: dom     ! day of month
+    integer, intent(in) :: moy     ! month of year (i.e., 1--12)
+    integer, intent(in) :: dom     ! day of month (i.e., 1--31)
 
     ! local variables
     integer :: my_yr
@@ -782,7 +782,7 @@ contains
 
     a = int(real(my_yr)/real(100))
     b = 2 - a + int(real(a)/real(4))
-    out_julian_day=int(real(int(365.25*real(my_yr+4716)))+real(int(30.6001*real(my_moy+1)))+real(dom)+real(b)-1524.5)  ! xxx use moy instead of (moy+1) without zero-indexing as in Python?
+    out_julian_day=int(real(int(365.25*real(my_yr+4716)))+real(int(30.6001*real(my_moy+1)))+real(dom)+real(b)-1524.5)
 
   end function get_julian_day
 
@@ -790,7 +790,7 @@ contains
   function get_sat_slope( tc ) result( out_sat_slope )
     !----------------------------------------------------------------
     ! Calculates the slope of the sat pressure temp curve, Pa/K
-    ! Ref:      Eq. 13, Allen et al. (1998)
+    ! Ref:  Eq. 13, Allen et al. (1998)
     !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: tc ! air temperature, degrees C
@@ -806,7 +806,7 @@ contains
   function get_enthalpy_vap( tc ) result( out_enthalpy_vap )
     !----------------------------------------------------------------
     ! Calculates the enthalpy of vaporization, J/kg
-    ! Ref:      Eq. 8, Henderson-Sellers (1984)
+    ! Ref:  Eq. 8, Henderson-Sellers (1984)
     !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: tc ! air temperature, degrees C
@@ -822,7 +822,7 @@ contains
   function elv2pres( alt ) result( press )
     !----------------------------------------------------------------
     ! Calculates atm. pressure for a given elevation
-    ! Ref:      Allen et al. (1998)
+    ! Ref:  Allen et al. (1998)
     !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: alt ! elevation above sea level, m
@@ -838,7 +838,7 @@ contains
   function get_density_h2o( tc, press ) result( density_h2o )
     !----------------------------------------------------------------
     ! Calculates density of water at a given temperature and pressure
-    ! Ref: Chen et al. (1977)
+    ! Ref:  Chen et al. (1977)
     !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: tc     ! air temperature (degrees C)
@@ -904,7 +904,7 @@ contains
   function get_psychro( tc, press ) result( psychro )
     !----------------------------------------------------------------
     ! Calculates the psychrometric constant for a given temperature and pressure
-    ! Ref: Allen et al. (1998); Tsilingiris (2008)
+    ! Ref:  Allen et al. (1998); Tsilingiris (2008)
     !----------------------------------------------------------------
     ! arguments
     real, intent(in) :: tc ! air temperature, degrees C
@@ -918,15 +918,21 @@ contains
     real :: psychro  ! psychrometric constant, Pa/K
 
     ! Calculate the specific heat capacity of water, J/kg/K
-    ! Eq. 47, Tsilingiris (2008)
-    cp = 1.0e3*(&
-               1.0045714270&
-             + 2.050632750e-3  *tc&
-             - 1.631537093e-4  *tc*tc&
-             + 6.212300300e-6  *tc*tc*tc&
-             - 8.830478888e-8  *tc*tc*tc*tc&
-             + 5.071307038e-10 *tc*tc*tc*tc*tc&
-            )
+    ! Eq. 47, Tsilingiris (2008); valid between 0 and 100 deg C
+    if (tc < 0) then
+        cp = 1004.5714270
+    else if (tc > 100) then
+        cp = 2031.2260590
+    else
+        cp = 1.0e3*(&
+                   1.0045714270&
+                 + 2.050632750e-3  *tc&
+                 - 1.631537093e-4  *tc*tc&
+                 + 6.212300300e-6  *tc*tc*tc&
+                 - 8.830478888e-8  *tc*tc*tc*tc&
+                 + 5.071307038e-10 *tc*tc*tc*tc*tc&
+                )
+    endif
 
     ! Calculate latent heat of vaporization, J/kg
     lv = get_enthalpy_vap( tc )
@@ -1024,7 +1030,7 @@ contains
     !----------------------------------------------------------------
     prefix = "./output/"
 
-    ! WRTIING DAILY TOTALS
+    ! WRITING DAILY TOTALS
     !----------------------------------------------------------------
     print*,"writing daily totals to files"
 
@@ -1074,7 +1080,7 @@ contains
     write(110,999) outdaet
 
 
-    ! WRTIING MONTHLY TOTALS
+    ! WRITING MONTHLY TOTALS
     !----------------------------------------------------------------
     print*,"writing monthly totals to files"
 
@@ -1115,4 +1121,4 @@ contains
 
   end subroutine write_to_file
 
-end module _splash
+end module splash
