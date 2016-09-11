@@ -3,7 +3,7 @@
 # evap.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-02-19
+# LAST UPDATED: 2016-09-09
 #
 # ~~~~~~~~
 # license:
@@ -62,6 +62,7 @@ class EVAP:
     Version:  1.0.0-dev
               - replaced radiation methods with SOLAR class [15.12.29]
               - implemented logging [15.12.29]
+              - created specific heat equation for Tc 0--100 deg C [16.09.09]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -346,14 +347,7 @@ class EVAP:
              "and pressure %f Pa") % (tc, p))
 
         # Calculate the specific heat capacity of water, J/kg/K
-        # Eq. 47, Tsilingiris (2008)
-        cp = 1.0045714270
-        cp += (2.050632750e-3)*tc
-        cp += -(1.631537093e-4)*tc*tc
-        cp += (6.212300300e-6)*tc*tc*tc
-        cp += -(8.830478888e-8)*tc*tc*tc*tc
-        cp += (5.071307038e-10)*tc*tc*tc*tc*tc
-        cp *= (1e3)
+        cp = self.specific_heat(tc)
         self.logger.info("specific heat capacity calculated as %f J/kg/K", cp)
 
         # Calculate latent heat of vaporization, J/kg
@@ -364,6 +358,34 @@ class EVAP:
         # Calculate psychrometric constant, Pa/K
         # Eq. 8, Allen et al. (1998)
         return (cp*kMa*p/(kMv*lv))
+
+    def specific_heat(self, tc):
+        """
+        Name:     EVAP.specific_heat
+        Inputs:   float, air tempearture, deg C (tc)
+        Outputs:  float, specific heat of air, J/kg/K
+        Features: Calculates the specific heat of air at a constant pressure;
+                  NOTE: this equation is only valid for temperatures between 0
+                  and 100 deg C
+        Ref:      Eq. 47, Tsilingiris (2008)
+        """
+        if tc < 0:
+            tc = 0.0
+            self.logger.debug(
+                "adjusting specific heat for air temperature below 0 deg C")
+        elif tc > 100:
+            tc = 100.0
+            self.logger.debug(
+                "adjusting specific heat for air temperature over 100 deg C")
+        cp = 1.0045714270
+        cp += (2.050632750e-3)*tc
+        cp += -(1.631537093e-4)*tc*tc
+        cp += (6.212300300e-6)*tc*tc*tc
+        cp += -(8.830478888e-8)*tc*tc*tc*tc
+        cp += (5.071307038e-10)*tc*tc*tc*tc*tc
+        cp *= (1e3)
+
+        return cp
 
 ###############################################################################
 # MAIN PROGRAM
