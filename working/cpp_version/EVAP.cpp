@@ -11,7 +11,7 @@ using namespace std;
  * EVAP.cpp
  *
  * VERSION 1.1-dev
- * LAST UPDATED: 2016-02-19
+ * LAST UPDATED: 2016-09-11
  *
  * ~~~~~~~~
  * license:
@@ -58,6 +58,7 @@ using namespace std;
  * 04. added EVAP header file to include list [15.02.19]
  * 05. updated R and To [15.08.22]
  * 06. included global.h [16.01.22]
+ * 07. addressed specifc heat limitation [16.09.11]
  *
  * //////////////////////////////////////////////////////////////////////// */
 
@@ -285,14 +286,7 @@ double EVAP::psychro(double tc, double p){
     Refs:     Allen et al. (1998); Tsilingiris (2008)
     *********************************************************************** */
     // Calculate the specific heat capacity of water, J/kg/K
-    //   Eq. 47, Tsilingiris (2008)
-    double cp = 1.0045714270;
-    cp += (2.050632750e-3)*tc;
-    cp += -(1.631537093e-4)*tc*tc;
-    cp += (6.212300300e-6)*tc*tc*tc;
-    cp += -(8.830478888e-8)*tc*tc*tc*tc;
-    cp += (5.071307038e-10)*tc*tc*tc*tc*tc;
-    cp *= (1.0e3);
+    double cp = specific_heat(tc);
 
     // Calculate latent heat of vaporization, J/kg
     double lv = enthalpy_vap(tc);
@@ -302,6 +296,32 @@ double EVAP::psychro(double tc, double p){
     double ps = (Global::Ma*cp*p)/(Global::Mv*lv);
 
     return ps;
+}
+
+double EVAP::specific_heat(double tc){
+    /* ***********************************************************************
+    Name:     EVAP.specific_heat
+    Input:    double, air temperature (tc), degrees C
+    Output:   double, specific heat of moist air, J/kg/K
+    Features: Calculates the specific heat of moist air for a given temperature
+    Refs:     Eq. 47, Tsilingiris (2008); valid only for air temp 0--100 deg C
+    *********************************************************************** */
+    double cp;
+    if (tc < 0) {
+        cp = 1004.5714270;
+    } else if (tc > 100) {
+        cp = 2031.2260590;
+    } else {
+        cp = 1.0045714270;
+        cp += (2.050632750e-3)*tc;
+        cp += -(1.631537093e-4)*tc*tc;
+        cp += (6.212300300e-6)*tc*tc*tc;
+        cp += -(8.830478888e-8)*tc*tc*tc*tc;
+        cp += (5.071307038e-10)*tc*tc*tc*tc*tc;
+        cp *= (1.0e3);
+    }
+
+    return cp;
 }
 
 etr EVAP::get_vals(){

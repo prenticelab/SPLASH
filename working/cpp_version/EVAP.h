@@ -6,7 +6,7 @@
  * EVAP.h
  *
  * VERSION 1.1-dev
- * LAST UPDATED: 2016-02-19
+ * LAST UPDATED: 2016-09-11
  *
  * ~~~~~~~~
  * license:
@@ -88,6 +88,7 @@ class EVAP {
         double elv2pres(double z);
         double density_h2o(double tc, double p);
         double psychro(double tc, double p);
+        double specific_heat(double tc);
 
     public:
         // Constructors
