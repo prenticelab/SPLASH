@@ -484,7 +484,8 @@ class SPLASH_DATA:
         d = self.data_dir[v]
 
         # Search directory for netCDF file:
-        my_path = '%s%s*%d%02d.nc' % (d, v, ct.year, ct.month)
+        my_pattern = '%s*%d%02d.nc' % (v, ct.year, ct.month)
+        my_path = os.path.join(d, my_pattern)
         try:
             my_file = glob.glob(my_path)[0]
         except IndexError:
@@ -543,7 +544,9 @@ class SPLASH_DATA:
 
         # Search directory for netCDF file:
         try:
-            my_file = glob.glob(d + "*" + v + ".dat.nc")[0]
+            my_pattern = "*%s.dat.nc" % v
+            my_path = os.path.join(d, my_pattern)
+            my_file = glob.glob(my_path)[0]
         except IndexError:
             print("No CRU file was found for variable: %s" % (v))
         else:
@@ -803,22 +806,21 @@ if __name__ == '__main__':
     my_class = SPLASH_DATA(user_lat, user_lon, user_elv)
 
     # Set the data input/output directories for your machine:
-    cru_dir = "/usr/local/share/data/cru/"
+    cru_dir = os.path.join(os.path.expanduser("~"), "Data", "cru_ts")
     out_dir = "out/"
-    watch_rain_dir = "/usr/local/share/data/watch/rainf/"
-    watch_air_dir = "/usr/local/share/data/watch/tair/"
+    watch_dir = os.path.join(os.path.expanduser("~"), "Data", "watch")
     my_class.set_cru_cld_dir(cru_dir)
     my_class.set_cru_pre_dir(cru_dir)
     my_class.set_cru_tmp_dir(cru_dir)
-    my_class.set_watch_rainf_dir(watch_rain_dir)
-    my_class.set_watch_tair_dir(watch_air_dir)
+    my_class.set_watch_rainf_dir(watch_dir)
+    my_class.set_watch_tair_dir(watch_dir)
     my_class.set_output_dir(out_dir)
 
     # Define the sources you want to use for processing the data
     # (i.e., cru or watch):
     my_class.set_sf_source('cru')
-    my_class.set_pn_source('watch')
-    my_class.set_tair_source('watch')
+    my_class.set_pn_source('cru')
+    my_class.set_tair_source('cru')
 
     # Set the date range you want to process
     start_date = datetime.date(2000, 1, 1)
