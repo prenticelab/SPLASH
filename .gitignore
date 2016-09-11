@@ -1,7 +1,16 @@
-# Ignore Python 2/3 compilations and log files:
-*.pyc
+# Ignore output files and folders:
+*out
+
+# Exclude R history:
+*.R-history
+
+# Ignore Python compile files and logs:
 *__pycache__
+*.pyc
+*.pyo
 *.log*
 
-# Ignore compiled object files:
+# Ignore C++ object and linter files:
 *.o
+*.gch
+
