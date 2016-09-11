@@ -3,7 +3,7 @@
 # evap.R
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-02-19
+# LAST UPDATED: 2016-09-11
 #
 # ~~~~~~~~
 # license:
@@ -50,6 +50,7 @@
 #   julian_day(double y, double m, double i)
 #   psychro(double tc, double pa)
 #   sat_slope(double tc)
+#   specific_heat(double tc)
 #
 # ~~~~~~~~~~
 # changelog:
@@ -59,6 +60,7 @@
 # - added berger_tls function [15.01.13]
 # - updated evap function (similar to stash.py EVAP class) [15.01.13]
 # - added missing variables to evap list [16.02.17]
+# - addressed specific heat limitation [16.09.11]
 #
 #### IMPORT SOURCES ##########################################################
 source("const.R")
@@ -161,21 +163,42 @@ enthalpy_vap <- function(tc) {
 # Returns:  double, Pa/K
 # Features: This function calculates the temperature and pressure
 #           dependent psychrometric constant
-# Depends:  enthalpy_vap
-# Ref:      - Temperature dependency of psychrometric constant (Eq. 8):
-#               Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998),
-#                 'Meteorological data,' Crop evapotranspiration - Guidelines
-#                 for computing crop water requirements - FAO Irrigation and
-#                 drainage paper 56, Food and Agriculture Organization of the
-#                 United Nations, Available:
-#                 http://www.fao.org/docrep/x0490e/x0490e07.htm
-#           - Pressure dependency of psychrometric constant (i.e., Cp):
-#               Tsilingris (2008), Thermophysical and transport properties of
-#                 humid air at temperature range between 0 and 100 °C, Energy
-#                 Conversion and Management, vol. 49, pp. 1098--1110.
+# Depends:  - enthalpy_vap
+#           - specific_heat
+# Ref:      Allen, R.G., L.S. Pereira, D. Raes, M. Smith (1998),
+#           'Meteorological data,' Crop evapotranspiration - Guidelines
+#           for computing crop water requirements - FAO Irrigation and
+#           drainage paper 56, Food and Agriculture Organization of the
+#           United Nations, Available:
+#           http://www.fao.org/docrep/x0490e/x0490e07.htm
 # ************************************************************************
 psychro <- function(tc, pa) {
     # Calculate the specific heat capacity of water, J/kg/K
+    cp <- specific_heat(tc)
+
+    # Calculate latent heat of vaporization, J/kg
+    lv <- enthalpy_vap(tc)
+
+    # Calculate psychrometric constant, Pa/K
+    return(cp*kMa*pa/(kMv*lv))
+}
+
+
+# ************************************************************************
+# Name:     specific_heat
+# Inputs:   double (tc), air temperature, degrees C
+# Returns:  double, specific heat of moist air, J/kg/K
+# Features: This function calculates the spefic heat of moist air
+# Ref:      Tsilingris (2008), Thermophysical and transport properties of
+#           humid air at temperature range between 0 and 100 °C, Energy
+#           Conversion and Management, vol. 49, pp. 1098--1110.
+# ************************************************************************
+specific_heat <- function(tc) {
+    if (tc < 0) {
+        tc <- 0
+    } else if (tc > 100) {
+        tc <- 100
+    }
     cp <- 1.0045714270 +
         (2.050632750e-3)*tc -
         (1.631537093e-4)*tc*tc +
@@ -184,11 +207,7 @@ psychro <- function(tc, pa) {
         (5.071307038e-10)*tc*tc*tc*tc*tc
     cp <- (1e3)*cp
 
-    # Calculate latent heat of vaporization, J/kg
-    lv <- enthalpy_vap(tc)
-
-    # Calculate psychrometric constant, Pa/K
-    return(cp*kMa*pa/(kMv*lv))
+    return(cp)
 }
 
 
