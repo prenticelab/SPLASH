@@ -89,18 +89,31 @@ class EVAP:
         else:
             self.logger.debug("initialized solar class")
 
+         # Initialize class variables:
+        self.sat = numpy.zeros([720,])     # slope of saturation vap press temp curve, Pa/K
+        self.lv = numpy.zeros([720,])    # enthalpy of vaporization, J/kg
+        self.pw = numpy.zeros([720,])    # density of water, kg/m^3
+        self.psy = numpy.zeros([720,])   # psychrometric constant, Pa/K
+        self.econ = numpy.zeros([720,])  # water-to-energy conversion factor
+        self.cond = numpy.zeros([720,])  # daily condensation, mm
+        self.eet_d = numpy.zeros([720,]) # daily EET, mm
+        self.pet_d = numpy.zeros([720,]) # daily PET, mm
+        self.rx = numpy.zeros([720,])    # variable substitute, (mm/hr)/(W/m^2)
+        self.hi = numpy.zeros([720,])    # intersection hour angle (hi), degrees
+        self.aet_d = numpy.zeros([720,]) # daily AET (aet_d), mm
+
         # Initialize class variables:
-        self.sat = None     # slope of saturation vap press temp curve, Pa/K
-        self.lv = None    # enthalpy of vaporization, J/kg
-        self.pw = None    # density of water, kg/m^3
-        self.psy = None   # psychrometric constant, Pa/K
-        self.econ = None  # water-to-energy conversion factor
-        self.cond = None  # daily condensation, mm
-        self.eet_d = None # daily EET, mm
-        self.pet_d = None # daily PET, mm
-        self.rx = None    # variable substitute, (mm/hr)/(W/m^2)
-        self.hi = None    # intersection hour angle (hi), degrees
-        self.aet_d = None # daily AET (aet_d), mm
+        #self.sat = None     # slope of saturation vap press temp curve, Pa/K
+        #self.lv = None    # enthalpy of vaporization, J/kg
+        #self.pw = None    # density of water, kg/m^3
+        #self.psy = None   # psychrometric constant, Pa/K
+        #self.econ = None  # water-to-energy conversion factor
+        #self.cond = None  # daily condensation, mm
+        #self.eet_d = None # daily EET, mm
+        #self.pet_d = None # daily PET, mm
+        #self.rx = None    # variable substitute, (mm/hr)/(W/m^2)
+        #self.hi = None    # intersection hour angle (hi), degrees
+        #self.aet_d = None # daily AET (aet_d), mm
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
@@ -130,14 +143,14 @@ class EVAP:
             self.logger.exception("failed to calculate daily radiation fluxes")
             raise
         else:
-            ru = self.solar.ru
-            rv = self.solar.rv
-            rw = self.solar.rw
-            rnl = self.solar.rnl
-            hn = self.solar.hn
-            rn_d = self.solar.rn_d
-            rnn_d = self.solar.rnn_d
-            self.ppfd_d = self.solar.ppfd_d
+            ru = self.solar.ru.copy()
+            rv = self.solar.rv.copy()
+            rw = self.solar.rw.copy()
+            rnl = self.solar.rnl.copy()
+            hn = self.solar.hn.copy()
+            rn_d = self.solar.rn_d.copy()
+            rnn_d = self.solar.rnn_d.copy()
+            self.ppfd_d = self.solar.ppfd_d.copy()
             self.logger.debug(
                 ("calculating daily evaporative fluxes for day %d of %d for "
                  "year %d ") % (
@@ -235,6 +248,7 @@ class EVAP:
         aet_d += (rx*rw*ru - rx*rnl)*(hn - hi)*pir
         aet_d *= (24.0/numpy.pi)
         self.aet_d = aet_d
+
         self.logger.debug("daily AET set to %f mm", nanmean(aet_d))
 
     def sat_slope(self, tc):
@@ -262,7 +276,8 @@ class EVAP:
         """
         self.logger.debug(
             "calculating temperature dependency at %f degrees", nanmean(tc))
-        return (1.91846e6*((tc + 273.15)/(tc + 273.15 - 33.91))**2)
+        enth_out = (1.91846e6*((tc + 273.15)/(tc + 273.15 - 33.91))**2)
+        return enth_out
 
     def elv2pres(self, z):
         """
@@ -361,6 +376,11 @@ class EVAP:
 
         # Calculate the specific heat capacity of water, J/kg/K
         # Eq. 47, Tsilingiris (2008)
+
+        t_neg = numpy.where(tc < 0.0)
+        #t_pos = numpy.where(tc >= 0.0)
+
+
         cp = 1.0045714270
         cp += (2.050632750e-3)*tc
         cp += -(1.631537093e-4)*tc*tc
@@ -368,16 +388,26 @@ class EVAP:
         cp += -(8.830478888e-8)*tc*tc*tc*tc
         cp += (5.071307038e-10)*tc*tc*tc*tc*tc
         cp *= (1e3)
+
+        #Assuming the temeprature dependance of Cp is negligable when t < 0 C (MS revision: Appendix B)
+        cp[t_neg] = 1.013 * 1e3 #J/kg/K
         # self.logger.debug("specific heat capacity calculated as %f J/kg/K", cp)
 
         # Calculate latent heat of vaporization, J/kg
-        lv = self.enthalpy_vap(tc)
+        lv_4_g = self.enthalpy_vap(tc)
         # self.logger.debug(
         #     "enthalpy of vaporization calculated as %f MJ/kg", (1e-6)*lv)
 
         # Calculate psychrometric constant, Pa/K
         # Eq. 8, Allen et al. (1998)
-        return (cp*kMa*p/(kMv*lv))
+        g = (cp*kMa*p/(kMv*lv_4_g))
+        phyc = g.copy()
+
+        neg_g = numpy.where(g < 0.0)
+        
+        #phyc[neg_g] *= 0.0
+        
+        return phyc
 
 ###############################################################################
 # MAIN PROGRAM

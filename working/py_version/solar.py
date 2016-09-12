@@ -339,9 +339,10 @@ class SOLAR:
         #rnn_d += rw*rv*(dsin(hs) - dsin(hn))
         #rnn_d += rnl*(numpy.pi - 2.0*hs*pir + hn*pir)
         #rnn_d *= (86400.0/numpy.pi)
-        rnn_d = rw*ru*(hs - hn)*pir
-        rnn_d += rw*rv*(dsin(hs) - dsin(hn))
-        rnn_d -= rnl*(numpy.pi - hn)
+        
+        rnn_d = rw*rv*(dsin(hs) - dsin(hn))
+        rnn_d += rw*ru*pir*(hs - hn)
+        rnn_d -= rnl*(numpy.pi - pir*hn)
         rnn_d *= (86400.0/numpy.pi)
         self.rnn_d = rnn_d
         self.logger.debug(

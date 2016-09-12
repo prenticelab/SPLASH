@@ -117,6 +117,9 @@ class SPLASH:
         # self.aet = None   # daily actual ET, mm
         # self.wn_vec = None # daily soil moisture array
 
+        self.ro_orig = self.ro
+        
+
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Function Definitions
     # ////////////////////////////////////////////////////////////////////////
@@ -304,7 +307,7 @@ class SPLASH:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 0. Set meteorological variables:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.precip = pn    # daily precipitation, mm
+        self.precip = pn.copy()    # daily precipitation, mm
         self.logger.debug("daily precipitation: %f mm", nanmean(pn))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -323,8 +326,8 @@ class SPLASH:
                 "failed to calculate daily evaporation fluxes")
             raise
         else:
-            self.cond = self.evap.cond    # daily condensation, mm
-            self.aet = self.evap.aet_d    # daily actual ET, mm
+            self.cond = self.evap.cond.copy()    # daily condensation, mm
+            self.aet = self.evap.aet_d.copy()    # daily actual ET, mm
             self.eet = self.evap.eet_d    # daily equilibrium ET, mm
             self.pet = self.evap.pet_d    # daily potential ET, mm
             self.ppfd_d = self.evap.ppfd_d
@@ -332,29 +335,60 @@ class SPLASH:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate today's soil moisture (sm), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.sm = wn + pn + self.cond - self.aet
+        self.soil_moisture_in = wn.copy()
+
+        self.sm = self.soil_moisture_in + self.precip + self.cond - self.aet
+        self.sm_orig = self.sm.copy()
+        self.sm_ro = self.sm.copy()
+        #print self.sm_ro
+        self.int_sm_ro = self.sm_ro.copy()
+        self.aet_full = self.aet.copy()
+
+        dif_sm = self.sm_orig - self.sm 
+        if numpy.nansum(dif_sm) > 0.0:
+            print dif_sm 
         self.logger.debug("calculated soil moisture as %f mm", nanmean(self.sm))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 4. Calculate runoff (ro), mm
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         
-        self.bucket_full_idx = numpy.where(self.sm > kWm)
-        self.bucket_empty_idx = numpy.where(self.sm < 0)
-        self.other_bucket_idx = numpy.where(((self.sm > kWm) & (self.sm <  numpy.float64(0.0)))
+        self.bucket_full_idx = numpy.where(self.sm_orig > kWm)
+        self.bucket_empty_idx = numpy.where(self.sm_orig < 0.0)
+        self.other_bucket_idx = numpy.where(((self.sm <= kWm) & (self.sm >= numpy.float64(0.0)))
                                          | numpy.isnan(self.sm))
 
+        
         #self.sm = 0.0
-        #self.ro = 0.0
+        #self.ro = numpy.zeros([720,]) 
+        
+        self.ro[self.bucket_full_idx] = self.sm_orig[self.bucket_full_idx] - kWm
 
-        self.sm[self.bucket_full_idx] = kWm
-        self.ro[self.bucket_full_idx] = self.sm - kWm
-        self.aet[self.bucket_empty_idx] = self.aet + self.sm
-        self.ro[self.bucket_empty_idx] = 0.0
+        #self.sm_ro[self.sm_ro > kWm] = self.sm_orig[self.bucket_full_idx] - kWm
+
+        #self.sm_ro = numpy.tile(200, 720)
+
         
-        #self.sm[self.bucket_empty_idx] = 0.0
+
+        #self.ro += self.sm_ro
         
-        self.ro[self.other_bucket_idx] = 0.0
+        self.ro_neg = numpy.where(self.ro < 0.0)
+
+
+        self.sm_ro[self.bucket_full_idx] *= 0.0
+        
+        self.sm_ro[self.bucket_full_idx] += kWm
+        
+        self.aet[self.bucket_empty_idx] *= 0.0
+
+        self.aet[self.bucket_empty_idx] += self.aet_full[self.bucket_empty_idx] 
+        self.aet[self.bucket_empty_idx] += self.sm_orig[self.bucket_empty_idx]
+        #self.ro[self.bucket_empty_idx] = 0.0
+        
+        self.sm_ro[self.bucket_empty_idx] *= 0.0 
+        
+        self.sm_ro[self.other_bucket_idx] *= 0.0
+        self.sm_ro[self.other_bucket_idx] += self.sm_orig[self.other_bucket_idx]
 
         
 
@@ -385,7 +419,7 @@ class SPLASH:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Update soil moisture & runoff
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        self.wn = self.sm  # daily soil moisture, mm
+        self.wn = self.sm_ro  # daily soil moisture, mm
         #self.ro = ro  # daily runoff, mm
         
 
