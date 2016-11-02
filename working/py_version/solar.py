@@ -298,29 +298,33 @@ class SOLAR:
         self.pos_rad_idx = numpy.where(self.rad_cond <= -1.0)
         #self.other_rad_idx = numpy.where(((rad_cond  < numpy.float64(1.0)) & (rad_cond > numpy.float64(-1.0)))
         #                                 | numpy.isnan(rad_cond))
-
+        
         hn = (numpy.arccos(self.rad_cond))/pir
-        hn[self.neg_rad_idx] = 0.0
-        hn[self.pos_rad_idx] = 180.0
+        
+        if type(hn) == numpy.float64:
+            if ((rnl - rw*ru)/(rw*rv)) >= 1.0:
+            # Net radiation negative all day
+                 self.logger.debug("net radiation negative all day")
+
+                 hn = 0
+            elif ((rnl - rw*ru)/(rw*rv)) <= -1.0:
+            # Net radiation positive all day
+                 self.logger.debug("net radiation positive all day")
+                 hn = 180.0
+            else:
+                 hn = (rnl - rw*ru)/(rw*rv)
+                 hn = numpy.arccos(hn)
+                 hn /= pir
+        else:
+            hn[self.neg_rad_idx] = 0.0
+            hn[self.pos_rad_idx] = 180.0
         #hn[self.other_rad_idx] = rad_cond
         #hn[self.other_rad_idx]  = (numpy.arccos(hn))/pir
         #hn[self.other_rad_idx]  /= pir
 
         self.hn = hn
 
-        #if ((rnl - rw*ru)/(rw*rv)) >= 1.0:
-        #    # Net radiation negative all day
-        #    self.logger.debug("net radiation negative all day")
-
-        #    hn = 0
-        #elif ((rnl - rw*ru)/(rw*rv)) <= -1.0:
-        #    # Net radiation positive all day
-        #    self.logger.debug("net radiation positive all day")
-        #    hn = 180.0
-        #else:
-        #    hn = (rnl - rw*ru)/(rw*rv)
-        #    hn = numpy.arccos(hn)
-        #    hn /= pir
+       
         #self.hn = hn
         self.logger.debug("cross-over hour angle set to %f", hn)
 

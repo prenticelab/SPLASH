@@ -211,7 +211,7 @@ class DATA_G:
         Features: Searches for the daily watch files(tAir & Rainf)) within a single directory
         Depends:  get_watch_file
         """
-        Rainf_file = self.get_watch_file(path, 'Rainf', ct)
+        Rainf_file = self.get_watch_file(path, 'Rainf', ct, '_daily_WFDEI_CRU_')
         if os.path.isfile(Rainf_file):
             self.logger.debug("found WACTH precipitation file %s", Rainf_file)
             self.Rainf_file = Rainf_file
@@ -219,7 +219,7 @@ class DATA_G:
             self.logger.warning("failed to load CWACTH precipitationfile")
             self.Rainf_file = None
 
-        Tair_file = self.get_watch_file(path, 'Tair', ct)
+        Tair_file = self.get_watch_file(path, 'Tair', ct, '_daily_WFDEI_')
         if os.path.isfile(Tair_file):
             self.logger.debug("found WACTH Tair temperature file %s", Tair_file)
             self.Tair_file = Tair_file
@@ -296,7 +296,7 @@ class DATA_G:
 
         return my_file
 
-    def get_watch_file(self, path, voi, ct):
+    def get_watch_file(self, path, voi, ct, fmid):
         """
         Name:     DATA_G.get_cru_file
         Input:    - str, directory path for CRU data files (path)
@@ -306,7 +306,7 @@ class DATA_G:
         """
         # Read through all files within the paths for voi:
         my_file = None
-        my_pattern = os.path.join(path, "%s_daily/%s*%d%02d.nc" % (voi, voi, ct.year, ct.month))
+        my_pattern = os.path.join(path, "%s_daily/%s%s%d%02d.nc" % (voi, voi, fmid, ct.year, ct.month))
         
         my_files = glob.glob(my_pattern)
 

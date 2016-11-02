@@ -130,9 +130,13 @@ class EVAP:
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 0. Validate supply rate
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if sw.any < 0:
+        sw_neg = numpy.where(sw < 0)
+        
+        if numpy.sum(sw_neg[0]) > 0:
             self.logger.error("supply rate is outside range of validity")
             raise ValueError("Please provide a valid evporative supply rate")
+        else:
+            self.logger.debug("Supply rate valid")
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 1. Calculate radiation
@@ -220,23 +224,29 @@ class EVAP:
         self.supply_lim_dem = numpy.where(cos_hi <= -1.0)
         #self.other_sup_dem = numpy.where(((cos_hi  < numpy.float64(1.0)) & (cos_hi > numpy.float64(-1.0)))
         #                                 | numpy.isnan(cos_hi))
-
+        
+        
         hi = (numpy.arccos(cos_hi))/pir
-        hi[self.supply_ex_dem] = 0.0
-        hi[self.supply_lim_dem] = 180.0
+        
+        if type(hi) == numpy.float64:
+             if cos_hi.all >= 1.0:
+                 # Supply exceeds demand:
+                 hi = 0.0
+             elif cos_hi.all <= -1.0:
+                 # Supply limits demand everywhere:
+                 hi = 180.0
+             else:
+                 hi = numpy.arccos(cos_hi)
+                 hi /= pir
+             
+        else:
+            hi[self.supply_ex_dem] = 0.0
+            hi[self.supply_lim_dem] = 180.0
         
 
         self.hi = hi
 
-        # if cos_hi.all >= 1.0:
-        #     # Supply exceeds demand:
-        #     hi = 0.0
-        # elif cos_hi.all <= -1.0:
-        #     # Supply limits demand everywhere:
-        #     hi = 180.0
-        # else:
-        #     hi = numpy.arccos(cos_hi)
-        #     hi /= pir
+        #
         # self.hi = hi
         self.logger.debug("intersection hour angle, hi, set to %f", nanmean(hi))
 
@@ -377,20 +387,33 @@ class EVAP:
         # Calculate the specific heat capacity of water, J/kg/K
         # Eq. 47, Tsilingiris (2008)
 
-        t_neg = numpy.where(tc < 0.0)
+       
         #t_pos = numpy.where(tc >= 0.0)
 
-
-        cp = 1.0045714270
-        cp += (2.050632750e-3)*tc
-        cp += -(1.631537093e-4)*tc*tc
-        cp += (6.212300300e-6)*tc*tc*tc
-        cp += -(8.830478888e-8)*tc*tc*tc*tc
-        cp += (5.071307038e-10)*tc*tc*tc*tc*tc
-        cp *= (1e3)
-
+        if type(tc) == numpy.float64:
+            if tc < 0.0:
+                cp = 1.013 * 1e3 #J/kg/K
+            else:
+                cp = 1.0045714270
+                cp += (2.050632750e-3)*tc
+                cp += -(1.631537093e-4)*tc*tc
+                cp += (6.212300300e-6)*tc*tc*tc
+                cp += -(8.830478888e-8)*tc*tc*tc*tc
+                cp += (5.071307038e-10)*tc*tc*tc*tc*tc
+                cp *= (1e3)
+        
+        else:
+             t_neg = numpy.where(tc < 0.0)
+             cp = 1.0045714270
+             cp += (2.050632750e-3)*tc
+             cp += -(1.631537093e-4)*tc*tc
+             cp += (6.212300300e-6)*tc*tc*tc
+             cp += -(8.830478888e-8)*tc*tc*tc*tc
+             cp += (5.071307038e-10)*tc*tc*tc*tc*tc
+             cp *= (1e3)
+        
         #Assuming the temeprature dependance of Cp is negligable when t < 0 C (MS revision: Appendix B)
-        cp[t_neg] = 1.013 * 1e3 #J/kg/K
+             cp[t_neg] = 1.013 * 1e3 #J/kg/K
         # self.logger.debug("specific heat capacity calculated as %f J/kg/K", cp)
 
         # Calculate latent heat of vaporization, J/kg

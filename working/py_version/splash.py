@@ -60,7 +60,7 @@ class SPLASH:
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
     # ////////////////////////////////////////////////////////////////////////
-    def __init__(self, lat, elv):
+    def __init__(self, lat, elv, lon = False):
         """
         Name:     SPLASH.__init__
         Input:    - float, latitude, degrees (lat)
@@ -92,31 +92,35 @@ class SPLASH:
             self.logger.debug("initialized EVAP class")
 
         # Initialize daily status variables:
-        self.ho = numpy.zeros([720,])    # daily solar irradiation, J/m2
-        self.hn = numpy.zeros([720,])      # daily net radiation, J/m2
-        self.ppfd = numpy.zeros([720,])    # daily PPFD, mol/m2
-        self.cond = numpy.zeros([720,])    # daily condensation water, mm
-        self.wn = numpy.zeros([720,])      # daily soil moisture, mm
-        self.precip = numpy.zeros([720,])  # daily precipitation, mm
-        self.ro = numpy.zeros([720,])     # daily runoff, mm
-        self.eet = numpy.zeros([720,])     # daily equilibrium ET, mm
-        self.pet = numpy.zeros([720,])     # daily potential ET, mm
-        self.aet = numpy.zeros([720,])    # daily actual ET, mm
-        self.wn_vec = numpy.zeros([720,])  # daily soil moisture array
+        if lon:
 
-        # # Initialize daily status variables:
-        # self.ho = None    # daily solar irradiation, J/m2
-        # self.hn = None     # daily net radiation, J/m2
-        # self.ppfd = None   # daily PPFD, mol/m2
-        # self.cond = None   # daily condensation water, mm
-        # self.wn = None     # daily soil moisture, mm
-        # self.precip = None # daily precipitation, mm
-        # self.ro = None    # daily runoff, mm
-        # self.eet = None    # daily equilibrium ET, mm
-        # self.pet = None    # daily potential ET, mm
-        # self.aet = None   # daily actual ET, mm
-        # self.wn_vec = None # daily soil moisture array
+            # # Initialize daily status variables for grid point:
+            self.ho = None    # daily solar irradiation, J/m2
+            self.hn = None     # daily net radiation, J/m2
+            self.ppfd = None   # daily PPFD, mol/m2
+            self.cond = None   # daily condensation water, mm
+            self.wn = None     # daily soil moisture, mm
+            self.precip = None # daily precipitation, mm
+            self.ro = None    # daily runoff, mm
+            self.eet = None    # daily equilibrium ET, mm
+            self.pet = None    # daily potential ET, mm
+            self.aet = None   # daily actual ET, mm
+            self.wn_vec = None # daily soil moisture array
+        else:
+            # Initialise for global run if no longitude specified:
+            self.ho = numpy.zeros([720,])    # daily solar irradiation, J/m2
+            self.hn = numpy.zeros([720,])      # daily net radiation, J/m2
+            self.ppfd = numpy.zeros([720,])    # daily PPFD, mol/m2
+            self.cond = numpy.zeros([720,])    # daily condensation water, mm
+            self.wn = numpy.zeros([720,])      # daily soil moisture, mm
+            self.precip = numpy.zeros([720,])  # daily precipitation, mm
+            self.ro = numpy.zeros([720,])     # daily runoff, mm
+            self.eet = numpy.zeros([720,])     # daily equilibrium ET, mm
+            self.pet = numpy.zeros([720,])     # daily potential ET, mm
+            self.aet = numpy.zeros([720,])    # daily actual ET, mm
+            self.wn_vec = numpy.zeros([720,])  # daily soil moisture array
 
+       
         self.ro_orig = self.ro
         
 
@@ -355,66 +359,69 @@ class SPLASH:
         
         self.bucket_full_idx = numpy.where(self.sm_orig > kWm)
         self.bucket_empty_idx = numpy.where(self.sm_orig < 0.0)
-        self.other_bucket_idx = numpy.where(((self.sm <= kWm) & (self.sm >= numpy.float64(0.0)))
+        self.other_bucket_idx = numpy.where(((self.sm_orig <= kWm) & (self.sm >= numpy.float64(0.0)))
                                          | numpy.isnan(self.sm))
 
-        
+        if type(self.sm_orig) == numpy.float64:
+            if self.sm_orig > kWm:
+                self.logger.debug("bucket is too full")
+                self.logger.debug("setting soil moisture to saturation")
+                self.logger.debug("calculating runoff")
+                # Bucket is too full
+                #   allocate excess water to runoff
+                #   set soil moisture to capacity (i.e., kWm)
+                self.ro = self.sm_orig - kWm
+                self.sm_ro = kWm
+            elif self.sm_orig < 0:
+                self.logger.debug("bucket is too empty")
+                self.logger.debug("correcting actual ET")
+                # Bucket is too empty
+                #   reduce actual ET by discrepancy amount
+                #   set soil moisture and runoff to zero
+                self.aet += self.sm_orig
+                self.sm_ro = 0
+                self.ro = 0
+            else:
+                self.ro = 0
+            
+            
         #self.sm = 0.0
         #self.ro = numpy.zeros([720,]) 
-        
-        self.ro[self.bucket_full_idx] = self.sm_orig[self.bucket_full_idx] - kWm
-
-        #self.sm_ro[self.sm_ro > kWm] = self.sm_orig[self.bucket_full_idx] - kWm
-
-        #self.sm_ro = numpy.tile(200, 720)
-
-        
-
-        #self.ro += self.sm_ro
-        
-        self.ro_neg = numpy.where(self.ro < 0.0)
-
-
-        self.sm_ro[self.bucket_full_idx] *= 0.0
-        
-        self.sm_ro[self.bucket_full_idx] += kWm
-        
-        self.aet[self.bucket_empty_idx] *= 0.0
-
-        self.aet[self.bucket_empty_idx] += self.aet_full[self.bucket_empty_idx] 
-        self.aet[self.bucket_empty_idx] += self.sm_orig[self.bucket_empty_idx]
-        #self.ro[self.bucket_empty_idx] = 0.0
-        
-        self.sm_ro[self.bucket_empty_idx] *= 0.0 
-        
-        self.sm_ro[self.other_bucket_idx] *= 0.0
-        self.sm_ro[self.other_bucket_idx] += self.sm_orig[self.other_bucket_idx]
-
-        
-
-    #    if sm > kWm:
-    #        self.logger.debug("bucket is too full")
-    #        self.logger.debug("setting soil moisture to saturation")
-    #        self.logger.debug("calculating runoff")
-    #        # Bucket is too full
-    #        #   allocate excess water to runoff
-    #        #   set soil moisture to capacity (i.e., kWm)
-    #        ro = sm - kWm
-    #        sm = kWm
-    #    elif sm < 0:
-    #        self.logger.debug("bucket is too empty")
-    #        self.logger.debug("correcting actual ET")
-    #        # Bucket is too empty
-    #        #   reduce actual ET by discrepancy amount
-    #        #   set soil moisture and runoff to zero
-    #        self.aet += sm
-    #        sm = 0
-    #        ro = 0
-    #    else:
-    #        ro = 0
-    #    self.logger.debug("soil moisture: %f mm", sm)
-    #    self.logger.debug("excess runoff: %f mm", ro)
-
+        else:
+            self.ro[self.bucket_full_idx] = self.sm_orig[self.bucket_full_idx] - kWm
+    
+            #self.sm_ro[self.sm_ro > kWm] = self.sm_orig[self.bucket_full_idx] - kWm
+    
+            #self.sm_ro = numpy.tile(200, 720)
+    
+            
+    
+            #self.ro += self.sm_ro
+            
+            self.ro_neg = numpy.where(self.ro < 0.0)
+    
+    
+            self.sm_ro[self.bucket_full_idx] *= 0.0
+            
+            self.sm_ro[self.bucket_full_idx] += kWm
+            
+            self.aet[self.bucket_empty_idx] *= 0.0
+    
+            self.aet[self.bucket_empty_idx] += self.aet_full[self.bucket_empty_idx] 
+            self.aet[self.bucket_empty_idx] += self.sm_orig[self.bucket_empty_idx]
+            #self.ro[self.bucket_empty_idx] = 0.0
+            
+            self.sm_ro[self.bucket_empty_idx] *= 0.0 
+            
+            self.sm_ro[self.other_bucket_idx] *= 0.0
+            self.sm_ro[self.other_bucket_idx] += self.sm_orig[self.other_bucket_idx]
+    
+            
+    
+      
+        #    self.logger.debug("soil moisture: %f mm", sm)
+        #    self.logger.debug("excess runoff: %f mm", ro)
+    
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 5. Update soil moisture & runoff
