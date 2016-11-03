@@ -240,12 +240,12 @@ class DATA_G:
             self.logger.warning("failed to load fAPAR3g file")
             self.fapar_file = None
 
-    def find_evi_files(self, path):
+    def find_evi_files(self, path, ct):
         """
         Features: Searches for evi file on the path within a single directory
         Depends:  get_evi_file
         """
-        evi_file = self.get_evi_file(path, 'fAPAR') # This is set to fAPAR becuase EVI in ISI_MIP == fAPAR
+        evi_file = self.get_evi_file(path, 'fAPAR', ct) # This is set to fAPAR becuase EVI in ISI_MIP == fAPAR
         if os.path.isfile(evi_file):
             self.logger.debug("found EVI file %s", evi_file)
             self.evi_file = evi_file
@@ -346,7 +346,7 @@ class DATA_G:
 
         return my_file
 
-    def get_evi_file(self, path, voi):
+    def get_evi_file(self, path, voi, ct):
         """
         Name:     DATA_G.get_evi_file
         Input:    - str, directory path for EVI data files (path)
@@ -356,7 +356,7 @@ class DATA_G:
         """
         # Read through all files within the paths for voi:
         my_file = None
-        my_pattern = os.path.join(path, "*%s*.*" % (voi))
+        my_pattern = os.path.join(path, "*%s*%s*.*" % (ct, voi))
         
         my_files = glob.glob(my_pattern)
 
