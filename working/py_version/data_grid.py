@@ -245,7 +245,7 @@ class DATA_G:
         Features: Searches for evi file on the path within a single directory
         Depends:  get_evi_file
         """
-        evi_file = self.get_evi_file(path, 'fAPAR', ct.year) # This is set to fAPAR becuase EVI in ISI_MIP == fAPAR
+        evi_file = self.get_evi_file(path, 'fAPAR', ct) # This is set to fAPAR becuase EVI in ISI_MIP == fAPAR
         if os.path.isfile(evi_file):
             self.logger.debug("found EVI file %s", evi_file)
             self.evi_file = evi_file
@@ -356,7 +356,8 @@ class DATA_G:
         """
         # Read through all files within the paths for voi:
         my_file = None
-        my_pattern = os.path.join(path, "*%s*%s*.*" % (ct.year, voi))
+        
+        my_pattern = os.path.join(path, "*%d*%s*.*" % (ct.year, voi))
         
         my_files = glob.glob(my_pattern)
 
