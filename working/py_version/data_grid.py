@@ -356,7 +356,7 @@ class DATA_G:
         """
         # Read through all files within the paths for voi:
         my_file = None
-        my_pattern = os.path.join(path, "*%s*%s*.*" % (ct, voi))
+        my_pattern = os.path.join(path, "*%s*%s*.*" % (ct.year, voi))
         
         my_files = glob.glob(my_pattern)
 
