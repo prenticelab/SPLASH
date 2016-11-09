@@ -4,7 +4,7 @@
 # data.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-07-28
+# LAST UPDATED: 2016-11-09
 #
 # ~~~~~~~~
 # license:
@@ -69,6 +69,7 @@ class DATA(object):
               - added CRU to SPLASH variable conversion [16.07.28]
               - changed num_lines to npoints [16.07.28]
               - created is okay check on data arrays [16.07.28]
+              - added condition for date col in CSV input file [16.11.09]
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -442,6 +443,29 @@ class DATA(object):
         except IOError:
             self.logger.exception("could not read input file %s", fname)
             raise
+        except ValueError:
+            try:
+                data = numpy.loadtxt(
+                    fname,
+                    dtype={'names': ('date', 'sf', 'tair', 'pn'),
+                           'formats': ('O', 'f4', 'f4', 'f4')},
+                    delimiter=',',
+                    skiprows=1)
+            except:
+                self.logger.exception("could not read input file %s", fname)
+                raise
+            else:
+                self.sf_vec = data['sf']
+                self.tair_vec = data['tair']
+                self.pn_vec = data['pn']
+
+                if y == -1:
+                    if data.shape[0] == 366:
+                        self.year = 2000
+                    elif data.shape[0] == 365:
+                        self.year = 2001
+                else:
+                    self.year = y
         else:
             self.sf_vec = data['sf']
             self.tair_vec = data['tair']
