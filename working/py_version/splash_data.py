@@ -3,7 +3,7 @@
 # splash_data.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-02-19
+# LAST UPDATED: 2016-11-09
 #
 # ~~~~~~~~
 # license:
@@ -73,7 +73,7 @@ class SPLASH_DATA:
     """
     Name:     SPLASH_DATA
     Features: Processes daily data for the SPLASH model
-    History:  Version 1.0
+    History:  Version 1.1-dev
               - created SPLASH_DATA class [15.01.26]
               - fixed mean daily CRU air temperature (tmp not tmn) [15.01.27]
               - renaming (addresses issue #3) [15.08.23]
@@ -81,6 +81,10 @@ class SPLASH_DATA:
               - addressed Python 2/3 compatibility [16.02.17]
               - fixed netCDF RuntimeWarning [16.02.17]
               - added logging [16.02.17]
+              - added out file class variable [16.11.09]
+              - fixed file and directory concatenation [16.11.09]
+
+    @TODO:    * better handle out file and output directory management
     """
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     # Class Initialization
@@ -100,6 +104,7 @@ class SPLASH_DATA:
         self.cru_sf_is_set = False       # for CRU-based Sf
         self.cru_pn_is_set = False       # for CRU-based Pn
         self.cru_tair_is_set = False     # for CRU-based Tair
+        self.out_file = 'splash_data_out.csv'
 
         # Initialize data directory and source preference dictionaries:
         self.data_dir = {'cld': '',
@@ -192,7 +197,7 @@ class SPLASH_DATA:
                   and create the output file
         Depends:  writeout
         """
-        self.output_file = d + 'splash_data_out.csv'
+        self.output_file = os.path.join(d, self.out_file)
         header = 'date,sf,tair,pn\n'
         if os.path.isfile(self.output_file):
             try:
@@ -484,7 +489,9 @@ class SPLASH_DATA:
         d = self.data_dir[v]
 
         # Search directory for netCDF file:
-        my_path = '%s%s*%d%02d.nc' % (d, v, ct.year, ct.month)
+        w_file = '%s*%d%02d.nc' % (v, ct.year, ct.month)
+        my_path = os.path.join(d, w_file)
+
         try:
             my_file = glob.glob(my_path)[0]
         except IndexError:
@@ -543,7 +550,9 @@ class SPLASH_DATA:
 
         # Search directory for netCDF file:
         try:
-            my_file = glob.glob(d + "*" + v + ".dat.nc")[0]
+            c_file = "*%s.dat.nc" % (v)
+            c_path = os.path.join(d, c_file)
+            my_file = glob.glob(c_path)[0]
         except IndexError:
             print("No CRU file was found for variable: %s" % (v))
         else:
@@ -784,7 +793,7 @@ def add_one_day(dt0):
 if __name__ == '__main__':
     # Create a root logger:
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(logging.INFO)
 
     # Instantiating logging handler and record format:
     root_handler = logging.StreamHandler()
@@ -797,35 +806,46 @@ if __name__ == '__main__':
 
     # Create a class instance with lon., lat. and elevation based on your
     # location of interest:
-    user_lat = 37.7    # degrees north
-    user_lon = -122.4  # degrees east
-    user_elv = 142.0   # meters AMSV (use 0 if unknown)
-    my_class = SPLASH_DATA(user_lat, user_lon, user_elv)
+    #              LON      LAT    ELV   OUTPUT FILE
+    my_params = [(-116.46875, 51.78125, 1383, 'splash.banff.in'),    # Canada
+                 (-73.78125, 44.65625, 383, 'splash.saranac.in'),    # New York
+                 (-122.40625, 37.78125, 16, 'splash.sanfran.in'),    # Calif
+                 (-100.96875, 22.15625, 1850, 'splash.sanluis.in'),  # Mexico
+                 (-114.59375, 32.71875, 43, 'splash.yuma.in'),       # Arizona
+                 (-80.21875, 25.78125, 2, 'splash.miami.in')]        # Florida
 
-    # Set the data input/output directories for your machine:
-    cru_dir = "/usr/local/share/data/cru/"
-    out_dir = "out/"
-    watch_rain_dir = "/usr/local/share/data/watch/rainf/"
-    watch_air_dir = "/usr/local/share/data/watch/tair/"
-    my_class.set_cru_cld_dir(cru_dir)
-    my_class.set_cru_pre_dir(cru_dir)
-    my_class.set_cru_tmp_dir(cru_dir)
-    my_class.set_watch_rainf_dir(watch_rain_dir)
-    my_class.set_watch_tair_dir(watch_air_dir)
-    my_class.set_output_dir(out_dir)
-
-    # Define the sources you want to use for processing the data
-    # (i.e., cru or watch):
-    my_class.set_sf_source('cru')
-    my_class.set_pn_source('watch')
-    my_class.set_tair_source('watch')
+    # Define data directories:
+    data_dir = os.path.join(os.path.expanduser("~"), "Data")
+    cru_dir = os.path.join(data_dir, "cru_ts")
+    out_dir = os.path.join(data_dir, "splash", "in")
+    watch_rain_dir = os.path.join(data_dir, "watch", "rainf")
+    watch_air_dir = os.path.join(data_dir, "watch", "tair")
 
     # Set the date range you want to process
     start_date = datetime.date(2000, 1, 1)
     end_date = datetime.date(2001, 1, 1)
 
-    # Iterate through time, saving daily data to file
-    cur_date = start_date
-    while cur_date < end_date:
-        my_class.get_daily_status(cur_date, write_out=True)
-        cur_date = add_one_day(cur_date)
+    for param in my_params:
+        user_lon, user_lat, user_elv, out_file = param
+
+        # Initialize class and set the data input/output directories:
+        my_class = SPLASH_DATA(user_lat, user_lon, user_elv)
+        my_class.set_cru_cld_dir(cru_dir)
+        my_class.set_cru_pre_dir(cru_dir)
+        my_class.set_cru_tmp_dir(cru_dir)
+        my_class.set_watch_rainf_dir(watch_rain_dir)
+        my_class.set_watch_tair_dir(watch_air_dir)
+        my_class.out_file = out_file
+        my_class.set_output_dir(out_dir)
+
+        # Define the sources you want to use for processing the data
+        # (i.e., cru or watch):
+        my_class.set_sf_source('cru')
+        my_class.set_pn_source('watch')
+        my_class.set_tair_source('watch')
+
+        # Iterate through time, saving daily data to file
+        cur_date = start_date
+        while cur_date < end_date:
+            my_class.get_daily_status(cur_date, write_out=True)
+            cur_date = add_one_day(cur_date)
