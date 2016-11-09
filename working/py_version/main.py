@@ -4,7 +4,7 @@
 # main.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-07-28
+# LAST UPDATED: 2016-11-09
 #
 # ~~~~~~~~
 # license:
@@ -75,53 +75,69 @@ if __name__ == '__main__':
     # Send logging handler to root logger:
     root_logger.addHandler(root_handler)
 
-    method = "lonlat"
+    method = "point"
+    my_params = [(-115.78125, 49.53125, 921, 'splash.cansbrook.in'),  # Canada
+                 (-122.40625, 37.78125, 16, 'splash.sanfran.in'),     # Calif
+                 (-100.96875, 22.15625, 1850, 'splash.sanluis.in'),   # Mexico
+                 (-114.59375, 32.71875, 43, 'splash.yuma.in'),        # Arizona
+                 (-80.21875, 25.78125, 2, 'splash.miami.in')]         # Florida
+
+    my_params = [(-116.46875, 51.78125, 1383, 'splash.banff.in'),    # Canada
+                 (-73.78125, 44.65625, 383, 'splash.saranac.in')]
 
     if method == "point":
-        my_data = DATA(mode='txt')
-        my_file = '../../data/example_data.csv'
-        my_data.read_csv(my_file)
-        output_dir = os.path.join(os.path.expanduser("~"), "Data", "splash")
-        output_file = "splash_out_2000sf.txt"
-        output_path = os.path.join(output_dir, output_file)
-        try:
-            f = open(output_path, 'w')
-            tmp = SPLASH(0, 0)
-            f.write(tmp._header)
-        except:
-            raise
-        else:
-            f.close()
-            tmp = None
-        my_class = SPLASH(37.7, 142.0)
-        my_class.spin_up(my_data)
+        input_dir = os.path.join(
+            os.path.expanduser("~"), "Data", "splash", "in")
+        output_dir = os.path.join(
+            os.path.expanduser("~"), "Data", "splash", "out")
+        for param in my_params:
+            my_lon, my_lat, my_elv, input_file = param
+            output_file = "%s.out" % (os.path.splitext(input_file)[0])
 
-        # Loop through a year:
-        for i in range(my_data.npoints):
-            # Get preceding soil moisture status:
-            if i == 0:
-                wn = my_class.wn_vec[-1]
+            input_path = os.path.join(input_dir, input_file)
+            output_path = os.path.join(output_dir, output_file)
+
+            my_data = DATA(mode='txt')
+            my_data.read_csv(input_path)
+            try:
+                f = open(output_path, 'w')
+                tmp = SPLASH(0, 0)
+                f.write(tmp._header)
+            except:
+                raise
             else:
-                wn = my_class.wn_vec[i-1]
+                f.close()
+                tmp = None
+            my_class = SPLASH(my_lat, my_elv)
+            my_class.lon = my_lon
+            my_class.spin_up(my_data)
 
-            # Calculate soil moisture and runoff:
-            my_class.run_one_day(n=i+1,
-                                 y=my_data.year,
-                                 wn=wn,
-                                 sf=my_data.sf_vec[i],
-                                 tc=my_data.tair_vec[i],
-                                 pn=my_data.pn_vec[i])
-            my_class.wn_vec[i] = my_class.wn
-
-            # Save daily results to file:
-            if os.path.isfile(output_path):
-                try:
-                    f = open(output_path, 'a')
-                    f.write(my_class.data_str)
-                except:
-                    logging.exception("Write failed!")
+            # Loop through a year:
+            for i in range(my_data.npoints):
+                # Get preceding soil moisture status:
+                if i == 0:
+                    wn = my_class.wn_vec[-1]
                 else:
-                    f.close()
+                    wn = my_class.wn_vec[i-1]
+
+                # Calculate soil moisture and runoff:
+                my_class.run_one_day(n=i+1,
+                                     y=my_data.year,
+                                     wn=wn,
+                                     sf=my_data.sf_vec[i],
+                                     tc=my_data.tair_vec[i],
+                                     pn=my_data.pn_vec[i])
+                my_class.wn_vec[i] = my_class.wn
+
+                # Save daily results to file:
+                if os.path.isfile(output_path):
+                    try:
+                        f = open(output_path, 'a')
+                        f.write(my_class.data_str)
+                    except:
+                        logging.exception("Write failed!")
+                    else:
+                        f.close()
 
     if method == "lonlat":
         # Testing the lon-lat version of SPLASH:
@@ -137,15 +153,16 @@ if __name__ == '__main__':
             "cru_ts3.23.1991.2000.tmp.dat.nc")
         my_data.cru_elv_file = os.path.join(
             os.path.expanduser("~"), "Data", "cru_ts",
-            "halfdeg.elv.grid.dat")
+            "cru_ts3.22_halfdeg.elv.grid.dat")
 
         # Set the output directory for saving lon-lat gridded data files:
-        output_dir = os.path.join(os.path.expanduser("~"), "Data", "splash")
+        output_dir = os.path.join(
+            os.path.expanduser("~"), "Data", "splash", "out")
 
         old_z = -1
 
         # Iterate through each latitude:
-        for y in range(315, len(my_data.latitude)):
+        for y in range(len(my_data.latitude)):
             lat = my_data.latitude[y]
 
             # Print progress:
