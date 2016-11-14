@@ -93,7 +93,7 @@ class DATA_G:
         self.tmn = None
         self.tmx = None
         self.vap = None
-        self.fapar = None
+        self.fAPAR = None
         self.evi = None
         self.Tair = None
         self.Rainf = None
@@ -184,7 +184,7 @@ class DATA_G:
         tmn_file = self.get_cru_file(path, 'tmn')
         
         if os.path.isfile(tmn_file):
-            self.logger.info("found CRU T MIN temperature file %s", tmn_file)
+            self.logger.debug("found CRU T MIN temperature file %s", tmn_file)
             self.tmn_file = tmn_file
         else:
             self.logger.warning("failed to load CRU T MIN temperature file")
@@ -216,7 +216,7 @@ class DATA_G:
             self.logger.debug("found WACTH precipitation file %s", Rainf_file)
             self.Rainf_file = Rainf_file
         else:
-            self.logger.warning("failed to load CWACTH precipitationfile")
+            self.logger.warning("failed to load WACTH precipitation file")
             self.Rainf_file = None
 
         Tair_file = self.get_watch_file(path, 'Tair', ct, '_daily_WFDEI_')
@@ -332,7 +332,7 @@ class DATA_G:
         # Read through all files within the paths for voi:
         my_file = None
         my_pattern = os.path.join(path, "*%s*.*" % (voi))
-        
+        print my_pattern
         my_files = glob.glob(my_pattern)
 
         if my_files:
@@ -344,6 +344,7 @@ class DATA_G:
         else:
             self.logger.warning("Found 0 files!")
 
+        print my_file
         return my_file
 
     def get_evi_file(self, path, voi, ct):
@@ -490,7 +491,7 @@ class DATA_G:
             f_data[noval_idx] *= 0.0
             f_data[noval_idx] += self.error_val
 
-            self.logger.debug("finished reading %s for month %s" % (v, ct))
+            self.logger.info("finished reading %s for month %s" % (v, ct))
             return f_data
 
     def get_daily_watch(self, ct, v):
@@ -695,7 +696,7 @@ class DATA_G:
             self.tmn = numpy.zeros(shape=(360, 720))
             self.tmx = numpy.zeros(shape=(360, 720))
             self.vap = numpy.zeros(shape=(360, 720))
-            self.fapar = numpy.zeros(shape=(360, 720))
+            self.fAPAR = numpy.zeros(shape=(360, 720))
             self.evi = numpy.zeros(shape=(360, 720))
 
             # Read monthly data:
@@ -705,7 +706,7 @@ class DATA_G:
             tmn = self.get_monthly_cru(m, 'tmn')
             tmx = self.get_monthly_cru(m, 'tmx')
             vap = self.get_monthly_cru(m, 'vap')
-            fapar = self.get_monthly_cru(m, 'fAPAR')
+            fAPAR = self.get_monthly_cru(m, 'fAPAR')
             evi = self.get_monthly_cru(m, 'evi')  # Set to fAPAR for EVI ebcuase ISI_MIP fAPAR == EVI
 
             # Update good and noval indexes:
@@ -713,12 +714,12 @@ class DATA_G:
             self.noval_idx = numpy.where(
                 (self.elevation == self.error_val) | (tmp == self.error_val) |
                 (tmn == self.error_val) |
-				(tmx == self.error_val) | (vap == self.error_val) | (fapar == self.error_val) | 
+				(tmx == self.error_val) | (vap == self.error_val) | (fAPAR == self.error_val) | 
                 (evi == self.error_val))
             self.good_idx = numpy.where(
                 (self.elevation != self.error_val) & (tmp != self.error_val) &
             	(tmn != self.error_val) & (tmx != self.error_val) & 
-            	(vap != self.error_val) & (fapar != self.error_val) & (evi != self.error_val))
+            	(vap != self.error_val) & (fAPAR != self.error_val) & (evi != self.error_val))
 
             ## Convert cloudiness to fractional sunshine, sf
             #self.logger.debug("converting cloudiness to sunshine fraction")
@@ -737,7 +738,7 @@ class DATA_G:
             self.tmn = tmn
             self.tmx = tmx
             self.vap = vap
-            self.fapar = fapar
+            self.fAPAR = fAPAR
             self.evi = evi
 
 
