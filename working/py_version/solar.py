@@ -187,7 +187,7 @@ class SOLAR:
             kN = self.julian_day((y+1), 1, 1) - self.julian_day(y, 1, 1)
             self.year = y
         self.kN = kN
-        self.logger.info(
+        self.logger.debug(
             ("calculating daily radiation fluxes for day %d of %d "
              "for year %d  ") % (n, kN, self.year))
 

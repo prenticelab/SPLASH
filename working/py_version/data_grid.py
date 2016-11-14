@@ -184,7 +184,7 @@ class DATA_G:
         tmn_file = self.get_cru_file(path, 'tmn')
         
         if os.path.isfile(tmn_file):
-            self.logger.debug("found CRU T MIN temperature file %s", tmn_file)
+            self.logger.info("found CRU T MIN temperature file %s", tmn_file)
             self.tmn_file = tmn_file
         else:
             self.logger.warning("failed to load CRU T MIN temperature file")
