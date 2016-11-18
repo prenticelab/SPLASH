@@ -335,7 +335,7 @@ class SPLASH:
             self.eet = self.evap.eet_d    # daily equilibrium ET, mm
             self.pet = self.evap.pet_d    # daily potential ET, mm
             self.ppfd_d = self.evap.ppfd_d
-            self.hn = self.evap.hn #Daily total radiation
+            self.netrad = self.evap.netrad #Daily total radiation
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate today's soil moisture (sm), mm
