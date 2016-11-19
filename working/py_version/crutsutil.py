@@ -3,7 +3,7 @@
 # data.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-07-28
+# LAST UPDATED: 2016-11-18
 #
 # ~~~~~~~~
 # license:
@@ -225,9 +225,10 @@ def get_monthly_cru(fname, ct, lat, lon, v):
               - float, longitude (lon)
               - string, variable of interest (v)
     Output:   float
-    Depends:  get_time_index
     Features: Returns monthly CRU TS value for a given month and variable of
               interest (e.g., cld, pre, tmp)
+    Depends:  - get_time_index
+              - grid_centroid
     """
     if os.path.isfile(fname):
         try:
@@ -274,11 +275,16 @@ def get_monthly_cru(fname, ct, lat, lon, v):
                         "Failed to read lon/lat variables from %s", fname)
                     raise
                 else:
+                    if lat not in f_lat or lon not in f_lon:
+                        logging.info(
+                            "Finding closest 0.5 degree grid for (%s, %s)" % (
+                                lon, lat))
+                        lon, lat = grid_centroid(lon, lat, grid_res=0.5)
+
                     if lat in f_lat:
                         ilat = numpy.where(f_lat == lat)[0]
                         logging.debug("lat index = %d", ilat)
                     else:
-                        logging.error("Could not index latitude %s", lat)
                         raise ValueError(
                             "Latitude %s not found in CRU TS file!" % lat)
                     if lon in f_lon:
@@ -319,6 +325,108 @@ def get_monthly_cru(fname, ct, lat, lon, v):
     else:
         logging.error("Failed to open file, %s, for reading", fname)
         raise OSError("File not found!")
+
+
+def grid_centroid(my_lon, my_lat, grid_res=0.5):
+    """
+    Name:     grid_centroid
+    Input:    - float, longitude (my_lon)
+              - float, latitude (my_lat)
+              - [optional] float, grid resolution (grid_res)
+    Output:   tuple, longitude latitude pair (my_centroid)
+    Features: Returns the nearest centroid per given coordinates based on the
+              Euclidean distance to each of the four surrounding grids;
+              if any distances are equivalent, the pixel north and east is
+              selected by default
+    """
+    # Create lists of regular latitude and longitude:
+    lat_min = -90 + 0.5*grid_res
+    lon_min = -180 + 0.5*grid_res
+    lat_dim = int(180./grid_res)
+    lon_dim = int(360./grid_res)
+    lats = [lat_min + y*grid_res for y in range(lat_dim)]
+    lons = [lon_min + x*grid_res for x in range(lon_dim)]
+
+    # Find bounding longitude:
+    centroid_lon = None
+    if my_lon in lons:
+        centroid_lon = my_lon
+    else:
+        lons.append(my_lon)
+        lons.sort()
+        lon_index = lons.index(my_lon)
+        bb_lon_min = lons[lon_index - 1]
+        try:
+            bb_lon_max = lons[lon_index + 1]
+        except IndexError:
+            bb_lon_max = lons[-1] + grid_res
+
+    # Find bounding latitude:
+    centroid_lat = None
+    if my_lat in lats:
+        centroid_lat = my_lat
+    else:
+        lats.append(my_lat)
+        lats.sort()
+        lat_index = lats.index(my_lat)
+        bb_lat_min = lats[lat_index - 1]
+        try:
+            bb_lat_max = lats[lat_index + 1]
+        except IndexError:
+            bb_lat_max = lats[-1] + grid_res
+
+    # Determine nearest centroid:
+    # NOTE: if dist_A equals dist_B, then centroid defaults positively
+    #       i.e., north / east
+    if centroid_lon and centroid_lat:
+        my_centroid = (centroid_lon, centroid_lat)
+    elif centroid_lon and not centroid_lat:
+        # Calculate the distances between lat and bounding box:
+        dist_A = bb_lat_max - my_lat
+        dist_B = my_lat - bb_lat_min
+        if dist_A > dist_B:
+            centroid_lat = bb_lat_min
+        else:
+            centroid_lat = bb_lat_max
+        my_centroid = (centroid_lon, centroid_lat)
+    elif centroid_lat and not centroid_lon:
+        # Calculate the distances between lon and bounding box:
+        dist_A = bb_lon_max - my_lon
+        dist_B = my_lon - bb_lon_min
+        if dist_A > dist_B:
+            centroid_lon = bb_lon_min
+        else:
+            centroid_lon = bb_lon_max
+        my_centroid = (centroid_lon, centroid_lat)
+    else:
+        # Calculate distances between lat:lon and bounding box:
+        # NOTE: if all distances are equal, defaults to NE grid
+        dist_A = numpy.sqrt(
+            numpy.power((bb_lon_max - my_lon), 2) +
+            numpy.power((bb_lat_max - my_lat), 2))
+        dist_B = numpy.sqrt(
+            numpy.power((bb_lon_max - my_lon), 2) +
+            numpy.power((my_lat - bb_lat_min), 2))
+        dist_C = numpy.sqrt(
+            numpy.power((my_lon - bb_lon_min), 2) +
+            numpy.power((bb_lat_max - my_lat), 2))
+        dist_D = numpy.sqrt(
+            numpy.power((my_lon - bb_lon_min), 2) +
+            numpy.power((my_lat - bb_lat_min), 2))
+        min_dist = min([dist_A, dist_B, dist_C, dist_D])
+
+        # Determine centroid based on min distance:
+        if dist_A == min_dist:
+            my_centroid = (bb_lon_max, bb_lat_max)
+        elif dist_B == min_dist:
+            my_centroid = (bb_lon_max, bb_lat_min)
+        elif dist_C == min_dist:
+            my_centroid = (bb_lon_min, bb_lat_max)
+        elif dist_D == min_dist:
+            my_centroid = (bb_lon_min, bb_lat_min)
+
+    # Return nearest centroid:
+    return my_centroid
 
 
 def pre_to_pn(pre, cm):

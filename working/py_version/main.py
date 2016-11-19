@@ -76,20 +76,22 @@ if __name__ == '__main__':
     root_logger.addHandler(root_handler)
 
     method = "point"
-    my_params = [(-115.78125, 49.53125, 921, 'splash.cansbrook.in'),  # Canada
+    my_params = [(-73.78125, 44.65625, 383, 'splash.saranac.in'), ]
+
+    my_params = [(-116.46875, 51.78125, 1383, 'splash.banff.in'),     # Canada
                  (-122.40625, 37.78125, 16, 'splash.sanfran.in'),     # Calif
                  (-100.96875, 22.15625, 1850, 'splash.sanluis.in'),   # Mexico
                  (-114.59375, 32.71875, 43, 'splash.yuma.in'),        # Arizona
                  (-80.21875, 25.78125, 2, 'splash.miami.in')]         # Florida
 
-    my_params = [(-116.46875, 51.78125, 1383, 'splash.banff.in'),    # Canada
-                 (-73.78125, 44.65625, 383, 'splash.saranac.in')]
+    years = [1991 + i for i in range(10)]  # ten year period
 
     if method == "point":
         input_dir = os.path.join(
             os.path.expanduser("~"), "Data", "splash", "in")
         output_dir = os.path.join(
             os.path.expanduser("~"), "Data", "splash", "out")
+
         for param in my_params:
             my_lon, my_lat, my_elv, input_file = param
             output_file = "%s.out" % (os.path.splitext(input_file)[0])
@@ -98,7 +100,20 @@ if __name__ == '__main__':
             output_path = os.path.join(output_dir, output_file)
 
             my_data = DATA(mode='txt')
-            my_data.read_csv(input_path)
+            my_data.cru_cld_file = os.path.join(
+                os.path.expanduser("~"), "Data", "cru_ts",
+                "cru_ts3.23.1991.2000.cld.dat.nc")
+            my_data.cru_pre_file = os.path.join(
+                os.path.expanduser("~"), "Data", "cru_ts",
+                "cru_ts3.23.1991.2000.pre.dat.nc")
+            my_data.cru_tmp_file = os.path.join(
+                os.path.expanduser("~"), "Data", "cru_ts",
+                "cru_ts3.23.1991.2000.tmp.dat.nc")
+            my_data.cru_elv_file = os.path.join(
+                os.path.expanduser("~"), "Data", "cru_ts",
+                "halfdeg.elv.grid.dat")
+            #my_data.read_csv(input_path)
+
             try:
                 f = open(output_path, 'w')
                 tmp = SPLASH(0, 0)
@@ -108,36 +123,48 @@ if __name__ == '__main__':
             else:
                 f.close()
                 tmp = None
-            my_class = SPLASH(my_lat, my_elv)
-            my_class.lon = my_lon
-            my_class.spin_up(my_data)
 
-            # Loop through a year:
-            for i in range(my_data.npoints):
-                # Get preceding soil moisture status:
-                if i == 0:
-                    wn = my_class.wn_vec[-1]
+            wn_last = 0.0
+            for year in years:
+                my_data.get_annual_cru(year, my_lat, my_lon)
+
+                my_class = SPLASH(my_lat, my_elv)
+                my_class.lon = my_lon
+
+                if my_data.is_okay:
+                    # Equilibrate first year:
+                    if year == 1991:
+                        my_class.spin_up(my_data)
+                        wn_last = my_class.wn_vec[-1]
+
+                    # Loop through a year:
+                    for i in range(my_data.npoints):
+                        # Get preceding soil moisture status:
+                        wn = wn_last
+
+                        # Calculate soil moisture and runoff:
+                        my_class.run_one_day(n=i+1,
+                                             y=my_data.year,
+                                             wn=wn,
+                                             sf=my_data.sf_vec[i],
+                                             tc=my_data.tair_vec[i],
+                                             pn=my_data.pn_vec[i])
+
+                        # Update previous soil moisture
+                        wn_last = my_class.wn
+
+                        # Save daily results to file:
+                        if year == 2000:
+                            if os.path.isfile(output_path):
+                                try:
+                                    f = open(output_path, 'a')
+                                    f.write(my_class.data_str)
+                                except:
+                                    logging.exception("Write failed!")
+                                else:
+                                    f.close()
                 else:
-                    wn = my_class.wn_vec[i-1]
-
-                # Calculate soil moisture and runoff:
-                my_class.run_one_day(n=i+1,
-                                     y=my_data.year,
-                                     wn=wn,
-                                     sf=my_data.sf_vec[i],
-                                     tc=my_data.tair_vec[i],
-                                     pn=my_data.pn_vec[i])
-                my_class.wn_vec[i] = my_class.wn
-
-                # Save daily results to file:
-                if os.path.isfile(output_path):
-                    try:
-                        f = open(output_path, 'a')
-                        f.write(my_class.data_str)
-                    except:
-                        logging.exception("Write failed!")
-                    else:
-                        f.close()
+                    raise IOError("Encountered bad data for year %s" % (year))
 
     if method == "lonlat":
         # Testing the lon-lat version of SPLASH:
