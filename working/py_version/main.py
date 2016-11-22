@@ -4,7 +4,7 @@
 # main.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-11-09
+# LAST UPDATED: 2016-11-22
 #
 # ~~~~~~~~
 # license:
@@ -84,6 +84,9 @@ if __name__ == '__main__':
                  (-114.59375, 32.71875, 43, 'splash.yuma.in'),        # Arizona
                  (-80.21875, 25.78125, 2, 'splash.miami.in')]         # Florida
 
+    my_params = [(-80.316, 26.011, 2, 'splash.penbroke.in'), ]        # Florida
+
+
     years = [1991 + i for i in range(10)]  # ten year period
 
     if method == "point":
@@ -109,9 +112,9 @@ if __name__ == '__main__':
             my_data.cru_tmp_file = os.path.join(
                 os.path.expanduser("~"), "Data", "cru_ts",
                 "cru_ts3.23.1991.2000.tmp.dat.nc")
-            my_data.cru_elv_file = os.path.join(
-                os.path.expanduser("~"), "Data", "cru_ts",
-                "halfdeg.elv.grid.dat")
+            # my_data.cru_elv_file = os.path.join(
+            #    os.path.expanduser("~"), "Data", "cru_ts",
+            #    "halfdeg.elv.grid.dat")
             #my_data.read_csv(input_path)
 
             try:
