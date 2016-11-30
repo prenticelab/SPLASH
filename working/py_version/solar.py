@@ -40,7 +40,7 @@
 import logging
 
 import numpy
-from scipy.stats import nanmean
+#from scipy.stats import nanmean
 from const import (ke, keps, kGsc, kA, kb, kc, kd, kfFEC, kalb_vis, kalb_sw,
                    komega, pir)
 from utilities import dcos

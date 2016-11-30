@@ -445,6 +445,7 @@ class DATA_G:
         elif v == 'evi':          #Set to fAPAR for EVI ebcuase ISI-MIP EVI == fAPAR
             my_file = self.evi_file
             v = 'fAPAR'
+        
 
 
         if my_file:
