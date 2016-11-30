@@ -172,7 +172,7 @@ class EVAP:
         # Enthalpy of vaporization, J/kg
         lv = self.enthalpy_vap(tc)
         self.lv = lv
-        self.logger.debug("enthalpy of vaporization set to %f MJ/kg", (1e-6)*nanmean(lv))
+        self.logger.debug("enthalpy of vaporization set to %f MJ/kg", (1e-6)*numpy.nanmean(lv))
 
         # Density of water, kg/m^3
         pw = self.density_h2o(tc, self.elv2pres(self.elv))
@@ -186,7 +186,7 @@ class EVAP:
 
         econ = s/(lv*pw*(s + g))
         self.econ = econ
-        self.logger.debug("Econ set to %f mm^3/J", (1e9)*nanmean(econ))
+        self.logger.debug("Econ set to %f mm^3/J", (1e9)*numpy.nanmean(econ))
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         # 3. Calculate daily condensation (cn), mm
