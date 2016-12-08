@@ -440,11 +440,6 @@ class DATA_G:
             my_file = self.tmx_file
         elif v == 'vap':
         	my_file = self.vap_file
-        elif v == 'fAPAR':
-        	my_file = self.fapar_file
-        elif v == 'evi':          #Set to fAPAR for EVI ebcuase ISI-MIP EVI == fAPAR
-            my_file = self.evi_file
-            v = 'fAPAR'
         
 
 
@@ -494,6 +489,78 @@ class DATA_G:
 
             self.logger.debug("finished reading %s for month %s" % (v, ct))
             return f_data
+
+    def get_monthly_fAPAR(self, ct, v):
+        """
+        Name:     DATA_G.get_monthly_cru
+        Input:    - datetime date, current month datetime object (ct)
+                  - str, variable of interest (v)
+        Output:   numpy nd.array
+        Features: Returns 360x720 monthly CRU TS dataset for a given month and
+                  variable of interest (e.g., cld, pre, tmp, tmn, tmx)
+                  NODATA = error_val
+        Depends:  - get_cru_file
+                  - get_time_index
+        """
+        self.logger.debug("reading %s for month %s" % (v, ct))
+
+        if v == 'fAPAR':
+        	my_file = self.fapar_file
+        elif v == 'evi':          #Set to fAPAR for EVI ebcuase ISI-MIP EVI == fAPAR
+            my_file = self.evi_file
+            v = 'fAPAR'
+        
+
+
+        if my_file:
+            # Open netCDF file for reading:
+            self.logger.debug("opening NetCDF file %s", my_file)
+            f = netcdf.netcdf_file(my_file, "r")
+
+            # Save data for variables of interest:
+            # NOTE: for CRU TS 3.2:
+            #       variables: 'lat', 'lon', 'time', v
+            #       where v is 'tmp', 'pre', 'cld'
+            # LAT:  -89.75 -- 89.75
+            # LON:  -179.75 -- 179.75
+            # TIME: units: days since 1900-1-1
+            #       shape: (1344,)
+            #       values: mid-day of each month (e.g., 15th or 16th)
+            # DATA: 'cld' units = %
+            #       'pre' units = mm
+            #       'tmp' units = deg. C
+            #       Missing value = 9.96e+36
+
+            # Save the base time stamp:
+            bt = datetime.date(1900, 1, 1)
+
+            # Read the time data as array:
+            f_time = f.variables['time'].data.copy()
+
+            # Find the time index for the current date:
+            ti = self.get_time_index(bt, ct, f_time)
+            print ti
+            print v
+
+            # Get the spatial data for current time:
+            f_var = f.variables[v]
+            f_noval = f_var.missing_value
+            f_temp = f_var.data[ti]
+            f_data = numpy.copy(f_temp)
+            f_var = None
+            f.close()
+
+            self.logger.debug("setting error value")
+            if v == 'fAPAR':
+               noval_idx = numpy.where((f_data > 1)) # | (f_data < 0.12)) 
+            else: 
+                noval_idx = numpy.where(f_data == f_noval)
+            f_data[noval_idx] *= 0.0
+            f_data[noval_idx] += self.error_val
+
+            self.logger.debug("finished reading %s for month %s" % (v, ct))
+            return f_data
+
 
     def get_daily_watch(self, ct, v):
             """
@@ -696,9 +763,7 @@ class DATA_G:
             # self.pre = numpy.zeros(shape=(360, 720))
             self.tmn = numpy.zeros(shape=(360, 720))
             self.tmx = numpy.zeros(shape=(360, 720))
-            self.vap = numpy.zeros(shape=(360, 720))
-            self.fAPAR = numpy.zeros(shape=(360, 720))
-            self.evi = numpy.zeros(shape=(360, 720))
+            self.vap = numpy.zeros(shape=(360, 720))        
 
             # Read monthly data:
             self.logger.debug("reading monthly climatology")
@@ -707,20 +772,17 @@ class DATA_G:
             tmn = self.get_monthly_cru(m, 'tmn')
             tmx = self.get_monthly_cru(m, 'tmx')
             vap = self.get_monthly_cru(m, 'vap')
-            fAPAR = self.get_monthly_cru(m, 'fAPAR')
-            evi = self.get_monthly_cru(m, 'evi')  # Set to fAPAR for EVI ebcuase ISI_MIP fAPAR == EVI
 
             # Update good and noval indexes:
             self.logger.debug("updating good and no-value indexes")
             self.noval_idx = numpy.where(
                 (self.elevation == self.error_val) | (tmp == self.error_val) |
                 (tmn == self.error_val) |
-				(tmx == self.error_val) | (vap == self.error_val) | (fAPAR == self.error_val) | 
-                (evi == self.error_val))
+				(tmx == self.error_val) | (vap == self.error_val))
             self.good_idx = numpy.where(
                 (self.elevation != self.error_val) & (tmp != self.error_val) &
             	(tmn != self.error_val) & (tmx != self.error_val) & 
-            	(vap != self.error_val) & (fAPAR != self.error_val) & (evi != self.error_val))
+            	(vap != self.error_val) )
 
             ## Convert cloudiness to fractional sunshine, sf
             #self.logger.debug("converting cloudiness to sunshine fraction")
@@ -739,10 +801,50 @@ class DATA_G:
             self.tmn = tmn
             self.tmx = tmx
             self.vap = vap
+        
+
+    def read_monthly_fAPAR(self, m):
+        """
+        Name:     DATA_G.read_monthly_clim
+        Inputs:   datetime.date, month of interest (m)
+        Features: Reads monthly climatology (i.e., temperature, min monthly temp, max monhtly temp, precipitation,
+                  and cloudiness), converts cloudiness to sunshine fraction and
+                  monthly precipitation to daily fraction
+        Depends:  - get_monthly_cru
+                  - set_date
+        """
+        # Check to see if new monthly data needs to be processed:
+        to_process = True
+        #to_process = False
+        #self.logger.debug("checking whether to process month... ")
+        #if self.date:
+        #    # Check to see if this is a new month:
+        #    if not self.year == m.year or not self.month == m.month:
+        #        to_process = True
+        #else:
+        #    to_process = True
+        #self.logger.debug("... %s", to_process)
+
+
+        if to_process:
+            # Set the date:
+            self.set_date(m)
+
+            self.fAPAR = numpy.zeros(shape=(360, 720))
+            self.evi = numpy.zeros(shape=(360, 720))
+
+            fAPAR = self.get_monthly_fAPAR(m, 'fAPAR')
+            evi = self.get_monthly_fAPAR(m, 'evi')  # Set to fAPAR for EVI ebcuase ISI_MIP fAPAR == EVI
+
+             # Update good and noval indexes:
+            self.logger.debug("updating good and no-value indexes")
+            self.noval_idx = numpy.where(
+            	(fAPAR == self.error_val) | (evi == self.error_val))
+            self.good_idx = numpy.where(
+                (fAPAR != self.error_val) & (evi != self.error_val))
+
             self.fAPAR = fAPAR
             self.evi = evi
-
-
 
     def read_daily_clim(self, m):
         """
