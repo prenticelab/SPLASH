@@ -97,7 +97,7 @@ class SPLASH:
             # # Initialize daily status variables for grid point:
             self.ho = None    # daily solar irradiation, J/m2
             self.hn = None     # daily net radiation, J/m2
-            self.ppfd = None   # daily PPFD, mol/m2
+            self.ppfd_d = None   # daily PPFD, mol/m2
             self.cond = None   # daily condensation water, mm
             self.wn = None     # daily soil moisture, mm
             self.precip = None # daily precipitation, mm
@@ -110,7 +110,7 @@ class SPLASH:
             # Initialise for global run if no longitude specified:
             self.ho = numpy.zeros([720,])    # daily solar irradiation, J/m2
             self.hn = numpy.zeros([720,])      # daily net radiation, J/m2
-            self.ppfd = numpy.zeros([720,])    # daily PPFD, mol/m2
+            self.ppfd_d = numpy.zeros([720,])    # daily PPFD, mol/m2
             self.cond = numpy.zeros([720,])    # daily condensation water, mm
             self.wn = numpy.zeros([720,])      # daily soil moisture, mm
             self.precip = numpy.zeros([720,])  # daily precipitation, mm
@@ -293,7 +293,7 @@ class SPLASH:
 
         return(sm, ro)
 
-    def run_one_day(self, n, y, wn, sf, tc, pn):
+    def run_one_day(self, n, y, wn, sf, tc, pn, leap_const):
         """
         Name:     SPLASH.run_one_day
         Inputs:   - int, day of year (n)
@@ -334,7 +334,13 @@ class SPLASH:
             self.aet = self.evap.aet_d.copy()    # daily actual ET, mm
             self.eet = self.evap.eet_d    # daily equilibrium ET, mm
             self.pet = self.evap.pet_d    # daily potential ET, mm
-            self.ppfd_d = self.evap.ppfd_d
+           
+            if leap_const:                # Checking if doing a constant run and if its a leap year (ignore the 29th Feb if it is - to stay consistent)
+                self.ppfd_d = numpy.nan * self.evap.ppfd_d
+            else:
+                
+                self.ppfd_d = self.evap.ppfd_d
+
             self.netrad = self.evap.netrad #Daily total radiation
 
         # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
