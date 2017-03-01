@@ -80,7 +80,18 @@ class EVAP:
         # Assign default public variables:
         self.elv = elv
         self.logger.debug("elevation set to %f m", elv)
-
+        # Calculate the size of the output variables:
+        if numpy.ndim(elv) == 2:
+            lond = 1
+        elif numpy.ndim(elv) == 1:
+            lond = 2
+        else:
+            lond = 3
+        
+        no_lons = elv.shape[lond]
+        print no_lons
+        print lond
+        
         # Create SOLAR class:
         try:
             self.solar = SOLAR(lat, elv)
@@ -90,17 +101,17 @@ class EVAP:
             self.logger.debug("initialized solar class")
 
          # Initialize class variables:
-        self.sat = numpy.zeros([720,])     # slope of saturation vap press temp curve, Pa/K
-        self.lv = numpy.zeros([720,])    # enthalpy of vaporization, J/kg
-        self.pw = numpy.zeros([720,])    # density of water, kg/m^3
-        self.psy = numpy.zeros([720,])   # psychrometric constant, Pa/K
-        self.econ = numpy.zeros([720,])  # water-to-energy conversion factor
-        self.cond = numpy.zeros([720,])  # daily condensation, mm
-        self.eet_d = numpy.zeros([720,]) # daily EET, mm
-        self.pet_d = numpy.zeros([720,]) # daily PET, mm
-        self.rx = numpy.zeros([720,])    # variable substitute, (mm/hr)/(W/m^2)
-        self.hi = numpy.zeros([720,])    # intersection hour angle (hi), degrees
-        self.aet_d = numpy.zeros([720,]) # daily AET (aet_d), mm
+        self.sat = numpy.zeros([no_lons,])     # slope of saturation vap press temp curve, Pa/K
+        self.lv = numpy.zeros([no_lons,])    # enthalpy of vaporization, J/kg
+        self.pw = numpy.zeros([no_lons,])    # density of water, kg/m^3
+        self.psy = numpy.zeros([no_lons,])   # psychrometric constant, Pa/K
+        self.econ = numpy.zeros([no_lons,])  # water-to-energy conversion factor
+        self.cond = numpy.zeros([no_lons,])  # daily condensation, mm
+        self.eet_d = numpy.zeros([no_lons,]) # daily EET, mm
+        self.pet_d = numpy.zeros([no_lons,]) # daily PET, mm
+        self.rx = numpy.zeros([no_lons,])    # variable substitute, (mm/hr)/(W/m^2)
+        self.hi = numpy.zeros([no_lons,])    # intersection hour angle (hi), degrees
+        self.aet_d = numpy.zeros([no_lons,]) # daily AET (aet_d), mm
 
         # Initialize class variables:
         #self.sat = None     # slope of saturation vap press temp curve, Pa/K

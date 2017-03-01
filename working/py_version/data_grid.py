@@ -559,7 +559,7 @@ class DATA_G:
             f_data[noval_idx] += self.error_val
 
             self.logger.debug("finished reading %s for month %s" % (v, ct))
-            return f_data
+            return f_data,
 
 
     def get_daily_watch(self, ct, v):
@@ -708,7 +708,7 @@ class DATA_G:
             self.good_idx = (numpy.array([]), numpy.array([]))
             self.noval_idx = (numpy.array([]), numpy.array([]))
 
-    def read_lon_lat(self):
+    def read_lon_lat(self, my_file = None):
         """
         Name:     DATA_G.read_lon_lat
         Inputs:   None.
@@ -716,7 +716,8 @@ class DATA_G:
         Features: Retrieves latitude array from CRU temperature netCDF file
         """
         self.logger.debug("retrieving lon and lat arrays from CRU file")
-        my_file = self.tmp_file
+        if my_file is None:
+            my_file = self.tmp_file
         if my_file:
             f = netcdf.netcdf_file(my_file, "r")
             f_lat = f.variables['lat'].data.copy()
@@ -759,11 +760,16 @@ class DATA_G:
 
             # Reset the data arrays:
             self.logger.debug("initializing climate arrays")
-            self.tmp = numpy.zeros(shape=(360, 720))
+            # Read a file to get the lat_lon of the input data
+            self.read_lon_lat(self.tmp_file)
+            no_lats = self.latitude.shape[0]
+            no_lons = self.longitude.shape[0]
+
+            self.tmp = numpy.zeros(shape=(no_lats, no_lons))
             # self.pre = numpy.zeros(shape=(360, 720))
-            self.tmn = numpy.zeros(shape=(360, 720))
-            self.tmx = numpy.zeros(shape=(360, 720))
-            self.vap = numpy.zeros(shape=(360, 720))        
+            self.tmn = numpy.zeros(shape=(no_lats, no_lons))
+            self.tmx = numpy.zeros(shape=(no_lats, no_lons))
+            self.vap = numpy.zeros(shape=(no_lats, no_lons))
 
             # Read monthly data:
             self.logger.debug("reading monthly climatology")
@@ -829,9 +835,14 @@ class DATA_G:
         if to_process:
             # Set the date:
             self.set_date(m)
+            # Read a file to get the lat_lon of the input data
+            self.read_lon_lat(self.fapar_file)
+            no_lats = self.latitude.shape[0]
+            no_lons = self.longitude.shape[0]
 
-            self.fAPAR = numpy.zeros(shape=(360, 720))
-            self.evi = numpy.zeros(shape=(360, 720))
+
+            self.fAPAR = numpy.zeros(shape=(no_lats, no_lons))
+            self.evi = numpy.zeros(shape=(no_lats, no_lons))
 
             fAPAR = self.get_monthly_fAPAR(m, 'fAPAR')
             evi = self.get_monthly_fAPAR(m, 'evi')  # Set to fAPAR for EVI ebcuase ISI_MIP fAPAR == EVI
@@ -870,12 +881,16 @@ class DATA_G:
         # if to_process:
             # Set the date:
         self.set_date(m)
+        # Read a file to get the lat_lon of the input data
+        self.read_lon_lat(self.cld_file)
+        no_lats = self.latitude.shape[0]
+        no_lons = self.longitude.shape[0]
 
         # Reset the data arrays:
         self.logger.debug("initializing climate arrays")
-        self.Tair = numpy.zeros(shape=(360, 720))
-        self.Rainf = numpy.zeros(shape=(360, 720))
-        self.sf = numpy.zeros(shape = (360,720))
+        self.Tair = numpy.zeros(shape=(no_lats, no_lons))
+        self.Rainf = numpy.zeros(shape=(no_lats, no_lons))
+        self.sf = numpy.zeros(shape = (no_lats, no_lons))
         
 
         # Read monthly data:

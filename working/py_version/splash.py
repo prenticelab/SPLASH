@@ -73,7 +73,16 @@ class SPLASH:
         # Error handle and assign required public variables:
         self.elv = elv
         self.logger.debug("elevation set to %f m", elv)
-
+        # Calculate the size of the output variables:
+        if numpy.ndim(elv) == 2:
+            lond = 1
+        elif numpy.ndim(elv) == 1:
+            lond = 2
+        else:
+            lond = 3
+        no_lons = elv.shape[lond]
+        print no_lons
+        print lond
         if lat > 90.0 or lat < -90.0:
             self.logger.error(
                 "Latitude outside range of validity, (-90 to 90)!")
@@ -108,17 +117,17 @@ class SPLASH:
             self.wn_vec = None # daily soil moisture array
         else:
             # Initialise for global run if no longitude specified:
-            self.ho = numpy.zeros([720,])    # daily solar irradiation, J/m2
-            self.hn = numpy.zeros([720,])      # daily net radiation, J/m2
-            self.ppfd_d = numpy.zeros([720,])    # daily PPFD, mol/m2
-            self.cond = numpy.zeros([720,])    # daily condensation water, mm
-            self.wn = numpy.zeros([720,])      # daily soil moisture, mm
-            self.precip = numpy.zeros([720,])  # daily precipitation, mm
-            self.ro = numpy.zeros([720,])     # daily runoff, mm
-            self.eet = numpy.zeros([720,])     # daily equilibrium ET, mm
-            self.pet = numpy.zeros([720,])     # daily potential ET, mm
-            self.aet = numpy.zeros([720,])    # daily actual ET, mm
-            self.wn_vec = numpy.zeros([720,])  # daily soil moisture array
+            self.ho = numpy.zeros([no_lons,])    # daily solar irradiation, J/m2
+            self.hn = numpy.zeros([no_lons,])      # daily net radiation, J/m2
+            self.ppfd_d = numpy.zeros([no_lons,])    # daily PPFD, mol/m2
+            self.cond = numpy.zeros([no_lons,])    # daily condensation water, mm
+            self.wn = numpy.zeros([no_lons,])      # daily soil moisture, mm
+            self.precip = numpy.zeros([no_lons,])  # daily precipitation, mm
+            self.ro = numpy.zeros([no_lons,])     # daily runoff, mm
+            self.eet = numpy.zeros([no_lons,])     # daily equilibrium ET, mm
+            self.pet = numpy.zeros([no_lons,])     # daily potential ET, mm
+            self.aet = numpy.zeros([no_lons,])    # daily actual ET, mm
+            self.wn_vec = numpy.zeros([no_lons,])  # daily soil moisture array
 
        
         self.ro_orig = self.ro
