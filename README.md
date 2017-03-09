@@ -9,13 +9,14 @@ This program calculates bioclimatic indices and fluxes (radiation, evapotranspir
 
 # Repository Details
 ---------------
-
-* LATEST RELEASE: v1.0 ([doi: 10.5281/zenodo.376293](https://doi.org/10.5281/zenodo.376293))
 * LAST UPDATED: 2017-03-09
 * LICENSE: GNU Lesser General Public License 2.1
 * TEAM: labprentice
 * REPO: https://bitbucket.org/labprentice/splash
 * WIKI: https://bitbucket.org/labprentice/splash/wiki/
+* LATEST RELEASE: v1.0 
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.376293.svg)](https://doi.org/10.5281/zenodo.376293)
 
 # Repository Structure
 ----------------------
