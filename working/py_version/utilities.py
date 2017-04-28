@@ -4,7 +4,7 @@
 # utilities.py
 #
 # VERSION: 1.1-dev
-# LAST UPDATED: 2016-02-19
+# LAST UPDATED: 2017-04-28
 #
 # ~~~~~~~~
 # license:
@@ -38,7 +38,10 @@
 ###############################################################################
 # IMPORT MODULES:
 ###############################################################################
+import glob
 import logging
+import os
+import sys
 
 import numpy
 
@@ -96,6 +99,24 @@ def dsin(x):
     return numpy.sin(x*pir)
 
 
+def find_files(my_dir, my_pattern):
+    """
+    Name:     find_files
+    Inputs:   - str, directory path (my_dir)
+              - str, file name search pattern (my_pattern)
+    Outputs:  list, file paths
+    Features: Returns a sorted list of files found at a given directory with
+              file names that match a given pattern
+    """
+    my_files = []
+    if os.path.isdir(my_dir):
+        s_str = os.path.join(my_dir, my_pattern)
+        my_files = glob.glob(s_str)
+    if len(my_files) > 0:
+        my_files = sorted(my_files)
+    return my_files
+
+
 def get_x_y(lon, lat, r=0.5):
     """
     Name:     get_x_y
@@ -117,3 +138,31 @@ def get_x_y(lon, lat, r=0.5):
         x = (lon + 180.0)/r - 0.5
         y = (lat + 90.0)/r - 0.5
         return (int(x), int(y))
+
+
+def print_progress(iteration, total, prefix='', suffix='', decimals=0,
+                   bar_length=44):
+    """
+    Name:     print_progress
+    Inputs:   - int, current iteration (iteration)
+              - int, total iterations (total)
+              - [optional] str, prefix string (prefix)
+              - [optional] str, suffix string (suffix)
+              - [optional] int, decimal number in percent complete (decimals)
+              - [optional] int, character length of bar (bar_length)
+    Outputs:  None.
+    Features: Creates a terminal progress bar
+    Reference: "Python Progress Bar" by aubricus
+    https://gist.github.com/aubricus/f91fb55dc6ba5557fbab06119420dd6a
+    """
+    str_format = "{0:." + str(decimals) + "f}"
+    percents = str_format.format(100 * (iteration / float(total)))
+    filled_length = int(round(bar_length * iteration / float(total)))
+    bar = '█' * filled_length + '-' * (bar_length - filled_length)
+
+    sys.stdout.write(
+        '\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+
+    if iteration == total:
+        sys.stdout.write('\n')
+    sys.stdout.flush()
