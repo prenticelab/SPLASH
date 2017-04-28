@@ -9,13 +9,14 @@ This program calculates bioclimatic indices and fluxes (radiation, evapotranspir
 
 # Repository Details
 ---------------
-
-* LATEST RELEASE: v1.0
-* LAST UPDATED: 2016-09-11
-* LICENSE: GNU Lesser General Public License
+* LAST UPDATED: 2017-03-09
+* LICENSE: GNU Lesser General Public License 2.1
 * TEAM: labprentice
 * REPO: https://bitbucket.org/labprentice/splash
 * WIKI: https://bitbucket.org/labprentice/splash/wiki/
+* LATEST RELEASE: v1.0 
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.376293.svg)](https://doi.org/10.5281/zenodo.376293)
 
 # Repository Structure
 ----------------------
@@ -67,7 +68,8 @@ This directory holds the SPLASH v1.0 code release in C++, Fortran90, Python 2/3,
 ## working/
 This directory contains the SPLASH source code currently under development.
 
-## Theory
+# Theory
+--------
 There is a growing need of global ecophysiological datasets for the study of vegetation dynamics under changing climate scenarios; however, simulation of natural processes is often necessary due to the lack of observations.
 Bioclimatic indices, such as the climatic water deficit and the plant available water coefficient, are improvements over indices of mean annual temperature and precipitation. The algorithms to produce these indices are based on the STASH (STAtic SHell) model, developed as a simple process-based predictive model for the simulation of tree species distributions at the regional scale (Sykes and Prentice, 1995, 1996; Sykes et al., 1996).
 
