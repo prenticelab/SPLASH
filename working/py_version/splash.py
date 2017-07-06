@@ -80,6 +80,8 @@ class SPLASH:
             lond = 2
         else:
             lond = 3
+        print lond
+        print elv.shape
         no_lons = elv.shape[lond]
         print no_lons
         print lond
