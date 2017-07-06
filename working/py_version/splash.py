@@ -77,9 +77,9 @@ class SPLASH:
         if numpy.ndim(elv) == 2:
             lond = 1
         elif numpy.ndim(elv) == 1:
-            lond = 2
+            lond = 0
         else:
-            lond = 3
+            lond = 2
         print lond
         print elv.shape
         no_lons = elv.shape[lond]
