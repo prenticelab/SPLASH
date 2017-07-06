@@ -81,16 +81,21 @@ class EVAP:
         self.elv = elv
         self.logger.debug("elevation set to %f m", elv)
         # Calculate the size of the output variables:
-        if numpy.ndim(elv) == 2:
-            lond = 1
-        elif numpy.ndim(elv) == 1:
-            lond = 2
+        print elv
+        print numpy.ndim(elv)
+        if numpy.ndim(elv) == 1:
+            no_lons = elv.shape[0]
+
+        elif numpy.ndim(elv) == 2:
+            no_lons = elv.shape[1]
+
+        elif numpy.ndim(elv) == 3:
+            no_lons = elv.shape[1]
         else:
-            lond = 3
+            no_lons = 1
         
-        no_lons = elv.shape[lond]
         print no_lons
-        print lond
+   
         
         # Create SOLAR class:
         try:

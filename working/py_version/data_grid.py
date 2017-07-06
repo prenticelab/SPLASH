@@ -211,7 +211,7 @@ class DATA_G:
         Features: Searches for the daily watch files(tAir & Rainf)) within a single directory
         Depends:  get_watch_file
         """
-        Rainf_file = self.get_watch_file(path, 'Rainf', ct, '_daily_WFDEI_CRU_')
+        Rainf_file = self.get_watch_file(path, 'Rainf', ct, '_daily_WFDEI_GPCC_')
         if os.path.isfile(Rainf_file):
             self.logger.debug("found WACTH precipitation file %s", Rainf_file)
             self.Rainf_file = Rainf_file
