@@ -82,7 +82,7 @@ class EVAP:
         self.logger.debug("elevation set to %f m", elv)
         # Calculate the size of the output variables:
 #        print elv
-        print numpy.ndim(elv)
+# print numpy.ndim(elv)
         if numpy.ndim(elv) == 1:
             no_lons = elv.shape[0]
 
