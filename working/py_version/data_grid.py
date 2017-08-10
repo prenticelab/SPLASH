@@ -211,7 +211,7 @@ class DATA_G:
         Features: Searches for the daily watch files(tAir & Rainf)) within a single directory
         Depends:  get_watch_file
         """
-        Rainf_file = self.get_watch_file(path, 'Rainf', ct, '_daily_WFDEI_GPCC_')
+        Rainf_file = self.get_watch_file(path, 'Rainf', ct, '_daily_WFDEI_CRU_')
         if os.path.isfile(Rainf_file):
             self.logger.debug("found WACTH precipitation file %s", Rainf_file)
             self.Rainf_file = Rainf_file
@@ -539,7 +539,7 @@ class DATA_G:
 
             # Find the time index for the current date:
             ti = self.get_time_index(bt, ct, f_time)
-            print ti
+            print 'time_index...', ti
             print v
 
             # Get the spatial data for current time:
@@ -640,7 +640,7 @@ class DATA_G:
                 idx = None
             else:
                 self.logger.debug("Found index %d for month %s" % (idx, ct))
-                return idx
+       return idx
 
     def get_year_days(self, ts):
         """
