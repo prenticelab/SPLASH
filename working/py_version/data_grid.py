@@ -640,7 +640,7 @@ class DATA_G:
                 idx = None
             else:
                 self.logger.debug("Found index %d for month %s" % (idx, ct))
-       return idx
+        return idx
 
     def get_year_days(self, ts):
         """
