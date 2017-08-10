@@ -42,6 +42,11 @@ import datetime
 import glob
 import logging
 import os.path
+# import netCDF4 module for date conversions based on calendar
+# as netCDF4 module is already loaded, some of the reading of the files will
+# be done using the netCDF4 module (some speed advantages, and gets rid of
+# some of the warnings)
+import netCDF4 as nc4
 
 import numpy
 from scipy.io import netcdf
