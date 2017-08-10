@@ -80,11 +80,11 @@ class SPLASH:
             lond = 0
         else:
             lond = 2
-        print lond
-        print elv.shape
+        # print lond
+        #print elv.shape
         no_lons = elv.shape[lond]
-        print no_lons
-        print lond
+        #print no_lons
+        #print lond
         if lat > 90.0 or lat < -90.0:
             self.logger.error(
                 "Latitude outside range of validity, (-90 to 90)!")
