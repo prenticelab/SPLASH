@@ -558,8 +558,8 @@ class DATA_G:
             f_data[noval_idx] *= 0.0
             f_data[noval_idx] += self.error_val
 
-            self.logger.debug("finished reading %s for month %s" % (v, ct))
-            return f_data,
+            self.logger.info("finished reading %s for month %s" % (v, ct))
+            return f_data
 
 
     def get_daily_watch(self, ct, v):
