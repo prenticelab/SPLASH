@@ -977,17 +977,19 @@ class DATA_G:
             (Rainf != self.error_val) & (sf != self.error_val))
 
         # processing date
+        if Tair:
+            Tair[self.good_idx] -= 273.15 
 
-        Tair[self.good_idx] -= 273.15 
+        if Rainf:
+            patm = kPo*(1.0 - kL*self.elevation/kTo)**(kG*kMa/(kR*kL))
+            pw = self.density_h2o(Tair, patm)
 
-        patm = kPo*(1.0 - kL*self.elevation/kTo)**(kG*kMa/(kR*kL))
-        pw = self.density_h2o(Tair, patm)
+            Rainf /= pw   # m/s
+            Rainf[self.good_idx] *= 8.64e7
 
-        Rainf /= pw   # m/s
-        Rainf[self.good_idx] *= 8.64e7
-
-        sf[self.good_idx] /= 100.0                   # unitless
-        sf = 1.0 - sf                 # complement of cloudiness
+        if sf:
+            sf[self.good_idx] /= 100.0                   # unitless
+            sf = 1.0 - sf                 # complement of cloudiness
     
 
         # Save data:
