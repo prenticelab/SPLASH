@@ -6,6 +6,11 @@
 # VERSION: 1.1-dev
 # LAST UPDATED: 2016-02-19
 #
+#x-x-x-x-x-x-x-x-x-x-x-x
+# NOTES:
+#x-x-x-x-x-x-x-x-x-x-x-x-x
+#Rebecca - 20/9/2017: Trying to add in WFD data reading (for pre-1979 runs) - don't need this for now, so All I've done is add in
+#                     the find WFD and get WFD functions - need to add in read WFD (requires file reshaping)
 # ~~~~~~~~
 # license:
 # ~~~~~~~~
@@ -227,6 +232,27 @@ class DATA_G:
             self.logger.warning("failed to load WACTH Tair temperature file")
             self.Tair_file = None
 
+    def find_wfd_files(self, path, ct):
+        """
+        Features: Searches for the daily watch files(tAir & Rainf)) within a single directory
+        Depends:  get_watch_file
+        """
+        Rainf_file = self.get_wfd_file(path, 'Rainf', ct, '_daily_WFD_')
+        if os.path.isfile(Rainf_file):
+            self.logger.debug("found WFD precipitation file %s", Rainf_file)
+            self.Rainf_file = Rainf_file
+        else:
+            self.logger.warning("failed to load WFD precipitation file")
+            self.Rainf_file = None
+
+        Tair_file = self.get_wfd_file(path, 'Tair', ct, '_daily_WFD_')
+        if os.path.isfile(Tair_file):
+            self.logger.debug("found WACTH Tair temperature file %s", Tair_file)
+            self.Tair_file = Tair_file
+        else:
+            self.logger.warning("failed to load WFD Tair temperature file")
+            self.Tair_file = None
+
     def find_fapar_files(self, path):
         """
         Features: Searches for fapar file on the path within a single directory
@@ -270,6 +296,23 @@ class DATA_G:
 
         return co2_data
 
+    def find_RCP_files(self, path):
+        """
+        Features: Searches for the RCPvariable files (i.e., co2) within a single directory and returns file contents
+        Depends:  get_noaa_file
+        """
+        co2_file = self.get_noaa_file(path, 'CO2')
+        if os.path.isfile(co2_file):
+            self.logger.debug("found RCP co2 file %s", co2_file)
+            self.co2_file = co2_file
+        else:
+            self.logger.warning("failed to load  RCP co2 file")
+            self.co2_file = None
+
+        co2_data = numpy.loadtxt(co2_file)
+
+        return co2_data
+
     def get_cru_file(self, path, voi):
         """
         Name:     DATA_G.get_cru_file
@@ -307,6 +350,31 @@ class DATA_G:
         # Read through all files within the paths for voi:
         my_file = None
         my_pattern = os.path.join(path, "%s_daily/%s%s%d%02d.nc" % (voi, voi, fmid, ct.year, ct.month))
+        
+        my_files = glob.glob(my_pattern)
+
+        if my_files:
+            if len(my_files) > 1:
+                self.logger.warning("Found %d files!", len(my_files))
+            else:
+                my_file = my_files[0]
+                self.logger.debug("found file %s", my_file)
+        else:
+            self.logger.warning("Found 0 files!")
+
+        return my_file
+
+    def get_wfd_file(self, path, voi, ct, fmid):
+        """
+        Name:     DATA_G.get_cru_file
+        Input:    - str, directory path for CRU data files (path)
+                  - str, variable of interest (voi)
+        Output:   str OR list of file names
+        Features: Returns the CRU TS file for given variable of interest
+        """
+        # Read through all files within the paths for voi:
+        my_file = None
+        my_pattern = os.path.join(path, "%s_daily_WFD/%s%s%d%02d.nc" % (voi, voi, fmid, ct.year, ct.month))
         
         my_files = glob.glob(my_pattern)
 
