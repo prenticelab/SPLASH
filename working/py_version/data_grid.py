@@ -976,18 +976,18 @@ class DATA_G:
             (Tair != self.error_val) &
             (Rainf != self.error_val) & (sf != self.error_val))
 
-        # processing date
-        if Tair:
+        # processing data
+        if Tair is not None:
             Tair[self.good_idx] -= 273.15 
 
-        if Rainf:
+        if Rainf is not None:
             patm = kPo*(1.0 - kL*self.elevation/kTo)**(kG*kMa/(kR*kL))
             pw = self.density_h2o(Tair, patm)
 
             Rainf /= pw   # m/s
             Rainf[self.good_idx] *= 8.64e7
 
-        if sf:
+        if sf is not None:
             sf[self.good_idx] /= 100.0                   # unitless
             sf = 1.0 - sf                 # complement of cloudiness
     
