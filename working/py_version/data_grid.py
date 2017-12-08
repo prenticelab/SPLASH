@@ -301,7 +301,7 @@ class DATA_G:
         Features: Searches for the RCPvariable files (i.e., co2) within a single directory and returns file contents
         Depends:  get_noaa_file
         """
-        co2_file = self.get_noaa_file(path, 'CO2')
+        co2_file = self.get_noaa_file(path, 'rcp85')
         if os.path.isfile(co2_file):
             self.logger.debug("found RCP co2 file %s", co2_file)
             self.co2_file = co2_file
