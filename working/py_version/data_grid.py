@@ -91,6 +91,7 @@ class DATA_G:
         self.evi_file = None
         self.Tair_file = None
         self.Rainf_file = None
+        self.SWdown_file = None
         self.co2_file = None
 
         self.tmp = None
@@ -102,6 +103,7 @@ class DATA_G:
         self.evi = None
         self.Tair = None
         self.Rainf = None
+        self.SWdown = None
         self.co2 = None
         
         self.elevation = None
@@ -232,6 +234,14 @@ class DATA_G:
         else:
             self.logger.warning("failed to load WACTH Tair temperature file")
             self.Tair_file = None
+
+        SWdown_file = self.get_watch_file(path, 'SWdown', ct, '_daily_WFDEI_')
+        if os.path.isfile(Tair_file):
+            self.logger.debug("found WACTH SWdown temperature file %s", SWdown_file)
+            self.SWdown_file = SWdown_file
+        else:
+            self.logger.warning("failed to load WACTH SWdown temperature file")
+            self.SWdown_file = None
 
     def find_wfd_files(self, path, ct):
         """
@@ -645,6 +655,8 @@ class DATA_G:
                 my_file = self.Tair_file
             elif v == 'Rainf':
                 my_file = self.Rainf_file
+            elif v == 'SWdown':
+            	my_file = self.SWdown_file
             
             
             if my_file:
@@ -959,6 +971,7 @@ class DATA_G:
         self.logger.debug("initializing climate arrays")
         self.Tair = numpy.zeros(shape=(no_lats, no_lons))
         self.Rainf = numpy.zeros(shape=(no_lats, no_lons))
+        self.SWdown = numpy.zeros(shape=(no_lats, no_lons))
         self.sf = numpy.zeros(shape = (no_lats, no_lons))
         
 
@@ -966,16 +979,17 @@ class DATA_G:
         self.logger.debug("reading monthly climatology")
         Tair = self.get_daily_watch(m, 'Tair')
         Rainf = self.get_daily_watch(m, 'Rainf')
+        SWdown = self.get_daily_watch(m, 'SWdown')
         sf = self.get_monthly_cru(m, 'cld')
 
         # Update good and noval indexes:
         self.logger.debug("updating good and no-value indexes")
         self.noval_idx = numpy.where(
-           (Tair == self.error_val) |
-            (Rainf == self.error_val) | (sf == self.error_val))
+           (Tair == self.error_val) | 
+            (Rainf == self.error_val) | (SWdown == self.error_val) | (sf == self.error_val))
         self.good_idx = numpy.where(
             (Tair != self.error_val) &
-            (Rainf != self.error_val) & (sf != self.error_val))
+            (Rainf != self.error_val) & (SWdown != self.error_val) & (sf != self.error_val))
 
         # processing data
         if Tair is not None:
@@ -988,6 +1002,8 @@ class DATA_G:
             Rainf /= pw   # m/s
             Rainf[self.good_idx] *= 8.64e7
 
+
+
         if sf is not None:
             sf[self.good_idx] /= 100.0                   # unitless
             sf = 1.0 - sf                 # complement of cloudiness
@@ -996,6 +1012,7 @@ class DATA_G:
         # Save data:
         self.Tair = Tair
         self.Rainf = Rainf
+        self.SWdown = SWdown
         self.sf = sf
         
 
