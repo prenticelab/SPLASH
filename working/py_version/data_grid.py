@@ -163,6 +163,7 @@ class DATA_G:
             self.cld_file = None
 
         elv_file = self.get_cru_file(path, 'elv')
+        self.logger.warning("Elevation file: %s", elv_file)
         if os.path.isfile(elv_file):
             self.logger.debug("found CRU TS elevation file %s", elv_file)
             self.elv_file = elv_file
