@@ -335,7 +335,7 @@ class DATA_G:
                 my_file = my_files[0]
                 self.logger.debug("found file %s", my_file)
         else:
-            self.logger.warning("Found 0 files!")
+            self.logger.warning("Found 0 files for %s!", my_pattern)
 
         return my_file
 
