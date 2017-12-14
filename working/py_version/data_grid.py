@@ -333,7 +333,7 @@ class DATA_G:
                 self.logger.warning("Found %d files!", len(my_files))
             else:
                 my_file = my_files[0]
-                self.logger.debug("found file %s", my_file)
+                self.logger.warning("found file %s", my_file)
         else:
             self.logger.warning("Found 0 files for %s!", my_pattern)
 
