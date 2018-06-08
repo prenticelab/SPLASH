@@ -11,12 +11,16 @@
 
 ## >>> un-comment the follwing 2 lines for compilation with (free) gfortran compiler
 FC=gfortran
-FCFLAGS = -ffree-line-length-0 -ffree-form -fdefault-real-8 -fdefault-integer-8
+FCFLAGS = -ffree-line-length-0 -ffree-form -fdefault-real-8 #-fdefault-integer-8
+FCFSHARED=-fPIC
+FLFLAGS=-shared
 ## <<<
 
 PROGRAMS = spinup_splash test_splash
+LIBRARY=libsplash.so
 
 all: $(PROGRAMS)
+lib: $(LIBRARY)
 
 #---------- Dependencies ----------#
 spinup_splash.o: splash.mod.o
@@ -25,6 +29,10 @@ test_splash.o: splash.mod.o
 test_splash: splash.mod.o
 
 #---------- Targets ----------#
+$(LIBRARY): splash.mod.f90
+	$(FC) $(FCFLAGS) $(FCFSHARED) -c $<
+	$(FC) $(FLFLAGS) -o $@ splash.mod.o
+
 %: %.o
 	$(FC) $(FCFLAGS) -o $@ $^ $(LDFLAGS)
 
@@ -36,4 +44,4 @@ test_splash: splash.mod.o
 
 .PHONY: clean
 clean:
-	rm -f $(PROGRAMS) *.o *.mod *.MOD
+	rm -f $(PROGRAMS) $(LIBRARY) *.o *.mod *.MOD
